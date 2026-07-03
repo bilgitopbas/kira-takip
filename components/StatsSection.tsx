@@ -6,30 +6,30 @@ const STATS = [
   {
     value: 95,
     suffix: "%",
-    label: "Kira Geliri Artisi",
-    desc: "Mevcut sozlesmeler ve piyasa kosullari dikkate alinarak kira gelirlerinin etkin ve surdurulebilir sekilde artirilmasi hedeflenir.",
-    color: "from-[#17B6AE] to-[#0d8b84]",
+    label: "Kira Geliri Artışı",
+    desc: "Mevcut sözleşmeler ve piyasa koşulları dikkate alınarak kira gelirlerinin etkin ve sürdürülebilir şekilde artırılması hedeflenir.",
+    dark: false,
   },
   {
     value: 250,
     suffix: "+",
-    label: "Tasinmaz",
-    desc: "Farkli nitelik ve olcekteki tasinmazlar, tek bir sistem uzerinden duzenli ve kontrollu bicimde yonetilmektedir.",
-    color: "from-slate-700 to-slate-900",
+    label: "Taşınmaz",
+    desc: "Farklı nitelik ve ölçekteki taşınmazlar, tek bir sistem üzerinden düzenli ve kontrollü biçimde yönetilmektedir.",
+    dark: true,
   },
   {
     value: 99,
     suffix: "%",
     label: "Memnuniyet",
-    desc: "Seffaf surec yonetimi, duzenli takip ve guvene dayali hizmet anlayisiyla yuksek memnuniyet saglanmaktadir.",
-    color: "from-[#17B6AE] to-[#0d8b84]",
+    desc: "Şeffaf süreç yönetimi, düzenli takip ve güvene dayalı hizmet anlayışıyla yüksek memnuniyet sağlanmaktadır.",
+    dark: false,
   },
   {
     value: 96,
     suffix: "%",
-    label: "Duzenli Odeme Takibi",
-    desc: "Kira odemeleri anlik bildirimlerle kontrol altinda tutulur.",
-    color: "from-slate-700 to-slate-900",
+    label: "Düzenli Ödeme Takibi",
+    desc: "Kira ödemeleri anlık bildirimlerle kontrol altında tutulur.",
+    dark: true,
   },
 ];
 
@@ -80,31 +80,56 @@ export default function StatsSection() {
             Rakamlarla Mizan
           </span>
           <h2 className="text-4xl font-bold text-slate-800 leading-tight">
-            Dijital mulk yonetiminde<br />
-            <span className="text-[#17B6AE]">olculebilir sonuclar</span>
+            Dijital mülk yönetiminde{" "}
+            <span className="text-[#17B6AE]">ölçülebilir sonuçlar</span>
           </h2>
+          <p className="text-slate-500 mt-3 text-base">
+            Dijital mülk yönetiminde ölçülebilir sonuçlar ve net veriler.
+          </p>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
           {STATS.map((stat, i) => (
             <div
               key={i}
-              className="group relative bg-white rounded-3xl border border-gray-100 p-8 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-1 overflow-hidden"
+              className={`rounded-3xl p-8 flex flex-col gap-4 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 ${
+                stat.dark
+                  ? "bg-slate-900 text-white"
+                  : "bg-white border border-gray-100 text-slate-800"
+              }`}
             >
-              <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`} />
-              
-              <div className={`inline-flex w-12 h-12 rounded-2xl bg-gradient-to-br ${stat.color} items-center justify-center mb-6 shadow-lg`}>
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              <div
+                className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+                  stat.dark ? "bg-[#17B6AE]" : "bg-[#17B6AE]/10"
+                }`}
+              >
+                <svg
+                  className={`w-6 h-6 ${stat.dark ? "text-white" : "text-[#17B6AE]"}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                  />
                 </svg>
               </div>
 
-              <AnimatedNumber target={stat.value} suffix={stat.suffix} />
-              
-              <p className="text-sm font-bold text-slate-700 mt-2 mb-3">{stat.label}</p>
-              <p className="text-xs text-slate-400 leading-relaxed">{stat.desc}</p>
+              <div className={stat.dark ? "text-white" : "text-[#17B6AE]"}>
+                <AnimatedNumber target={stat.value} suffix={stat.suffix} />
+              </div>
 
-              <div className={`absolute bottom-0 left-0 h-1 w-0 group-hover:w-full bg-gradient-to-r ${stat.color} transition-all duration-700 rounded-b-3xl`} />
+              <div>
+                <p className={`text-sm font-bold mb-1 ${stat.dark ? "text-white" : "text-slate-800"}`}>
+                  {stat.label}
+                </p>
+                <p className={`text-xs leading-relaxed ${stat.dark ? "text-slate-400" : "text-slate-500"}`}>
+                  {stat.desc}
+                </p>
+              </div>
             </div>
           ))}
         </div>
