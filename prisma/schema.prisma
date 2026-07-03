@@ -1,0 +1,184 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  CUSTOMER
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PASSIVE
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
+  PENDING
+}
+
+enum AccountType {
+  PROPERTY_OWNER
+  REAL_ESTATE_AGENT
+  LAWYER
+  AUTHORIZED_REPRESENTATIVE
+  OTHER
+}
+
+enum PropertyCountRange {
+  RANGE_1_3
+  RANGE_3_5
+  RANGE_5_10
+  RANGE_10_25
+  RANGE_25_50
+  RANGE_50_PLUS
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  passwordHash      String
+  fullName          String
+  phone             String?
+  city              String
+  role              Role     @default(CUSTOMER)
+  wantsManagement   Boolean  @default(false)
+
+  accountType       AccountType?
+  accountTypeOther  String?
+
+  propertyCountRange PropertyCountRange?
+
+  termsAcceptedAt      DateTime?
+  marketingConsentAt   DateTime?
+
+  trialEndsAt       DateTime
+  subscriptionStatus SubscriptionStatus @default(TRIAL)
+
+  properties        Property[]
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Property {
+  id          String   @id @default(cuid())
+  owner       User     @relation(fields: [ownerId], references: [id])
+  ownerId     String
+
+  title       String
+  address     String
+  city        String?
+  isOccupied  Boolean  @default(false)
+
+  tenants     Tenant[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("properties")
+}
+
+model Tenant {
+  id           String   @id @default(cuid())
+  property     Property @relation(fields: [propertyId], references: [id])
+  propertyId   String
+
+  fullName     String
+  phone        String?
+  email        String?
+
+  monthlyRent  Decimal  @db.Decimal(10, 2)
+  contractStart DateTime?
+  contractEnd   DateTime?
+
+  debts        Debt[]
+  payments     Payment[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("tenants")
+}
+
+model Debt {
+  id          String        @id @default(cuid())
+  tenant      Tenant        @relation(fields: [tenantId], references: [id])
+  tenantId    String
+
+  year        Int
+  month       Int
+  amount      Decimal       @db.Decimal(10, 2)
+  dueDate     DateTime
+  status      PaymentStatus @default(UNPAID)
+
+  payments    Payment[]
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([tenantId, year, month])
+  @@map("debts")
+}
+
+model Payment {
+  id          String   @id @default(cuid())
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  tenantId    String
+
+  debt        Debt?    @relation(fields: [debtId], references: [id])
+  debtId      String?
+
+  amount      Decimal  @db.Decimal(10, 2)
+  paidAt      DateTime @default(now())
+  method      String?
+
+  createdAt   DateTime @default(now())
+
+  @@map("payments")
+}
+
+model Subscription {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+
+  propertyCount Int      @default(0)
+  monthlyPrice  Decimal  @db.Decimal(10, 2) @default(0)
+
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("subscriptions")
+}
+
+model PlatformSetting {
+  id              String  @id @default(cuid())
+  key             String  @unique
+  value           String
+
+  updatedAt       DateTime @updatedAt
+
+  @@map("platform_settings")
+}
+model ContactRequest {
+  id              String   @id @default(cuid())
+  name            String
+  phone           String
+  marketingConsent Boolean @default(false)
+  isRead          Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  @@map("contact_requests")
+}
