@@ -6,6 +6,7 @@ import NotificationFlow from "@/components/NotificationFlow";
 import PhoneMockup from "@/components/PhoneMockup";
 import Testimonials from "@/components/Testimonials";
 import FaqContact from "@/components/FaqContact";
+import StatsSection from "@/components/StatsSection";
 
 const HERO_BENEFITS = ["Kullanıcı Dostu Arayüz", "Bulut Tabanlı Erişim", "Güvenli Altyapı"];
 
@@ -107,7 +108,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <PaymentFlow />
+      <StatsSection />
       <NotificationFlow />
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
