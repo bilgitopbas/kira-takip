@@ -1,12 +1,12 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import TrustedCompanies from "@/components/TrustedCompanies";
-import PaymentFlow from "@/components/PaymentFlow";
 import NotificationFlow from "@/components/NotificationFlow";
 import PhoneMockup from "@/components/PhoneMockup";
 import Testimonials from "@/components/Testimonials";
 import FaqContact from "@/components/FaqContact";
 import StatsSection from "@/components/StatsSection";
+import HowItWorks from "@/components/HowItWorks";
 
 const HERO_BENEFITS = ["Kullanıcı Dostu Arayüz", "Bulut Tabanlı Erişim", "Güvenli Altyapı"];
 
@@ -21,28 +21,14 @@ const WHAT_WE_DO = [
     icon: "💰",
     color: "from-blue-500 to-blue-700",
     title: "Kira Takibi",
-    desc: "Kira bedelleri ve ödeme tarihleri sistemli biçimde takip edilir. Ödenen, geciken veya bekleyen kiralar net şekilde görüntülenir. Tüm hareketler kayıt altına alınarak düzenli bir finansal tablo oluşturulur. Olası gecikmeler erkenden fark edilerek gerekli bilgilendirmeler yapılır. Bu yapı kira gelirlerinin sürdürülebilirliğini destekler. Manuel takip ihtiyacı ortadan kalkar. Süreçler daha hızlı ve kontrollü ilerler.",
+    desc: "Kira bedelleri ve ödeme tarihleri sistemli biçimde takip edilir. Ödenen, geciken veya bekleyen kiralar net şekilde görüntülenir. Tüm hareketler kayıt altına alınarak düzenli bir finansal tablo oluşturulur. Olası gecikmeler erkenden fark edilerek gerekli bilgilendirmeler yapılır. Bu yapı kira gelirlerinin sürdürülebilirliğini destekler. Manuel takip ihtiyacı ortadan kalkar.",
   },
   {
     icon: "📄",
     color: "from-amber-500 to-amber-700",
     title: "Sözleşme ve Evrak Yönetimi",
-    desc: "Kira sözleşmeleri ve tüm mülke ilişkin belgeler dijital ortamda güvenle saklanır. Evraklar düzenli klasör yapısı sayesinde kolayca bulunur. Fiziki belge karmaşası ve kayıp riski ortadan kaldırılır. İhtiyaç duyulan belgelere her an erişim sağlanır. Belgelerin güncelliği ve düzeni korunur. Arşivleme süreci sistematik şekilde yürütülür. Yasal takvimler ve kritik tarihler gözden kaçırılmaz.",
+    desc: "Kira sözleşmeleri ve tüm mülke ilişkin belgeler dijital ortamda güvenle saklanır. Evraklar düzenli klasör yapısı sayesinde kolayca bulunur. Fiziki belge karmaşası ve kayıp riski ortadan kaldırılır. İhtiyaç duyulan belgelere her an erişim sağlanır. Yasal takvimler ve kritik tarihler gözden kaçırılmaz.",
   },
-];
-
-const STEPS = [
-  { no: "01", title: "Mülkünüzü Ekleyin", desc: "Daire, dükkan veya diğer mülklerinizi ekleyin. Her mülke ait temel bilgileri tek yerde toplayarak düzenli bir yönetim yapısı kurun." },
-  { no: "02", title: "Kiracı ve Süreçleri Yönetin", desc: "Kiracı bilgilerini tanımlayın, süreç takibini başlatın. Yönetim adımlarını tek panelden ilerleterek kontrolü kaybetmeden düzenli takip sağlayın." },
-  { no: "03", title: "Raporları Görün, Kontrolü Elinizde Tutun", desc: "Tüm mülklerinizi tek ekranda izleyin. Yönetim durumunu raporlarla görün, süreçleri daha şeffaf ve planlı şekilde yönetin." },
-];
-
-const FAQS = [
-  { q: "Ücretsiz deneme süresi ne kadar?", a: "Kayıt olduğunuz andan itibaren 45 gün boyunca hiçbir ücret ödemeden tüm özellikleri kullanabilirsiniz." },
-  { q: "Deneme süresi bitince ne olur?", a: "45 gün içinde ödeme yapmazsanız hesabınız pasif duruma geçer; verilerinizi görüntüleyebilirsiniz ancak yeni mülk ekleyemez veya güncelleme yapamazsınız." },
-  { q: "Fiyatlandırma nasıl işliyor?", a: "1-15 mülk arası mülk başına 100 TL/ay, 16-30 mülk arası mülk başına 75 TL/ay olarak hesaplanır. 30 üzeri mülkler için bizimle iletişime geçerek özel fiyat alabilirsiniz." },
-  { q: "Ödemelerim güvende mi?", a: "Tüm ödemeler iyzico altyapısı üzerinden gerçekleştirilir, kart bilgileriniz bizim sistemimizde saklanmaz." },
-  { q: "Profesyonel mülk yönetimi hizmeti nedir?", a: "Kayıt sırasında bu hizmeti seçerseniz, ekibimiz sizin adınıza mülk ve kiracı yönetiminde destek sağlayabilir." },
 ];
 
 export default function HomePage() {
@@ -50,6 +36,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-white">
       <Navbar />
 
+      {/* HERO */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div>
@@ -86,6 +73,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* NELER YAPIYORUZ */}
       <section id="neler-yapiyoruz" className="bg-gray-50 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-semibold text-slate-800 text-center mb-12">Neler Yapıyoruz?</h2>
@@ -108,24 +96,16 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* RAKAMLARLA MİZAN */}
       <StatsSection />
+
+      {/* SMS & EPOSTA */}
       <NotificationFlow />
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <h2 className="text-3xl font-semibold text-slate-800 text-center mb-12">Mizan Mülk Yönetimi Nasıl Kullanılır?</h2>
-        <div className="grid md:grid-cols-3 gap-8">
-          {STEPS.map((s) => (
-            <div key={s.no} className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#17B6AE] to-[#0d8b84] flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-[#17B6AE]/30 mb-4">
-                {s.no}
-              </div>
-              <h3 className="font-semibold text-slate-800 mb-2 text-lg">{s.title}</h3>
-              <p className="text-sm text-slate-500">{s.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* NASIL KULLANILIR */}
+      <HowItWorks />
 
+      {/* MOBİL UYGULAMA */}
       <section className="bg-gray-50 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-12 items-center">
           <div>
@@ -144,12 +124,14 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* REFERANSLAR */}
       <TrustedCompanies />
-
       <Testimonials />
 
+      {/* SSS + İLETİŞİM */}
       <FaqContact />
 
+      {/* CTA */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
         <h2 className="text-3xl font-semibold text-slate-800 mb-4">Hemen Ücretsiz Deneyin</h2>
         <p className="text-slate-500 mb-8">45 gün boyunca hiçbir ücret ödemeden tüm özellikleri kullanın.</p>
