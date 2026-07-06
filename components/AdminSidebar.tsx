@@ -39,6 +39,10 @@ export default function AdminSidebar() {
           <span className="flex-1">Kullanicilar</span>
         </a>
 
+        <a href="/admin/islemler" className={linkClass("/admin/islemler")}>
+  <span className="flex-1">Kullanici Islemleri</span>
+</a>
+
         <a href="/admin/destek" className={linkClass("/admin/destek")}>
           <span className="flex-1">Destek Talepleri</span>
         </a>
