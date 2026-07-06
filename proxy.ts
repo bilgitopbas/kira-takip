@@ -8,7 +8,7 @@ const COOKIE_NAME = "kira_session";
 const PROTECTED_CUSTOMER_PATHS = ["/dashboard"];
 const PROTECTED_ADMIN_PATHS = ["/admin"];
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   const isCustomerPath = PROTECTED_CUSTOMER_PATHS.some((p) => pathname.startsWith(p));
