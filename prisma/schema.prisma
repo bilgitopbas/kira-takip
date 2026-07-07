@@ -41,6 +41,37 @@ enum PropertyCountRange {
   RANGE_50_PLUS
 }
 
+enum PropertyType {
+  ARSA
+  AVM
+  DEPO
+  DEVREMULK
+  FABRIKA
+  KONUT
+  OFIS
+}
+
+enum TenantType {
+  INDIVIDUAL
+  CORPORATE
+}
+
+enum PaymentFrequency {
+  MONTHLY
+  YEARLY
+}
+
+enum IncreaseType {
+  TUFE
+  CUSTOM
+}
+
+enum Currency {
+  TRY
+  USD
+  EUR
+}
+
 model User {
   id                String   @id @default(cuid())
   email             String   @unique
@@ -78,6 +109,10 @@ model Property {
   title       String
   address     String
   city        String?
+  district    String?
+  squareMeters Float?
+  propertyType PropertyType?
+  notes       String?
   isOccupied  Boolean  @default(false)
 
   tenants     Tenant[]
@@ -97,9 +132,26 @@ model Tenant {
   phone        String?
   email        String?
 
+  tenantType   TenantType?
+  nationalId   String?
+  taxNumber    String?
+  notificationAddress String?
+  notes        String?
+  rating       Int?
+
   monthlyRent  Decimal  @db.Decimal(10, 2)
   contractStart DateTime?
   contractEnd   DateTime?
+  rentRevisionDate DateTime?
+  rentPaymentDate  DateTime?
+  contractDurationMonths Int?
+  paymentFrequency PaymentFrequency?
+  increaseType     IncreaseType?
+  increaseRate     Decimal? @db.Decimal(5, 2)
+  depositAmount    Decimal? @db.Decimal(10, 2)
+  depositCurrency  Currency?
+  contractFileUrl  String?
+  contractNotes    String?
 
   debts        Debt[]
   payments     Payment[]

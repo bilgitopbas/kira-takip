@@ -8,7 +8,18 @@ type Property = {
   address: string;
   city: string | null;
   isOccupied: boolean;
+  propertyType: string | null;
   _count: { tenants: number };
+};
+
+const TYPE_LABELS: Record<string, string> = {
+  ARSA: "Arsa",
+  AVM: "AVM",
+  DEPO: "Depo",
+  DEVREMULK: "Devremulk",
+  FABRIKA: "Fabrika",
+  KONUT: "Konut",
+  OFIS: "Ofis",
 };
 
 export default function MulkListPage() {
@@ -78,6 +89,7 @@ export default function MulkListPage() {
             <thead>
               <tr className="bg-gray-50 text-left">
                 <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Baslik</th>
+                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Tip</th>
                 <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Adres</th>
                 <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Sehir</th>
                 <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Durum</th>
@@ -89,6 +101,15 @@ export default function MulkListPage() {
               {properties.map((p) => (
                 <tr key={p.id} className="hover:bg-gray-50/60 transition-colors">
                   <td className="px-5 py-4 font-medium text-slate-700">{p.title}</td>
+                  <td className="px-5 py-4">
+                    {p.propertyType ? (
+                      <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-slate-100 text-slate-500">
+                        {TYPE_LABELS[p.propertyType] || p.propertyType}
+                      </span>
+                    ) : (
+                      <span className="text-slate-300">—</span>
+                    )}
+                  </td>
                   <td className="px-5 py-4 text-slate-500">{p.address}</td>
                   <td className="px-5 py-4 text-slate-500">{p.city || "—"}</td>
                   <td className="px-5 py-4">

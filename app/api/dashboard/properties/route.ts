@@ -23,10 +23,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Yetkisiz erişim." }, { status: 401 });
   }
 
-  const { title, address, city, isOccupied } = await req.json();
+  const { title, address, city, district, squareMeters, propertyType, notes, isOccupied } =
+    await req.json();
 
   if (!title?.trim() || !address?.trim()) {
     return NextResponse.json({ error: "Başlık ve adres zorunludur." }, { status: 400 });
+  }
+
+  const VALID_TYPES = ["ARSA", "AVM", "DEPO", "DEVREMULK", "FABRIKA", "KONUT", "OFIS"];
+  if (propertyType && !VALID_TYPES.includes(propertyType)) {
+    return NextResponse.json({ error: "Geçersiz mülk tipi." }, { status: 400 });
   }
 
   try {
@@ -36,6 +42,10 @@ export async function POST(req: NextRequest) {
         title: title.trim(),
         address: address.trim(),
         city: city?.trim() || null,
+        district: district?.trim() || null,
+        squareMeters: squareMeters ? Number(squareMeters) : null,
+        propertyType: propertyType || null,
+        notes: notes?.trim() || null,
         isOccupied: !!isOccupied,
       },
     });

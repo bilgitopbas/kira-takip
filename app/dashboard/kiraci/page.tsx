@@ -9,8 +9,32 @@ type Tenant = {
   email: string | null;
   monthlyRent: string;
   contractEnd: string | null;
+  tenantType: string | null;
+  rating: number | null;
   property: { title: string };
 };
+
+function MiniStars({ rating }: { rating: number | null }) {
+  if (!rating) return <span className="text-slate-300 text-xs">—</span>;
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <svg
+          key={n}
+          viewBox="0 0 24 24"
+          className={`w-3.5 h-3.5 ${n <= rating ? "fill-amber-400 stroke-amber-400" : "fill-transparent stroke-gray-300"}`}
+          strokeWidth={1.5}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 2.5l2.9 5.88 6.49.94-4.7 4.58 1.11 6.47L12 17.27l-5.8 3.1 1.11-6.47-4.7-4.58 6.49-.94L12 2.5z"
+          />
+        </svg>
+      ))}
+    </div>
+  );
+}
 
 export default function KiraciListPage() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -83,6 +107,7 @@ export default function KiraciListPage() {
                 <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Mulk</th>
                 <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Aylik Kira</th>
                 <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Sozlesme Bitis</th>
+                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Puan</th>
                 <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Islemler</th>
               </tr>
             </thead>
@@ -109,6 +134,9 @@ export default function KiraciListPage() {
                   </td>
                   <td className="px-5 py-4 text-slate-500 text-xs">
                     {t.contractEnd ? new Date(t.contractEnd).toLocaleDateString("tr-TR") : "—"}
+                  </td>
+                  <td className="px-5 py-4">
+                    <MiniStars rating={t.rating} />
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex items-center justify-end">
