@@ -2,11 +2,22 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import MonthlyIncomeChart from "@/components/MonthlyIncomeChart";
+import OccupancyChart from "@/components/OccupancyChart";
 
 const MONTH_SHORT = [
   "Oca", "Sub", "Mar", "Nis", "May", "Haz",
   "Tem", "Agu", "Eyl", "Eki", "Kas", "Ara",
 ];
+
+function timeAgo(date: Date) {
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  const days = Math.floor(seconds / 86400);
+  if (days === 0) return "Bugun";
+  if (days === 1) return "Dun";
+  if (days < 30) return `${days} gun once`;
+  const months = Math.floor(days / 30);
+  return `${months} ay once`;
+}
 
 async function getStats(ownerId: string) {
   const now = new Date();
@@ -15,23 +26,53 @@ async function getStats(ownerId: string) {
   const yearStart = new Date(now.getFullYear(), 0, 1);
   const sixMonthsAgoStart = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
-  const [propertyCount, tenantCount, monthCollections, yearCollections, recentPayments] =
-    await Promise.all([
-      prisma.property.count({ where: { ownerId } }),
-      prisma.tenant.count({ where: { property: { ownerId } } }),
-      prisma.payment.aggregate({
-        where: { tenant: { property: { ownerId } }, paidAt: { gte: monthStart, lt: monthEnd } },
-        _sum: { amount: true },
-      }),
-      prisma.payment.aggregate({
-        where: { tenant: { property: { ownerId } }, paidAt: { gte: yearStart, lt: monthEnd } },
-        _sum: { amount: true },
-      }),
-      prisma.payment.findMany({
-        where: { tenant: { property: { ownerId } }, paidAt: { gte: sixMonthsAgoStart } },
-        select: { amount: true, paidAt: true },
-      }),
-    ]);
+  const [
+    propertyCount,
+    occupiedCount,
+    tenantCount,
+    monthCollections,
+    yearCollections,
+    recentPayments,
+    overdueDebts,
+    recentProperties,
+    recentTenants,
+  ] = await Promise.all([
+    prisma.property.count({ where: { ownerId } }),
+    prisma.property.count({ where: { ownerId, isOccupied: true } }),
+    prisma.tenant.count({ where: { property: { ownerId } } }),
+    prisma.payment.aggregate({
+      where: { tenant: { property: { ownerId } }, paidAt: { gte: monthStart, lt: monthEnd } },
+      _sum: { amount: true },
+    }),
+    prisma.payment.aggregate({
+      where: { tenant: { property: { ownerId } }, paidAt: { gte: yearStart, lt: monthEnd } },
+      _sum: { amount: true },
+    }),
+    prisma.payment.findMany({
+      where: { tenant: { property: { ownerId } }, paidAt: { gte: sixMonthsAgoStart } },
+      select: { amount: true, paidAt: true },
+    }),
+    prisma.debt.findMany({
+      where: {
+        tenant: { property: { ownerId } },
+        status: { not: "PAID" },
+        dueDate: { lt: now },
+      },
+      select: { amount: true },
+    }),
+    prisma.property.findMany({
+      where: { ownerId },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      select: { id: true, title: true, createdAt: true },
+    }),
+    prisma.tenant.findMany({
+      where: { property: { ownerId } },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      select: { id: true, fullName: true, createdAt: true, property: { select: { title: true } } },
+    }),
+  ]);
 
   const monthlyTotals = new Map<string, number>();
   for (let i = 5; i >= 0; i--) {
@@ -50,12 +91,38 @@ async function getStats(ownerId: string) {
     return { ay: MONTH_SHORT[month], tutar: total };
   });
 
+  const overdueTotal = overdueDebts.reduce((sum, d) => sum + Number(d.amount), 0);
+
+  const activity = [
+    ...recentProperties.map((p) => ({
+      id: p.id,
+      type: "property" as const,
+      label: p.title,
+      sub: "Yeni mulk eklendi",
+      createdAt: p.createdAt,
+    })),
+    ...recentTenants.map((t) => ({
+      id: t.id,
+      type: "tenant" as const,
+      label: t.fullName,
+      sub: `${t.property.title} icin kiraci eklendi`,
+      createdAt: t.createdAt,
+    })),
+  ]
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, 5);
+
   return {
     propertyCount,
+    occupiedCount,
+    vacantCount: propertyCount - occupiedCount,
     tenantCount,
     collected: monthCollections._sum.amount ? Number(monthCollections._sum.amount) : 0,
     yearlyCollected: yearCollections._sum.amount ? Number(yearCollections._sum.amount) : 0,
     chartData,
+    overdueTotal,
+    overdueCount: overdueDebts.length,
+    activity,
   };
 }
 
@@ -86,15 +153,38 @@ const CARD_ICONS = {
   ),
 };
 
+const ACTIVITY_ICONS = {
+  property: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" />
+    </svg>
+  ),
+  tenant: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <circle cx="12" cy="8" r="4" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 21v-1a8 8 0 0116 0v1" />
+    </svg>
+  ),
+};
+
 export default async function DashboardPage() {
   const session = await getSession();
   if (!session) {
     redirect("/login");
   }
 
-  const { propertyCount, tenantCount, collected, yearlyCollected, chartData } = await getStats(
-    session.userId
-  );
+  const {
+    propertyCount,
+    occupiedCount,
+    vacantCount,
+    tenantCount,
+    collected,
+    yearlyCollected,
+    chartData,
+    overdueTotal,
+    overdueCount,
+    activity,
+  } = await getStats(session.userId);
 
   const CARDS = [
     { label: "Toplam Mulk", value: `${propertyCount}`, icon: CARD_ICONS.properties, color: "text-blue-500 bg-blue-50" },
@@ -109,6 +199,24 @@ export default async function DashboardPage() {
         <h1 className="text-3xl font-bold text-slate-900">Kontrol Paneli</h1>
         <p className="text-sm text-slate-500 mt-1">Mulklerinizin genel durumu</p>
       </div>
+
+      {overdueCount > 0 && (
+        <div className="mb-6 bg-red-50 border border-red-100 rounded-2xl p-5 flex items-center gap-4">
+          <div className="w-11 h-11 rounded-xl bg-red-100 text-red-500 flex items-center justify-center flex-shrink-0">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86l-8.18 14.18A2 2 0 004.18 21h15.64a2 2 0 001.87-2.96L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-bold text-red-700">
+              {overdueCount} vadesi gecmis odeme var — toplam {overdueTotal.toLocaleString("tr-TR")} ₺
+            </p>
+            <p className="text-xs text-red-500 mt-0.5">
+              Kiracilar sayfasindan ilgili kiraciya girip tahsilat kaydedebilirsiniz.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
         {CARDS.map((card) => (
@@ -128,6 +236,45 @@ export default async function DashboardPage() {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
         <h2 className="text-sm font-bold text-slate-800 mb-4">Son 6 Ay Tahsilat</h2>
         <MonthlyIncomeChart data={chartData} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <h2 className="text-sm font-bold text-slate-800 mb-4">Doluluk Orani</h2>
+          {propertyCount === 0 ? (
+            <p className="text-sm text-slate-500">Henuz mulk eklenmedi.</p>
+          ) : (
+            <OccupancyChart occupied={occupiedCount} vacant={vacantCount} />
+          )}
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <h2 className="text-sm font-bold text-slate-800 mb-4">Son Eklenenler</h2>
+          {activity.length === 0 ? (
+            <p className="text-sm text-slate-500">Henuz kayit yok.</p>
+          ) : (
+            <div className="space-y-4">
+              {activity.map((item) => (
+                <div key={`${item.type}-${item.id}`} className="flex items-center gap-3">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      item.type === "property"
+                        ? "bg-blue-50 text-blue-500"
+                        : "bg-violet-50 text-violet-500"
+                    }`}
+                  >
+                    {ACTIVITY_ICONS[item.type]}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-slate-800 truncate">{item.label}</p>
+                    <p className="text-xs text-slate-500">{item.sub}</p>
+                  </div>
+                  <span className="text-xs text-slate-400 flex-shrink-0">{timeAgo(item.createdAt)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {propertyCount === 0 ? (
