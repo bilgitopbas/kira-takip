@@ -52,7 +52,7 @@ export default async function DashboardPage() {
         <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
           <p className="text-xs font-medium text-slate-400 mb-1">Bu Ay Tahsilat</p>
           <p className="text-3xl font-bold text-slate-800">
-            {collected.toLocaleString("tr-TR")} TL
+            {collected.toLocaleString("tr-TR")} ₺
           </p>
         </div>
       </div>

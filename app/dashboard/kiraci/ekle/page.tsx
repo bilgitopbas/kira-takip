@@ -149,7 +149,7 @@ export default function KiraciEklePage() {
     <div className="max-w-2xl">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-800">Kiraci Ekle</h1>
-        <p className="text-sm text-slate-400 mt-1">
+        <p className="text-sm text-slate-500 mt-1">
           Adim {step}/2 — {step === 1 ? "Kiraci Bilgileri" : "Kira Sozlesmesi"}
         </p>
       </div>
@@ -180,7 +180,7 @@ export default function KiraciEklePage() {
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Mulk *</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Mulk *</label>
             <select
               required
               value={propertyId}
@@ -196,7 +196,7 @@ export default function KiraciEklePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-2">Kiraci Tipi</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-2">Kiraci Tipi</label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -225,7 +225,7 @@ export default function KiraciEklePage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Ad Soyad *</label>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Ad Soyad *</label>
               <input
                 type="text"
                 required
@@ -235,7 +235,7 @@ export default function KiraciEklePage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">
                 {tenantType === "INDIVIDUAL" ? "TC Kimlik No" : "Vergi No"}
               </label>
               <input
@@ -252,7 +252,7 @@ export default function KiraciEklePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Telefon Numarasi</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Telefon Numarasi</label>
             <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-[#17B6AE]/30">
               <span className="flex items-center gap-1.5 px-3 py-2.5 bg-gray-50 border-r border-gray-200 text-sm text-slate-500">
                 <span>🇹🇷</span>
@@ -269,7 +269,7 @@ export default function KiraciEklePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Tebligat Adresi</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Tebligat Adresi</label>
             <input
               type="text"
               value={notificationAddress}
@@ -279,7 +279,7 @@ export default function KiraciEklePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Notlar</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Notlar</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -289,7 +289,7 @@ export default function KiraciEklePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-2">Kiraciyi Puanlayin</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-2">Kiraciyi Puanlayin</label>
             <StarRating value={rating} onChange={setRating} />
           </div>
 
@@ -313,9 +313,9 @@ export default function KiraciEklePage() {
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">
                 Sozlesme Baslangic
               </label>
               <input
@@ -326,7 +326,7 @@ export default function KiraciEklePage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">
                 Kira Duzenlenme Tarihi
               </label>
               <input
@@ -336,21 +336,25 @@ export default function KiraciEklePage() {
                 className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
               />
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1.5">
-                Kira Odeme Tarihi
-              </label>
-              <input
-                type="date"
-                value={rentPaymentDate}
-                onChange={(e) => setRentPaymentDate(e.target.value)}
-                className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
-              />
-            </div>
+          </div>
+
+          <div className="bg-[#17B6AE]/5 border border-[#17B6AE]/20 rounded-xl p-4">
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Kira Odeme Tarihi
+            </label>
+            <input
+              type="date"
+              value={rentPaymentDate}
+              onChange={(e) => setRentPaymentDate(e.target.value)}
+              className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30 bg-white"
+            />
+            <p className="mt-2 text-xs text-slate-500">
+              Bu tarihten itibaren kiraci 12 ay boyunca borclandirilacaktir.
+            </p>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-2">Sozlesme Suresi</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-2">Sozlesme Suresi</label>
             <div className="grid grid-cols-4 gap-2">
               {DURATION_OPTIONS.map((d) => (
                 <button
@@ -378,14 +382,14 @@ export default function KiraciEklePage() {
               />
             )}
             {computedEnd && (
-              <p className="mt-2 text-xs text-slate-400">
+              <p className="mt-2 text-xs text-slate-500">
                 Sozlesme bitis tarihi: <span className="font-medium text-slate-600">{computedEnd.toLocaleDateString("tr-TR")}</span>
               </p>
             )}
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">
               Aylik Kira Bedeli (₺) *
             </label>
             <input
@@ -398,14 +402,14 @@ export default function KiraciEklePage() {
               className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
             />
             {yearlyRent > 0 && (
-              <p className="mt-1.5 text-xs text-slate-400">
+              <p className="mt-1.5 text-xs text-slate-500">
                 Yillik Kira Bedeli: <span className="font-medium text-slate-600">{yearlyRent.toLocaleString("tr-TR")} ₺</span>
               </p>
             )}
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-2">Odeme Sekli</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-2">Odeme Sekli</label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -433,7 +437,7 @@ export default function KiraciEklePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-2">Artis Orani</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-2">Artis Orani</label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -472,7 +476,7 @@ export default function KiraciEklePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Depozito</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Depozito</label>
             <div className="flex gap-2">
               <input
                 type="number"
@@ -495,7 +499,7 @@ export default function KiraciEklePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Sozlesme Dosyasi</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Sozlesme Dosyasi</label>
             <input
               type="file"
               accept=".pdf,.jpg,.jpeg,.png"
@@ -505,7 +509,7 @@ export default function KiraciEklePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Sozlesme Notlari</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Sozlesme Notlari</label>
             <textarea
               value={contractNotes}
               onChange={(e) => setContractNotes(e.target.value)}

@@ -193,6 +193,8 @@ model Payment {
   amount      Decimal  @db.Decimal(10, 2)
   paidAt      DateTime @default(now())
   method      String?
+  receiptFileUrl String?
+  notes       String?
 
   createdAt   DateTime @default(now())
 
