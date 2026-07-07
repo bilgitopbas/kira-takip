@@ -3,28 +3,20 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import MonthlyIncomeChart from "@/components/MonthlyIncomeChart";
 import OccupancyChart from "@/components/OccupancyChart";
+import MonthlyPaymentsPie from "@/components/MonthlyPaymentsPie";
+import { getEffectiveDebtStatus } from "@/lib/debtStatus";
 
 const MONTH_SHORT = [
   "Oca", "Sub", "Mar", "Nis", "May", "Haz",
   "Tem", "Agu", "Eyl", "Eki", "Kas", "Ara",
 ];
 
-function timeAgo(date: Date) {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  const days = Math.floor(seconds / 86400);
-  if (days === 0) return "Bugun";
-  if (days === 1) return "Dun";
-  if (days < 30) return `${days} gun once`;
-  const months = Math.floor(days / 30);
-  return `${months} ay once`;
-}
-
 async function getStats(ownerId: string) {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   const yearStart = new Date(now.getFullYear(), 0, 1);
-  const sixMonthsAgoStart = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const fiveYearsAgoStart = new Date(now.getFullYear(), now.getMonth() - 59, 1);
 
   const [
     propertyCount,
@@ -32,10 +24,8 @@ async function getStats(ownerId: string) {
     tenantCount,
     monthCollections,
     yearCollections,
-    recentPayments,
-    overdueDebts,
-    recentProperties,
-    recentTenants,
+    longRangePayments,
+    monthDebts,
   ] = await Promise.all([
     prisma.property.count({ where: { ownerId } }),
     prisma.property.count({ where: { ownerId, isOccupied: true } }),
@@ -49,37 +39,27 @@ async function getStats(ownerId: string) {
       _sum: { amount: true },
     }),
     prisma.payment.findMany({
-      where: { tenant: { property: { ownerId } }, paidAt: { gte: sixMonthsAgoStart } },
+      where: { tenant: { property: { ownerId } }, paidAt: { gte: fiveYearsAgoStart } },
       select: { amount: true, paidAt: true },
     }),
     prisma.debt.findMany({
-      where: {
-        tenant: { property: { ownerId } },
-        status: { not: "PAID" },
-        dueDate: { lt: now },
+      where: { tenant: { property: { ownerId } }, dueDate: { gte: monthStart, lt: monthEnd } },
+      select: {
+        id: true,
+        amount: true,
+        status: true,
+        dueDate: true,
+        tenant: { select: { id: true, fullName: true } },
       },
-      select: { amount: true },
-    }),
-    prisma.property.findMany({
-      where: { ownerId },
-      orderBy: { createdAt: "desc" },
-      take: 5,
-      select: { id: true, title: true, createdAt: true },
-    }),
-    prisma.tenant.findMany({
-      where: { property: { ownerId } },
-      orderBy: { createdAt: "desc" },
-      take: 5,
-      select: { id: true, fullName: true, createdAt: true, property: { select: { title: true } } },
     }),
   ]);
 
   const monthlyTotals = new Map<string, number>();
-  for (let i = 5; i >= 0; i--) {
+  for (let i = 59; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     monthlyTotals.set(`${d.getFullYear()}-${d.getMonth()}`, 0);
   }
-  for (const p of recentPayments) {
+  for (const p of longRangePayments) {
     const d = new Date(p.paidAt);
     const key = `${d.getFullYear()}-${d.getMonth()}`;
     if (monthlyTotals.has(key)) {
@@ -87,30 +67,17 @@ async function getStats(ownerId: string) {
     }
   }
   const chartData = Array.from(monthlyTotals.entries()).map(([key, total]) => {
-    const [, month] = key.split("-").map(Number);
-    return { ay: MONTH_SHORT[month], tutar: total };
+    const [year, month] = key.split("-").map(Number);
+    return { ay: `${MONTH_SHORT[month]} '${String(year).slice(2)}`, tutar: total };
   });
 
-  const overdueTotal = overdueDebts.reduce((sum, d) => sum + Number(d.amount), 0);
-
-  const activity = [
-    ...recentProperties.map((p) => ({
-      id: p.id,
-      type: "property" as const,
-      label: p.title,
-      sub: "Yeni mulk eklendi",
-      createdAt: p.createdAt,
-    })),
-    ...recentTenants.map((t) => ({
-      id: t.id,
-      type: "tenant" as const,
-      label: t.fullName,
-      sub: `${t.property.title} icin kiraci eklendi`,
-      createdAt: t.createdAt,
-    })),
-  ]
-    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-    .slice(0, 5);
+  const monthlyPayments = monthDebts.map((d) => ({
+    id: d.id,
+    tenantId: d.tenant.id,
+    tenantName: d.tenant.fullName,
+    amount: Number(d.amount),
+    status: getEffectiveDebtStatus(d.status, d.dueDate),
+  }));
 
   return {
     propertyCount,
@@ -120,9 +87,7 @@ async function getStats(ownerId: string) {
     collected: monthCollections._sum.amount ? Number(monthCollections._sum.amount) : 0,
     yearlyCollected: yearCollections._sum.amount ? Number(yearCollections._sum.amount) : 0,
     chartData,
-    overdueTotal,
-    overdueCount: overdueDebts.length,
-    activity,
+    monthlyPayments,
   };
 }
 
@@ -153,20 +118,6 @@ const CARD_ICONS = {
   ),
 };
 
-const ACTIVITY_ICONS = {
-  property: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" />
-    </svg>
-  ),
-  tenant: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-      <circle cx="12" cy="8" r="4" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 21v-1a8 8 0 0116 0v1" />
-    </svg>
-  ),
-};
-
 export default async function DashboardPage() {
   const session = await getSession();
   if (!session) {
@@ -181,9 +132,7 @@ export default async function DashboardPage() {
     collected,
     yearlyCollected,
     chartData,
-    overdueTotal,
-    overdueCount,
-    activity,
+    monthlyPayments,
   } = await getStats(session.userId);
 
   const CARDS = [
@@ -195,28 +144,32 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Kontrol Paneli</h1>
-        <p className="text-sm text-slate-500 mt-1">Mulklerinizin genel durumu</p>
-      </div>
-
-      {overdueCount > 0 && (
-        <div className="mb-6 bg-red-50 border border-red-100 rounded-2xl p-5 flex items-center gap-4">
-          <div className="w-11 h-11 rounded-xl bg-red-100 text-red-500 flex items-center justify-center flex-shrink-0">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86l-8.18 14.18A2 2 0 004.18 21h15.64a2 2 0 001.87-2.96L13.71 3.86a2 2 0 00-3.42 0z" />
-            </svg>
-          </div>
-          <div>
-            <p className="text-sm font-bold text-red-700">
-              {overdueCount} vadesi gecmis odeme var — toplam {overdueTotal.toLocaleString("tr-TR")} ₺
-            </p>
-            <p className="text-xs text-red-500 mt-0.5">
-              Kiracilar sayfasindan ilgili kiraciya girip tahsilat kaydedebilirsiniz.
-            </p>
-          </div>
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Kontrol Paneli</h1>
+          <p className="text-sm text-slate-500 mt-1">Mulklerinizin genel durumu</p>
         </div>
-      )}
+        <div className="flex items-center gap-2">
+          <a
+            href="/dashboard/mulk/ekle"
+            className="inline-flex bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm"
+          >
+            Mulk Ekle
+          </a>
+          <a
+            href="/dashboard/kiraci/ekle"
+            className="inline-flex bg-white hover:bg-gray-50 text-slate-700 font-semibold px-4 py-2.5 rounded-xl transition text-sm border border-gray-200"
+          >
+            Kiraci Ekle
+          </a>
+          <a
+            href="/dashboard/tahsilat/ekle"
+            className="inline-flex bg-white hover:bg-gray-50 text-slate-700 font-semibold px-4 py-2.5 rounded-xl transition text-sm border border-gray-200"
+          >
+            Tahsilat Ekle
+          </a>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
         {CARDS.map((card) => (
@@ -233,14 +186,9 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
-        <h2 className="text-sm font-bold text-slate-800 mb-4">Son 6 Ay Tahsilat</h2>
-        <MonthlyIncomeChart data={chartData} />
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <h2 className="text-sm font-bold text-slate-800 mb-4">Doluluk Orani</h2>
+          <h2 className="text-sm font-bold text-slate-800 mb-4">Mulk Doluluk Durumu</h2>
           {propertyCount === 0 ? (
             <p className="text-sm text-slate-500">Henuz mulk eklenmedi.</p>
           ) : (
@@ -249,35 +197,16 @@ export default async function DashboardPage() {
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <h2 className="text-sm font-bold text-slate-800 mb-4">Son Eklenenler</h2>
-          {activity.length === 0 ? (
-            <p className="text-sm text-slate-500">Henuz kayit yok.</p>
-          ) : (
-            <div className="space-y-4">
-              {activity.map((item) => (
-                <div key={`${item.type}-${item.id}`} className="flex items-center gap-3">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      item.type === "property"
-                        ? "bg-blue-50 text-blue-500"
-                        : "bg-violet-50 text-violet-500"
-                    }`}
-                  >
-                    {ACTIVITY_ICONS[item.type]}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-slate-800 truncate">{item.label}</p>
-                    <p className="text-xs text-slate-500">{item.sub}</p>
-                  </div>
-                  <span className="text-xs text-slate-400 flex-shrink-0">{timeAgo(item.createdAt)}</span>
-                </div>
-              ))}
-            </div>
-          )}
+          <h2 className="text-sm font-bold text-slate-800 mb-4">Bu Ay Kira Odemeleri</h2>
+          <MonthlyPaymentsPie items={monthlyPayments} />
         </div>
       </div>
 
-      {propertyCount === 0 ? (
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
+        <MonthlyIncomeChart data={chartData} />
+      </div>
+
+      {propertyCount === 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
           <h3 className="text-lg font-semibold text-slate-800 mb-2">Ilk mulkunuzu ekleyin</h3>
           <p className="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
@@ -289,27 +218,6 @@ export default async function DashboardPage() {
           >
             Mulk Ekle
           </a>
-        </div>
-      ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
-          <h3 className="text-lg font-semibold text-slate-800 mb-2">Devam edin</h3>
-          <p className="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
-            Mulklerinizi ve kiracilarinizi yonetmeye devam edin.
-          </p>
-          <div className="flex items-center justify-center gap-3">
-            <a
-              href="/dashboard/mulk"
-              className="inline-flex bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-6 py-3 rounded-xl transition text-sm"
-            >
-              Mulklerimi Gor
-            </a>
-            <a
-              href="/dashboard/kiraci/ekle"
-              className="inline-flex bg-gray-50 hover:bg-gray-100 text-slate-600 font-semibold px-6 py-3 rounded-xl transition text-sm border border-gray-200"
-            >
-              Kiraci Ekle
-            </a>
-          </div>
         </div>
       )}
     </div>
