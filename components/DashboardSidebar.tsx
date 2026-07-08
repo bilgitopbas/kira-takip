@@ -13,7 +13,7 @@ export default function DashboardSidebar() {
     <span className="text-[10px] font-bold bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded">Yakında</span>
   );
   return (
-    <aside className="w-72 bg-white border-r border-gray-100 flex flex-col min-h-screen shadow-sm">
+    <aside className="no-print w-72 bg-white border-r border-gray-100 flex flex-col min-h-screen shadow-sm">
       <div className="h-20 flex items-center px-6 border-b border-gray-100">
         <Image src="/logo.png" alt="Mizan" width={140} height={42} className="h-11 w-auto object-contain" style={{width:"auto"}} />
       </div>
@@ -25,7 +25,7 @@ export default function DashboardSidebar() {
         <a href="/dashboard/kiraci" className={lc("/dashboard/kiraci",true)}>Kiracılar</a>
         <p className={sec}>Finans</p>
         <div className={soon}><span>Hesap Hareketleri</span><SoonBadge /></div>
-        <div className={soon}><span>Finans Raporları</span><SoonBadge /></div>
+        <a href="/dashboard/finans-raporlari" className={lc("/dashboard/finans-raporlari",true)}>Finans Raporları</a>
         <p className={sec}>Diğer</p>
         <div className={soon}><span>Bildirimler</span><SoonBadge /></div>
         <div className={soon}><span>Kira Sözleşmesi</span><SoonBadge /></div>

@@ -58,3 +58,9 @@ body {
 .animate-flow {
   animation: flow 3s linear infinite;
 }
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
