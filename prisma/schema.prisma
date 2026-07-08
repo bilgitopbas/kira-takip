@@ -303,3 +303,20 @@ model Notification {
   @@unique([userId, dedupeKey])
   @@map("notifications")
 }
+
+enum PriceIndexType {
+  TUFE
+  YIUFE
+}
+
+model PriceIndex {
+  id         String         @id @default(cuid())
+  type       PriceIndexType
+  year       Int
+  month      Int
+  indexValue Decimal        @db.Decimal(14, 4)
+  fetchedAt  DateTime       @default(now())
+
+  @@unique([type, year, month])
+  @@map("price_indices")
+}

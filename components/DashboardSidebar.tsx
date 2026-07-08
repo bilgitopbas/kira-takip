@@ -45,7 +45,7 @@ export default function DashboardSidebar() {
           )}
         </a>
         <div className={soon}><span>Kira Sözleşmesi</span><SoonBadge /></div>
-        <div className={soon}><span>Kira Artış Hesapla</span><SoonBadge /></div>
+        <a href="/dashboard/kira-artis-hesapla" className={lc("/dashboard/kira-artis-hesapla",true)}>Kira Artış Hesapla</a>
         <a href="/dashboard/blog" className={lc("/dashboard/blog")}>Blog</a>
         <a href="/dashboard/destek" className={lc("/dashboard/destek",true)}>Yardım &amp; Destek</a>
         <a href="/dashboard/ayarlar" className={lc("/dashboard/ayarlar",true)}>Ayarlar</a>
