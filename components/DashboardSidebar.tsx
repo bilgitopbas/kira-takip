@@ -20,8 +20,7 @@ export default function DashboardSidebar() {
       <nav className="flex-1 px-4 py-4 overflow-y-auto">
         <a href="/dashboard" className={lc("/dashboard",true)}>Ana Sayfa</a>
         <p className={sec}>Mülklerim</p>
-        <div className={soon}><span>Toplu Mülk Ekle</span><SoonBadge /></div>
-        <a href="/dashboard/mulk" className={lc("/dashboard/mulk",true)}>Mülkleri Listele</a>
+        <a href="/dashboard/mulk" className={lc("/dashboard/mulk",true)}>Mülklerim</a>
         <p className={sec}>Kiracılar</p>
         <a href="/dashboard/kiraci" className={lc("/dashboard/kiraci",true)}>Kiracılar</a>
         <p className={sec}>Finans</p>

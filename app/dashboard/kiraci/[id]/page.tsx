@@ -201,6 +201,16 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div>
+      <a
+        href="/dashboard/kiraci"
+        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-4"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Geri
+      </a>
+
       <div className="mb-6 flex items-start justify-between">
         <div>
           <p className="text-xs font-semibold text-[#17B6AE] uppercase tracking-wider mb-1">
@@ -208,20 +218,12 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
           </p>
           <h1 className="text-3xl font-bold text-slate-900">{tenant.fullName}</h1>
         </div>
-        <div className="flex items-center gap-2">
-          <a
-            href={`/dashboard/kiraci/${tenant.id}/duzenle`}
-            className="bg-white border border-gray-200 hover:border-[#17B6AE] text-slate-700 font-semibold px-4 py-2 rounded-xl transition text-sm"
-          >
-            Düzenle
-          </a>
-          <a
-            href="/dashboard/kiraci"
-            className="text-sm text-slate-500 hover:text-slate-700 px-2"
-          >
-            Geri
-          </a>
-        </div>
+        <a
+          href={`/dashboard/kiraci/${tenant.id}/duzenle`}
+          className="bg-white border border-gray-200 hover:border-[#17B6AE] text-slate-700 font-semibold px-4 py-2 rounded-xl transition text-sm"
+        >
+          Düzenle
+        </a>
       </div>
 
       {error && (
