@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useMemo, useState, use } from "react";
 import Modal from "@/components/Modal";
 import {
   getEffectiveDebtStatus,
@@ -102,6 +102,26 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
   const [payFile, setPayFile] = useState<File | null>(null);
   const [paySubmitting, setPaySubmitting] = useState(false);
   const [payError, setPayError] = useState("");
+
+  const [periodIndex, setPeriodIndex] = useState(0);
+
+  const periods = useMemo(() => {
+    const debts = tenant?.debts ?? [];
+    const sorted = [...debts].sort(
+      (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+    );
+    const chunks: Debt[][] = [];
+    for (let i = 0; i < sorted.length; i += 12) {
+      chunks.push(sorted.slice(i, i + 12));
+    }
+    return chunks;
+  }, [tenant]);
+
+  useEffect(() => {
+    setPeriodIndex(periods.length > 0 ? periods.length - 1 : 0);
+  }, [periods.length]);
+
+  const currentPeriod = periods[periodIndex] || [];
 
   async function load() {
     setLoading(true);
@@ -310,8 +330,8 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
-        <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-slate-800">Ödeme Planı</h2>
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h2 className="text-base font-bold text-slate-800">Ödeme Planı</h2>
           <button
             onClick={openDebtModal}
             className="bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-4 py-2 rounded-xl transition text-sm"
@@ -320,51 +340,83 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
           </button>
         </div>
 
-        {tenant.debts.length === 0 ? (
+        {periods.length === 0 ? (
           <p className="text-sm text-slate-500 text-center py-10">
             Henüz borç kaydı yok. &quot;Kiracıyı Borçlandır&quot; ile 12 aylık plan oluşturun.
           </p>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 text-left">
-                <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Ay / Yıl</th>
-                <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Tutar</th>
-                <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Durum</th>
-                <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">İşlem</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {tenant.debts.map((d) => {
-                const effective = getEffectiveDebtStatus(d.status, d.dueDate);
-                return (
-                  <tr key={d.id} className="hover:bg-gray-50/60 transition-colors">
-                    <td className="px-5 py-3 text-slate-800 font-medium">
-                      {MONTH_NAMES[d.month - 1]} {d.year}
-                    </td>
-                    <td className="px-5 py-3 text-slate-700">
-                      {Number(d.amount).toLocaleString("tr-TR")} ₺
-                    </td>
-                    <td className="px-5 py-3">
-                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${DEBT_STATUS_STYLES[effective]}`}>
-                        {DEBT_STATUS_LABELS[effective]}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      {effective !== "PAID" && (
-                        <button
-                          onClick={() => openPayModal(d)}
-                          className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-[#17B6AE]/10 text-[#17B6AE] hover:bg-[#17B6AE]/20 transition"
-                        >
-                          Ödendi Olarak İşaretle
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <>
+            <div className="flex items-center justify-center gap-4 px-6 py-3 border-b border-gray-100 bg-gray-50/50">
+              <button
+                type="button"
+                onClick={() => setPeriodIndex((i) => Math.max(0, i - 1))}
+                disabled={periodIndex === 0}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-white disabled:opacity-30 disabled:hover:bg-transparent transition"
+              >
+                ‹
+              </button>
+              <p className="text-sm font-bold text-slate-800 min-w-[180px] text-center">
+                {periodIndex + 1}. Yıl
+                {currentPeriod.length > 0 && (
+                  <span className="font-normal text-slate-500">
+                    {" "}
+                    ({MONTH_NAMES[currentPeriod[0].month - 1]} {currentPeriod[0].year} –{" "}
+                    {MONTH_NAMES[currentPeriod[currentPeriod.length - 1].month - 1]}{" "}
+                    {currentPeriod[currentPeriod.length - 1].year})
+                  </span>
+                )}
+              </p>
+              <button
+                type="button"
+                onClick={() => setPeriodIndex((i) => Math.min(periods.length - 1, i + 1))}
+                disabled={periodIndex === periods.length - 1}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-white disabled:opacity-30 disabled:hover:bg-transparent transition"
+              >
+                ›
+              </button>
+            </div>
+
+            <table className="w-full text-base">
+              <thead>
+                <tr className="bg-gray-50 text-left">
+                  <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider border-r border-gray-100">Ay / Yıl</th>
+                  <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider border-r border-gray-100">Tutar</th>
+                  <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider border-r border-gray-100">Durum</th>
+                  <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">İşlem</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {currentPeriod.map((d) => {
+                  const effective = getEffectiveDebtStatus(d.status, d.dueDate);
+                  return (
+                    <tr key={d.id} className="hover:bg-gray-50/60 transition-colors">
+                      <td className="px-5 py-3.5 text-slate-800 font-semibold border-r border-gray-100">
+                        {MONTH_NAMES[d.month - 1]} {d.year}
+                      </td>
+                      <td className="px-5 py-3.5 text-slate-700 border-r border-gray-100">
+                        {Number(d.amount).toLocaleString("tr-TR")} ₺
+                      </td>
+                      <td className="px-5 py-3.5 border-r border-gray-100">
+                        <span className={`text-xs px-3 py-1.5 rounded-full font-semibold ${DEBT_STATUS_STYLES[effective]}`}>
+                          {DEBT_STATUS_LABELS[effective]}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        {effective !== "PAID" && (
+                          <button
+                            onClick={() => openPayModal(d)}
+                            className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-[#17B6AE]/10 text-[#17B6AE] hover:bg-[#17B6AE]/20 transition"
+                          >
+                            Ödendi Olarak İşaretle
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </>
         )}
       </div>
 

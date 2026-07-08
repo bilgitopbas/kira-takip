@@ -19,7 +19,7 @@ export const DEBT_STATUS_LABELS: Record<EffectiveDebtStatus, string> = {
 };
 
 export const DEBT_STATUS_STYLES: Record<EffectiveDebtStatus, string> = {
-  PAID: "bg-emerald-50 text-emerald-600 border border-emerald-100",
-  UNPAID: "bg-red-50 text-red-600 border border-red-100",
-  PENDING: "bg-amber-50 text-amber-600 border border-amber-100",
+  PAID: "bg-emerald-500 text-white shadow-sm shadow-emerald-500/30",
+  UNPAID: "bg-red-500 text-white shadow-sm shadow-red-500/30",
+  PENDING: "bg-amber-500 text-white shadow-sm shadow-amber-500/30",
 };

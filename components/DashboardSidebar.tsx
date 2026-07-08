@@ -19,12 +19,12 @@ export default function DashboardSidebar() {
       </div>
       <nav className="flex-1 px-4 py-4 overflow-y-auto">
         <a href="/dashboard" className={lc("/dashboard",true)}>Ana Sayfa</a>
+        <a href="/dashboard/takvim" className={lc("/dashboard/takvim",true)}>Takvim</a>
         <p className={sec}>Mülklerim</p>
         <a href="/dashboard/mulk" className={lc("/dashboard/mulk",true)}>Mülklerim</a>
         <p className={sec}>Kiracılar</p>
         <a href="/dashboard/kiraci" className={lc("/dashboard/kiraci",true)}>Kiracılar</a>
         <p className={sec}>Finans</p>
-        <div className={soon}><span>Hesap Hareketleri</span><SoonBadge /></div>
         <a href="/dashboard/finans-raporlari" className={lc("/dashboard/finans-raporlari",true)}>Finans Raporları</a>
         <p className={sec}>Diğer</p>
         <div className={soon}><span>Bildirimler</span><SoonBadge /></div>
