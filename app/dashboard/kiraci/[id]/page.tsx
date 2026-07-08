@@ -46,14 +46,14 @@ type Tenant = {
 };
 
 const MONTH_NAMES = [
-  "Ocak", "Subat", "Mart", "Nisan", "Mayis", "Haziran",
-  "Temmuz", "Agustos", "Eylul", "Ekim", "Kasim", "Aralik",
+  "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+  "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
 ];
 
 const CURRENCY_SYMBOLS: Record<string, string> = { TRY: "₺", USD: "$", EUR: "€" };
 
 function Stars({ rating }: { rating: number | null }) {
-  if (!rating) return <span className="text-slate-400 text-sm">Puanlanmadi</span>;
+  if (!rating) return <span className="text-slate-400 text-sm">Puanlanmadı</span>;
   return (
     <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((n) => (
@@ -140,7 +140,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
     setDebtSubmitting(false);
     if (!res.ok) {
       const data = await res.json();
-      setDebtError(data.error || "Borclandirma yapilamadi.");
+      setDebtError(data.error || "Borçlandırma yapılamadı.");
       return;
     }
     setShowDebtModal(false);
@@ -194,7 +194,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
   }
 
   if (!tenant) {
-    return <p className="text-sm text-slate-500">Kiraci bulunamadi.</p>;
+    return <p className="text-sm text-slate-500">Kiracı bulunamadı.</p>;
   }
 
   const debtYearlyPreview = debtAmount ? Number(debtAmount) * 12 : 0;
@@ -213,7 +213,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
             href={`/dashboard/kiraci/${tenant.id}/duzenle`}
             className="bg-white border border-gray-200 hover:border-[#17B6AE] text-slate-700 font-semibold px-4 py-2 rounded-xl transition text-sm"
           >
-            Duzenle
+            Düzenle
           </a>
           <a
             href="/dashboard/kiraci"
@@ -232,7 +232,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <h2 className="text-sm font-bold text-slate-800 mb-3">Kiraci Bilgileri</h2>
+          <h2 className="text-sm font-bold text-slate-800 mb-3">Kiracı Bilgileri</h2>
           <InfoRow
             label="Tip"
             value={tenant.tenantType === "CORPORATE" ? "Kurumsal" : "Bireysel"}
@@ -251,38 +251,38 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <h2 className="text-sm font-bold text-slate-800 mb-3">Kira Sozlesmesi</h2>
+          <h2 className="text-sm font-bold text-slate-800 mb-3">Kira Sözleşmesi</h2>
           <InfoRow
-            label="Aylik Kira"
+            label="Aylık Kira"
             value={`${Number(tenant.monthlyRent).toLocaleString("tr-TR")} ₺`}
           />
           <InfoRow
-            label="Yillik Kira"
+            label="Yıllık Kira"
             value={`${(Number(tenant.monthlyRent) * 12).toLocaleString("tr-TR")} ₺`}
           />
           <InfoRow
-            label="Sozlesme Baslangic"
+            label="Sözleşme Başlangıç"
             value={tenant.contractStart ? new Date(tenant.contractStart).toLocaleDateString("tr-TR") : null}
           />
           <InfoRow
-            label="Sozlesme Bitis"
+            label="Sözleşme Bitiş"
             value={tenant.contractEnd ? new Date(tenant.contractEnd).toLocaleDateString("tr-TR") : null}
           />
           <InfoRow
-            label="Kira Duzenlenme Tarihi"
+            label="Kira Düzenlenme Tarihi"
             value={tenant.rentRevisionDate ? new Date(tenant.rentRevisionDate).toLocaleDateString("tr-TR") : null}
           />
           <InfoRow
-            label="Kira Odeme Tarihi"
+            label="Kira Ödeme Tarihi"
             value={tenant.rentPaymentDate ? new Date(tenant.rentPaymentDate).toLocaleDateString("tr-TR") : null}
           />
           <InfoRow
-            label="Odeme Sekli"
-            value={tenant.paymentFrequency === "YEARLY" ? "Yillik" : "Aylik"}
+            label="Ödeme Şekli"
+            value={tenant.paymentFrequency === "YEARLY" ? "Yıllık" : "Aylık"}
           />
           <InfoRow
-            label="Artis Orani"
-            value={tenant.increaseType === "CUSTOM" ? `%${tenant.increaseRate ?? "—"}` : "TUFE"}
+            label="Artış Oranı"
+            value={tenant.increaseType === "CUSTOM" ? `%${tenant.increaseRate ?? "—"}` : "TÜFE"}
           />
           <InfoRow
             label="Depozito"
@@ -294,42 +294,42 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
           />
           {tenant.contractFileUrl && (
             <div className="flex items-center justify-between py-2 text-sm">
-              <span className="text-slate-500">Sozlesme Dosyasi</span>
+              <span className="text-slate-500">Sözleşme Dosyası</span>
               <a
                 href={`/api/dashboard/tenants/${tenant.id}/contract`}
                 className="text-[#17B6AE] font-medium hover:underline"
               >
-                Indir
+                İndir
               </a>
             </div>
           )}
-          <InfoRow label="Sozlesme Notlari" value={tenant.contractNotes} />
+          <InfoRow label="Sözleşme Notları" value={tenant.contractNotes} />
         </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
         <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-slate-800">Odeme Plani</h2>
+          <h2 className="text-sm font-bold text-slate-800">Ödeme Planı</h2>
           <button
             onClick={openDebtModal}
             className="bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-4 py-2 rounded-xl transition text-sm"
           >
-            Kiraciyi Borclandir
+            Kiracıyı Borçlandır
           </button>
         </div>
 
         {tenant.debts.length === 0 ? (
           <p className="text-sm text-slate-500 text-center py-10">
-            Henuz borc kaydi yok. &quot;Kiraciyi Borclandir&quot; ile 12 aylik plan olusturun.
+            Henüz borç kaydı yok. &quot;Kiracıyı Borçlandır&quot; ile 12 aylık plan oluşturun.
           </p>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-left">
-                <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Ay / Yil</th>
+                <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Ay / Yıl</th>
                 <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Tutar</th>
                 <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Durum</th>
-                <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Islem</th>
+                <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">İşlem</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -354,7 +354,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
                           onClick={() => openPayModal(d)}
                           className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-[#17B6AE]/10 text-[#17B6AE] hover:bg-[#17B6AE]/20 transition"
                         >
-                          Odendi Olarak Isaretle
+                          Ödendi Olarak İşaretle
                         </button>
                       )}
                     </td>
@@ -367,7 +367,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
       </div>
 
       {showDebtModal && (
-        <Modal title="Kiraciyi Borclandir" onClose={() => setShowDebtModal(false)}>
+        <Modal title="Kiracıyı Borçlandır" onClose={() => setShowDebtModal(false)}>
           <form onSubmit={submitDebtBatch} className="space-y-4">
             {debtError && (
               <div className="bg-red-50 border border-red-100 text-red-500 text-sm px-4 py-3 rounded-xl">
@@ -376,7 +376,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
             )}
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                Aylik Kira Bedeli (₺)
+                Aylık Kira Bedeli (₺)
               </label>
               <input
                 type="number"
@@ -388,12 +388,12 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
               />
               {debtYearlyPreview > 0 && (
                 <p className="mt-1.5 text-xs text-slate-500">
-                  Yillik Kira Bedeli: <span className="font-medium text-slate-700">{debtYearlyPreview.toLocaleString("tr-TR")} ₺</span>
+                  Yıllık Kira Bedeli: <span className="font-medium text-slate-700">{debtYearlyPreview.toLocaleString("tr-TR")} ₺</span>
                 </p>
               )}
             </div>
             <div className="bg-[#17B6AE]/5 border border-[#17B6AE]/20 rounded-xl p-4">
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Baslangic Tarihi</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Başlangıç Tarihi</label>
               <input
                 type="date"
                 value={debtStartDate}
@@ -401,7 +401,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
                 className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30 bg-white"
               />
               <p className="mt-2 text-xs text-slate-500">
-                Bu tarihten itibaren kiraci 12 ay boyunca borclandirilacaktir.
+                Bu tarihten itibaren kiracı 12 ay boyunca borçlandırılacaktır.
               </p>
             </div>
             <button
@@ -409,7 +409,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
               disabled={debtSubmitting}
               className="w-full bg-[#17B6AE] hover:bg-[#149891] disabled:opacity-60 text-white font-semibold py-2.5 rounded-xl transition text-sm"
             >
-              {debtSubmitting ? "Kaydediliyor..." : "Borclandir"}
+              {debtSubmitting ? "Kaydediliyor..." : "Borçlandır"}
             </button>
           </form>
         </Modal>
@@ -424,7 +424,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
               </div>
             )}
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Tahsilat Miktari (₺)</label>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Tahsilat Miktarı (₺)</label>
               <input
                 type="number"
                 min="0"
@@ -444,7 +444,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Dekont Yukle</label>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Dekont Yükle</label>
               <input
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png"
@@ -466,7 +466,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
               disabled={paySubmitting}
               className="w-full bg-[#17B6AE] hover:bg-[#149891] disabled:opacity-60 text-white font-semibold py-2.5 rounded-xl transition text-sm"
             >
-              {paySubmitting ? "Kaydediliyor..." : "Odendi Olarak Isaretle"}
+              {paySubmitting ? "Kaydediliyor..." : "Ödendi Olarak İşaretle"}
             </button>
           </form>
         </Modal>

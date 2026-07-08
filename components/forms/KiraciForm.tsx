@@ -25,7 +25,7 @@ function addMonthsClamped(date: Date, months: number) {
   return result;
 }
 
-export default function KiraciEklePage() {
+export default function KiraciForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
 
@@ -88,7 +88,7 @@ export default function KiraciEklePage() {
     e.preventDefault();
     setError("");
     if (!propertyId || !fullName.trim()) {
-      setError("Mulk ve ad soyad zorunludur.");
+      setError("Mülk ve ad soyad zorunludur.");
       return;
     }
     setStep(2);
@@ -99,7 +99,7 @@ export default function KiraciEklePage() {
     setError("");
 
     if (!monthlyRent) {
-      setError("Aylik kira bedeli zorunludur.");
+      setError("Aylık kira bedeli zorunludur.");
       return;
     }
 
@@ -138,21 +138,20 @@ export default function KiraciEklePage() {
 
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error || "Kiraci olusturulamadi.");
+      setError(data.error || "Kiracı oluşturulamadı.");
       return;
     }
 
+    onSuccess();
     router.push("/dashboard/kiraci");
+    router.refresh();
   }
 
   return (
-    <div className="max-w-2xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-800">Kiraci Ekle</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Adim {step}/2 — {step === 1 ? "Kiraci Bilgileri" : "Kira Sozlesmesi"}
-        </p>
-      </div>
+    <div>
+      <p className="text-sm text-slate-500 mb-4">
+        Adım {step}/2 — {step === 1 ? "Kiracı Bilgileri" : "Kira Sözleşmesi"}
+      </p>
 
       <div className="flex items-center gap-2 mb-6">
         <div className={`h-1.5 flex-1 rounded-full ${step >= 1 ? "bg-[#17B6AE]" : "bg-gray-200"}`} />
@@ -160,19 +159,21 @@ export default function KiraciEklePage() {
       </div>
 
       {!loadingProperties && properties.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
+        <div className="text-center py-8">
           <p className="text-sm text-slate-500 mb-4">
-            Kiraci ekleyebilmek icin once bir mulk eklemeniz gerekiyor.
+            Kiracı ekleyebilmek için önce bir mülk eklemeniz gerekiyor. Bu pencereyi kapatıp
+            &quot;Mülk Ekle&quot; butonunu kullanın.
           </p>
-          <a
-            href="/dashboard/mulk/ekle"
+          <button
+            type="button"
+            onClick={onCancel}
             className="inline-flex bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-6 py-3 rounded-xl transition text-sm"
           >
-            Mulk Ekle
-          </a>
+            Kapat
+          </button>
         </div>
       ) : step === 1 ? (
-        <form onSubmit={goToStep2} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
+        <form onSubmit={goToStep2} className="space-y-5">
           {error && (
             <div className="bg-red-50 border border-red-100 text-red-500 text-sm px-4 py-3 rounded-xl">
               {error}
@@ -180,7 +181,7 @@ export default function KiraciEklePage() {
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Mulk *</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Mülk *</label>
             <select
               required
               value={propertyId}
@@ -196,7 +197,7 @@ export default function KiraciEklePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-2">Kiraci Tipi</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-2">Kiracı Tipi</label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -252,7 +253,7 @@ export default function KiraciEklePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Telefon Numarasi</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Telefon Numarası</label>
             <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-[#17B6AE]/30">
               <span className="flex items-center gap-1.5 px-3 py-2.5 bg-gray-50 border-r border-gray-200 text-sm text-slate-500">
                 <span>🇹🇷</span>
@@ -289,7 +290,7 @@ export default function KiraciEklePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-2">Kiraciyi Puanlayin</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-2">Kiracıyı Puanlayın</label>
             <StarRating value={rating} onChange={setRating} />
           </div>
 
@@ -298,15 +299,15 @@ export default function KiraciEklePage() {
               type="submit"
               className="bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm"
             >
-              Ileri
+              İleri
             </button>
-            <a href="/dashboard/kiraci" className="text-sm text-slate-400 hover:text-slate-600">
-              Vazgec
-            </a>
+            <button type="button" onClick={onCancel} className="text-sm text-slate-500 hover:text-slate-700">
+              Vazgeç
+            </button>
           </div>
         </form>
       ) : (
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {error && (
             <div className="bg-red-50 border border-red-100 text-red-500 text-sm px-4 py-3 rounded-xl">
               {error}
@@ -316,7 +317,7 @@ export default function KiraciEklePage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                Sozlesme Baslangic
+                Sözleşme Başlangıç
               </label>
               <input
                 type="date"
@@ -327,7 +328,7 @@ export default function KiraciEklePage() {
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                Kira Duzenlenme Tarihi
+                Kira Düzenlenme Tarihi
               </label>
               <input
                 type="date"
@@ -340,7 +341,7 @@ export default function KiraciEklePage() {
 
           <div className="bg-[#17B6AE]/5 border border-[#17B6AE]/20 rounded-xl p-4">
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Kira Odeme Tarihi
+              Kira Ödeme Tarihi
             </label>
             <input
               type="date"
@@ -349,12 +350,12 @@ export default function KiraciEklePage() {
               className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30 bg-white"
             />
             <p className="mt-2 text-xs text-slate-500">
-              Bu tarihten itibaren kiraci 12 ay boyunca borclandirilacaktir.
+              Bu tarihten itibaren kiracı 12 ay boyunca borçlandırılacaktır.
             </p>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-2">Sozlesme Suresi</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-2">Sözleşme Süresi</label>
             <div className="grid grid-cols-4 gap-2">
               {DURATION_OPTIONS.map((d) => (
                 <button
@@ -375,7 +376,7 @@ export default function KiraciEklePage() {
               <input
                 type="number"
                 min="1"
-                placeholder="Kac ay?"
+                placeholder="Kaç ay?"
                 value={customMonths}
                 onChange={(e) => setCustomMonths(e.target.value)}
                 className="mt-2 w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
@@ -383,14 +384,14 @@ export default function KiraciEklePage() {
             )}
             {computedEnd && (
               <p className="mt-2 text-xs text-slate-500">
-                Sozlesme bitis tarihi: <span className="font-medium text-slate-600">{computedEnd.toLocaleDateString("tr-TR")}</span>
+                Sözleşme bitiş tarihi: <span className="font-medium text-slate-600">{computedEnd.toLocaleDateString("tr-TR")}</span>
               </p>
             )}
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-              Aylik Kira Bedeli (₺) *
+              Aylık Kira Bedeli (₺) *
             </label>
             <input
               type="number"
@@ -403,13 +404,13 @@ export default function KiraciEklePage() {
             />
             {yearlyRent > 0 && (
               <p className="mt-1.5 text-xs text-slate-500">
-                Yillik Kira Bedeli: <span className="font-medium text-slate-600">{yearlyRent.toLocaleString("tr-TR")} ₺</span>
+                Yıllık Kira Bedeli: <span className="font-medium text-slate-600">{yearlyRent.toLocaleString("tr-TR")} ₺</span>
               </p>
             )}
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-2">Odeme Sekli</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-2">Ödeme Şekli</label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -420,7 +421,7 @@ export default function KiraciEklePage() {
                     : "bg-white text-slate-500 border-gray-300 hover:border-[#17B6AE]"
                 }`}
               >
-                Aylik
+                Aylık
               </button>
               <button
                 type="button"
@@ -431,13 +432,13 @@ export default function KiraciEklePage() {
                     : "bg-white text-slate-500 border-gray-300 hover:border-[#17B6AE]"
                 }`}
               >
-                Yillik
+                Yıllık
               </button>
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-2">Artis Orani</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-2">Artış Oranı</label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -448,7 +449,7 @@ export default function KiraciEklePage() {
                     : "bg-white text-slate-500 border-gray-300 hover:border-[#17B6AE]"
                 }`}
               >
-                TUFE
+                TÜFE
               </button>
               <button
                 type="button"
@@ -459,7 +460,7 @@ export default function KiraciEklePage() {
                     : "bg-white text-slate-500 border-gray-300 hover:border-[#17B6AE]"
                 }`}
               >
-                Ozel Hukumler
+                Özel Hükümler
               </button>
             </div>
             {increaseType === "CUSTOM" && (
@@ -467,7 +468,7 @@ export default function KiraciEklePage() {
                 type="number"
                 min="0"
                 step="0.01"
-                placeholder="Kac %?"
+                placeholder="Kaç %?"
                 value={increaseRate}
                 onChange={(e) => setIncreaseRate(e.target.value)}
                 className="mt-2 w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
@@ -499,7 +500,7 @@ export default function KiraciEklePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Sozlesme Dosyasi</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Sözleşme Dosyası</label>
             <input
               type="file"
               accept=".pdf,.jpg,.jpeg,.png"
@@ -509,7 +510,7 @@ export default function KiraciEklePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Sozlesme Notlari</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Sözleşme Notları</label>
             <textarea
               value={contractNotes}
               onChange={(e) => setContractNotes(e.target.value)}

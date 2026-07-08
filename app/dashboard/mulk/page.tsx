@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import MulkEkleButton from "@/components/MulkEkleButton";
 
 type Property = {
   id: string;
@@ -16,7 +17,7 @@ const TYPE_LABELS: Record<string, string> = {
   ARSA: "Arsa",
   AVM: "AVM",
   DEPO: "Depo",
-  DEVREMULK: "Devremulk",
+  DEVREMULK: "Devremülk",
   FABRIKA: "Fabrika",
   KONUT: "Konut",
   OFIS: "Ofis",
@@ -40,12 +41,12 @@ export default function MulkListPage() {
   }, []);
 
   async function handleDelete(id: string) {
-    if (!confirm("Bu mulku silmek istediginize emin misiniz?")) return;
+    if (!confirm("Bu mülkü silmek istediğinize emin misiniz?")) return;
     setError("");
     const res = await fetch(`/api/dashboard/properties/${id}`, { method: "DELETE" });
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error || "Mulk silinemedi.");
+      setError(data.error || "Mülk silinemedi.");
       return;
     }
     loadProperties();
@@ -55,15 +56,10 @@ export default function MulkListPage() {
     <div>
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Mulklerim</h1>
-          <p className="text-sm text-slate-400 mt-1">Kayitli tum mulkleriniz.</p>
+          <h1 className="text-2xl font-bold text-slate-800">Mülklerim</h1>
+          <p className="text-sm text-slate-500 mt-1">Kayıtlı tüm mülkleriniz.</p>
         </div>
-        <a
-          href="/dashboard/mulk/ekle"
-          className="inline-flex bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-5 py-2.5 rounded-xl transition text-sm"
-        >
-          Mulk Ekle
-        </a>
+        <MulkEkleButton className="inline-flex bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-5 py-2.5 rounded-xl transition text-sm" />
       </div>
 
       {error && (
@@ -79,22 +75,20 @@ export default function MulkListPage() {
           </div>
         ) : properties.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-sm text-slate-400 mb-4">Henuz mulk eklemediniz.</p>
-            <a href="/dashboard/mulk/ekle" className="text-sm text-[#17B6AE] font-medium hover:underline">
-              Ilk mulkunuzu ekleyin
-            </a>
+            <p className="text-sm text-slate-500 mb-4">Henüz mülk eklemediniz.</p>
+            <MulkEkleButton className="text-sm text-[#17B6AE] font-medium hover:underline" />
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-left">
-                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Baslik</th>
-                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Tip</th>
-                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Adres</th>
-                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Sehir</th>
-                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Durum</th>
-                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Kiraci</th>
-                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Islemler</th>
+                <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Başlık</th>
+                <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Tip</th>
+                <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Adres</th>
+                <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Şehir</th>
+                <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Durum</th>
+                <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Kiracı</th>
+                <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">İşlemler</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -120,7 +114,7 @@ export default function MulkListPage() {
                           : "bg-amber-50 text-amber-600 border border-amber-100"
                       }`}
                     >
-                      {p.isOccupied ? "Dolu" : "Bos"}
+                      {p.isOccupied ? "Dolu" : "Boş"}
                     </span>
                   </td>
                   <td className="px-5 py-4 text-slate-500">{p._count.tenants}</td>

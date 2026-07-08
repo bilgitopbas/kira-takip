@@ -40,7 +40,7 @@ export default function MonthlyPaymentsPie({ items }: Props) {
     .filter((d) => d.value > 0);
 
   if (items.length === 0) {
-    return <p className="text-sm text-slate-500">Bu ay icin borc kaydi yok.</p>;
+    return <p className="text-sm text-slate-500">Bu ay için borç kaydı yok.</p>;
   }
 
   return (

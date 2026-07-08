@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import MonthlyIncomeChart from "@/components/MonthlyIncomeChart";
 import OccupancyChart from "@/components/OccupancyChart";
 import MonthlyPaymentsPie from "@/components/MonthlyPaymentsPie";
+import MulkEkleButton from "@/components/MulkEkleButton";
+import KiraciEkleButton from "@/components/KiraciEkleButton";
+import TahsilatEkleButton from "@/components/TahsilatEkleButton";
 import { getEffectiveDebtStatus } from "@/lib/debtStatus";
 
 const MONTH_SHORT = [
@@ -136,38 +139,26 @@ export default async function DashboardPage() {
   } = await getStats(session.userId);
 
   const CARDS = [
-    { label: "Toplam Mulk", value: `${propertyCount}`, icon: CARD_ICONS.properties, color: "text-blue-500 bg-blue-50" },
-    { label: "Toplam Kiraci", value: `${tenantCount}`, icon: CARD_ICONS.tenants, color: "text-violet-500 bg-violet-50" },
+    { label: "Toplam Mülk", value: `${propertyCount}`, icon: CARD_ICONS.properties, color: "text-blue-500 bg-blue-50" },
+    { label: "Toplam Kiracı", value: `${tenantCount}`, icon: CARD_ICONS.tenants, color: "text-violet-500 bg-violet-50" },
     { label: "Bu Ay Tahsilat", value: `${collected.toLocaleString("tr-TR")} ₺`, icon: CARD_ICONS.month, color: "text-[#17B6AE] bg-[#17B6AE]/8" },
-    { label: "Bu Yil Toplam Kira Geliri", value: `${yearlyCollected.toLocaleString("tr-TR")} ₺`, icon: CARD_ICONS.year, color: "text-amber-500 bg-amber-50" },
+    { label: "Bu Yıl Toplam Kira Geliri", value: `${yearlyCollected.toLocaleString("tr-TR")} ₺`, icon: CARD_ICONS.year, color: "text-amber-500 bg-amber-50" },
   ];
+
+  const primaryBtn = "inline-flex bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm";
+  const secondaryBtn = "inline-flex bg-white hover:bg-gray-50 text-slate-700 font-semibold px-4 py-2.5 rounded-xl transition text-sm border border-gray-200";
 
   return (
     <div>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Kontrol Paneli</h1>
-          <p className="text-sm text-slate-500 mt-1">Mulklerinizin genel durumu</p>
+          <p className="text-sm text-slate-500 mt-1">Mülklerinizin genel durumu</p>
         </div>
         <div className="flex items-center gap-2">
-          <a
-            href="/dashboard/mulk/ekle"
-            className="inline-flex bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm"
-          >
-            Mulk Ekle
-          </a>
-          <a
-            href="/dashboard/kiraci/ekle"
-            className="inline-flex bg-white hover:bg-gray-50 text-slate-700 font-semibold px-4 py-2.5 rounded-xl transition text-sm border border-gray-200"
-          >
-            Kiraci Ekle
-          </a>
-          <a
-            href="/dashboard/tahsilat/ekle"
-            className="inline-flex bg-white hover:bg-gray-50 text-slate-700 font-semibold px-4 py-2.5 rounded-xl transition text-sm border border-gray-200"
-          >
-            Tahsilat Ekle
-          </a>
+          <MulkEkleButton className={primaryBtn} />
+          <KiraciEkleButton className={secondaryBtn} />
+          <TahsilatEkleButton className={secondaryBtn} />
         </div>
       </div>
 
@@ -188,16 +179,16 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <h2 className="text-sm font-bold text-slate-800 mb-4">Mulk Doluluk Durumu</h2>
+          <h2 className="text-sm font-bold text-slate-800 mb-4">Mülk Doluluk Durumu</h2>
           {propertyCount === 0 ? (
-            <p className="text-sm text-slate-500">Henuz mulk eklenmedi.</p>
+            <p className="text-sm text-slate-500">Henüz mülk eklenmedi.</p>
           ) : (
             <OccupancyChart occupied={occupiedCount} vacant={vacantCount} />
           )}
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <h2 className="text-sm font-bold text-slate-800 mb-4">Bu Ay Kira Odemeleri</h2>
+          <h2 className="text-sm font-bold text-slate-800 mb-4">Bu Ay Kira Ödemeleri</h2>
           <MonthlyPaymentsPie items={monthlyPayments} />
         </div>
       </div>
@@ -208,16 +199,11 @@ export default async function DashboardPage() {
 
       {propertyCount === 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
-          <h3 className="text-lg font-semibold text-slate-800 mb-2">Ilk mulkunuzu ekleyin</h3>
+          <h3 className="text-lg font-semibold text-slate-800 mb-2">İlk mülkünüzü ekleyin</h3>
           <p className="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
-            Mulklerinizi sisteme ekleyerek kira takibine baslayin.
+            Mülklerinizi sisteme ekleyerek kira takibine başlayın.
           </p>
-          <a
-            href="/dashboard/mulk/ekle"
-            className="inline-flex bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-6 py-3 rounded-xl transition text-sm"
-          >
-            Mulk Ekle
-          </a>
+          <MulkEkleButton className={primaryBtn} />
         </div>
       )}
     </div>

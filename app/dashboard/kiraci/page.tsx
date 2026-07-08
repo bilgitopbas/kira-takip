@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import KiraciEkleButton from "@/components/KiraciEkleButton";
 
 type Tenant = {
   id: string;
@@ -13,7 +14,7 @@ type Tenant = {
 };
 
 function MiniStars({ rating }: { rating: number | null }) {
-  if (!rating) return <span className="text-slate-400 text-xs">Puanlanmadi</span>;
+  if (!rating) return <span className="text-slate-400 text-xs">Puanlanmadı</span>;
   return (
     <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((n) => (
@@ -54,12 +55,12 @@ export default function KiraciListPage() {
 
   async function handleDelete(e: React.MouseEvent, id: string) {
     e.stopPropagation();
-    if (!confirm("Bu kiraciyi silmek istediginize emin misiniz?")) return;
+    if (!confirm("Bu kiracıyı silmek istediğinize emin misiniz?")) return;
     setError("");
     const res = await fetch(`/api/dashboard/tenants/${id}`, { method: "DELETE" });
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error || "Kiraci silinemedi.");
+      setError(data.error || "Kiracı silinemedi.");
       return;
     }
     loadTenants();
@@ -69,15 +70,13 @@ export default function KiraciListPage() {
     <div>
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Kiracilar</h1>
-          <p className="text-sm text-slate-500 mt-1">Mulklerinizdeki tum kiracilar.</p>
+          <h1 className="text-2xl font-bold text-slate-800">Kiracılar</h1>
+          <p className="text-sm text-slate-500 mt-1">Mülklerinizdeki tüm kiracılar.</p>
         </div>
-        <a
-          href="/dashboard/kiraci/ekle"
+        <KiraciEkleButton
           className="inline-flex bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-5 py-2.5 rounded-xl transition text-sm"
-        >
-          Kiraci Ekle
-        </a>
+          onCreated={loadTenants}
+        />
       </div>
 
       {error && (
@@ -92,10 +91,11 @@ export default function KiraciListPage() {
         </div>
       ) : tenants.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm text-center py-16">
-          <p className="text-sm text-slate-500 mb-4">Henuz kiraci eklemediniz.</p>
-          <a href="/dashboard/kiraci/ekle" className="text-sm text-[#17B6AE] font-medium hover:underline">
-            Ilk kiraciyi ekleyin
-          </a>
+          <p className="text-sm text-slate-500 mb-4">Henüz kiracı eklemediniz.</p>
+          <KiraciEkleButton
+            className="text-sm text-[#17B6AE] font-medium hover:underline"
+            onCreated={loadTenants}
+          />
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -127,19 +127,19 @@ export default function KiraciListPage() {
 
               <div className="space-y-1.5 mb-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500">Aylik Kira</span>
+                  <span className="text-slate-500">Aylık Kira</span>
                   <span className="font-semibold text-slate-800">
                     {Number(t.monthlyRent).toLocaleString("tr-TR")} ₺
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500">Yillik Kira</span>
+                  <span className="text-slate-500">Yıllık Kira</span>
                   <span className="font-medium text-slate-700">
                     {(Number(t.monthlyRent) * 12).toLocaleString("tr-TR")} ₺
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500">Baslangic</span>
+                  <span className="text-slate-500">Başlangıç</span>
                   <span className="text-slate-700">
                     {t.contractStart ? new Date(t.contractStart).toLocaleDateString("tr-TR") : "—"}
                   </span>

@@ -13,7 +13,7 @@ export default function OccupancyChart({ occupied, vacant }: Props) {
   const total = occupied + vacant;
   const data = [
     { name: "Dolu", value: occupied },
-    { name: "Bos", value: vacant },
+    { name: "Boş", value: vacant },
   ];
   const occupiedPct = total > 0 ? Math.round((occupied / total) * 100) : 0;
 
@@ -49,7 +49,7 @@ export default function OccupancyChart({ occupied, vacant }: Props) {
         </div>
         <div className="flex items-center gap-2 text-sm">
           <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS.vacant }} />
-          <span className="text-slate-600">Bos</span>
+          <span className="text-slate-600">Boş</span>
           <span className="font-semibold text-slate-900">{vacant}</span>
         </div>
       </div>

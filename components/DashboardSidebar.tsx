@@ -10,7 +10,7 @@ export default function DashboardSidebar() {
   const sec = "text-[10px] font-bold text-slate-300 uppercase tracking-widest px-4 pt-5 pb-1";
   const soon = "flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-300 mb-0.5 cursor-not-allowed select-none";
   const SoonBadge = () => (
-    <span className="text-[10px] font-bold bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded">Yakinda</span>
+    <span className="text-[10px] font-bold bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded">Yakında</span>
   );
   return (
     <aside className="w-72 bg-white border-r border-gray-100 flex flex-col min-h-screen shadow-sm">
@@ -19,20 +19,18 @@ export default function DashboardSidebar() {
       </div>
       <nav className="flex-1 px-4 py-4 overflow-y-auto">
         <a href="/dashboard" className={lc("/dashboard",true)}>Ana Sayfa</a>
-        <p className={sec}>Mulklerim</p>
-        <a href="/dashboard/mulk/ekle" className={lc("/dashboard/mulk/ekle")}>Mulk Ekle</a>
-        <div className={soon}><span>Toplu Mulk Ekle</span><SoonBadge /></div>
-        <a href="/dashboard/mulk" className={lc("/dashboard/mulk",true)}>Mulkleri Listele</a>
-        <p className={sec}>Kiracilar</p>
-        <a href="/dashboard/kiraci/ekle" className={lc("/dashboard/kiraci/ekle")}>Kiraci Ekle</a>
-        <a href="/dashboard/kiraci" className={lc("/dashboard/kiraci",true)}>Kiracilar</a>
+        <p className={sec}>Mülklerim</p>
+        <div className={soon}><span>Toplu Mülk Ekle</span><SoonBadge /></div>
+        <a href="/dashboard/mulk" className={lc("/dashboard/mulk",true)}>Mülkleri Listele</a>
+        <p className={sec}>Kiracılar</p>
+        <a href="/dashboard/kiraci" className={lc("/dashboard/kiraci",true)}>Kiracılar</a>
         <p className={sec}>Finans</p>
         <div className={soon}><span>Hesap Hareketleri</span><SoonBadge /></div>
-        <div className={soon}><span>Finans Raporlari</span><SoonBadge /></div>
-        <p className={sec}>Diger</p>
+        <div className={soon}><span>Finans Raporları</span><SoonBadge /></div>
+        <p className={sec}>Diğer</p>
         <div className={soon}><span>Bildirimler</span><SoonBadge /></div>
-        <div className={soon}><span>Kira Sozlesmesi</span><SoonBadge /></div>
-        <div className={soon}><span>Kira Artis Hesapla</span><SoonBadge /></div>
+        <div className={soon}><span>Kira Sözleşmesi</span><SoonBadge /></div>
+        <div className={soon}><span>Kira Artış Hesapla</span><SoonBadge /></div>
         <div className={soon}><span>Blog</span><SoonBadge /></div>
         <div className={soon}><span>Destek</span><SoonBadge /></div>
         <div className={soon}><span>Ayarlar</span><SoonBadge /></div>
@@ -43,12 +41,12 @@ export default function DashboardSidebar() {
             <span className="text-white text-sm font-bold">M</span>
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-700">Hesabim</p>
-            <p className="text-xs text-slate-400">Mizan Mulk</p>
+            <p className="text-sm font-semibold text-slate-700">Hesabım</p>
+            <p className="text-xs text-slate-400">Mizan Mülk</p>
           </div>
         </div>
         <a href="/api/auth/logout" className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-50 hover:text-red-600 transition-all">
-          Cikis Yap
+          Çıkış Yap
         </a>
       </div>
     </aside>

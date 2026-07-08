@@ -127,7 +127,7 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
     setError("");
 
     if (!propertyId || !fullName.trim() || !monthlyRent) {
-      setError("Mulk, ad soyad ve aylik kira zorunludur.");
+      setError("Mülk, ad soyad ve aylık kira zorunludur.");
       return;
     }
 
@@ -166,7 +166,7 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
 
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error || "Kiraci guncellenemedi.");
+      setError(data.error || "Kiracı güncellenemedi.");
       return;
     }
 
@@ -184,7 +184,7 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
   return (
     <div className="max-w-2xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-800">Kiraci Duzenle</h1>
+        <h1 className="text-2xl font-bold text-slate-800">Kiracı Düzenle</h1>
         <p className="text-sm text-slate-500 mt-1">{fullName}</p>
       </div>
 
@@ -195,10 +195,10 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
           </div>
         )}
 
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Kiraci Bilgileri</p>
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Kiracı Bilgileri</p>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Mulk *</label>
+          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Mülk *</label>
           <select
             required
             value={propertyId}
@@ -214,7 +214,7 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-2">Kiraci Tipi</label>
+          <label className="block text-xs font-semibold text-slate-600 mb-2">Kiracı Tipi</label>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -270,7 +270,7 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Telefon Numarasi</label>
+          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Telefon Numarası</label>
           <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-[#17B6AE]/30">
             <span className="flex items-center gap-1.5 px-3 py-2.5 bg-gray-50 border-r border-gray-200 text-sm text-slate-600">
               <span>🇹🇷</span>
@@ -307,15 +307,15 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-2">Kiraciyi Puanlayin</label>
+          <label className="block text-xs font-semibold text-slate-600 mb-2">Kiracıyı Puanlayın</label>
           <StarRating value={rating} onChange={setRating} />
         </div>
 
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest pt-2">Kira Sozlesmesi</p>
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest pt-2">Kira Sözleşmesi</p>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Sozlesme Baslangic</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Sözleşme Başlangıç</label>
             <input
               type="date"
               value={contractStart}
@@ -324,7 +324,7 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Kira Duzenlenme Tarihi</label>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Kira Düzenlenme Tarihi</label>
             <input
               type="date"
               value={rentRevisionDate}
@@ -335,7 +335,7 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
         </div>
 
         <div className="bg-[#17B6AE]/5 border border-[#17B6AE]/20 rounded-xl p-4">
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">Kira Odeme Tarihi</label>
+          <label className="block text-xs font-semibold text-slate-700 mb-1.5">Kira Ödeme Tarihi</label>
           <input
             type="date"
             value={rentPaymentDate}
@@ -343,12 +343,12 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
             className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30 bg-white"
           />
           <p className="mt-2 text-xs text-slate-500">
-            Bu tarihten itibaren kiraci 12 ay boyunca borclandirilacaktir.
+            Bu tarihten itibaren kiracı 12 ay boyunca borçlandırılacaktır.
           </p>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-2">Sozlesme Suresi</label>
+          <label className="block text-xs font-semibold text-slate-600 mb-2">Sözleşme Süresi</label>
           <div className="grid grid-cols-4 gap-2">
             {DURATION_OPTIONS.map((d) => (
               <button
@@ -369,7 +369,7 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
             <input
               type="number"
               min="1"
-              placeholder="Kac ay?"
+              placeholder="Kaç ay?"
               value={customMonths}
               onChange={(e) => setCustomMonths(e.target.value)}
               className="mt-2 w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
@@ -377,13 +377,13 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
           )}
           {computedEnd && (
             <p className="mt-2 text-xs text-slate-500">
-              Sozlesme bitis tarihi: <span className="font-medium text-slate-700">{computedEnd.toLocaleDateString("tr-TR")}</span>
+              Sözleşme bitiş tarihi: <span className="font-medium text-slate-700">{computedEnd.toLocaleDateString("tr-TR")}</span>
             </p>
           )}
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Aylik Kira Bedeli (₺) *</label>
+          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Aylık Kira Bedeli (₺) *</label>
           <input
             type="number"
             required
@@ -395,13 +395,13 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
           />
           {yearlyRent > 0 && (
             <p className="mt-1.5 text-xs text-slate-500">
-              Yillik Kira Bedeli: <span className="font-medium text-slate-700">{yearlyRent.toLocaleString("tr-TR")} ₺</span>
+              Yıllık Kira Bedeli: <span className="font-medium text-slate-700">{yearlyRent.toLocaleString("tr-TR")} ₺</span>
             </p>
           )}
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-2">Odeme Sekli</label>
+          <label className="block text-xs font-semibold text-slate-600 mb-2">Ödeme Şekli</label>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -412,7 +412,7 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
                   : "bg-white text-slate-600 border-gray-300 hover:border-[#17B6AE]"
               }`}
             >
-              Aylik
+              Aylık
             </button>
             <button
               type="button"
@@ -423,13 +423,13 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
                   : "bg-white text-slate-600 border-gray-300 hover:border-[#17B6AE]"
               }`}
             >
-              Yillik
+              Yıllık
             </button>
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-2">Artis Orani</label>
+          <label className="block text-xs font-semibold text-slate-600 mb-2">Artış Oranı</label>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -451,7 +451,7 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
                   : "bg-white text-slate-600 border-gray-300 hover:border-[#17B6AE]"
               }`}
             >
-              Ozel Hukumler
+              Özel Hükümler
             </button>
           </div>
           {increaseType === "CUSTOM" && (
@@ -459,7 +459,7 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
               type="number"
               min="0"
               step="0.01"
-              placeholder="Kac %?"
+              placeholder="Kaç %?"
               value={increaseRate}
               onChange={(e) => setIncreaseRate(e.target.value)}
               className="mt-2 w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
@@ -491,18 +491,18 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Sozlesme Dosyasi</label>
+          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Sözleşme Dosyası</label>
           <input
             type="file"
             accept=".pdf,.jpg,.jpeg,.png"
             onChange={(e) => setContractFile(e.target.files?.[0] || null)}
             className="w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#17B6AE]/10 file:text-[#17B6AE] hover:file:bg-[#17B6AE]/20"
           />
-          <p className="mt-1.5 text-xs text-slate-500">Yeni dosya yuklemezseniz mevcut sozlesme korunur.</p>
+          <p className="mt-1.5 text-xs text-slate-500">Yeni dosya yüklemezseniz mevcut sözleşme korunur.</p>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Sozlesme Notlari</label>
+          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Sözleşme Notları</label>
           <textarea
             value={contractNotes}
             onChange={(e) => setContractNotes(e.target.value)}
@@ -520,7 +520,7 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
             {submitting ? "Kaydediliyor..." : "Kaydet"}
           </button>
           <a href={`/dashboard/kiraci/${id}`} className="text-sm text-slate-500 hover:text-slate-700">
-            Vazgec
+            Vazgeç
           </a>
         </div>
       </form>

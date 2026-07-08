@@ -23,7 +23,7 @@ export default function StarRating({
             onMouseLeave={() => setHovered(0)}
             onClick={() => onChange(n)}
             className="p-0.5 transition-transform hover:scale-110"
-            aria-label={`${n} yildiz`}
+            aria-label={`${n} yıldız`}
           >
             <svg
               viewBox="0 0 24 24"

@@ -9,9 +9,9 @@ type Props = {
 
 const PERIODS = [
   { label: "6 Ay", months: 6 },
-  { label: "1 Yil", months: 12 },
-  { label: "2 Yil", months: 24 },
-  { label: "5 Yil", months: 60 },
+  { label: "1 Yıl", months: 12 },
+  { label: "2 Yıl", months: 24 },
+  { label: "5 Yıl", months: 60 },
 ];
 
 export default function MonthlyIncomeChart({ data }: Props) {
@@ -21,7 +21,7 @@ export default function MonthlyIncomeChart({ data }: Props) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-bold text-slate-800">Tahsilat Grafigi</h2>
+        <h2 className="text-sm font-bold text-slate-800">Tahsilat Grafiği</h2>
         <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1">
           {PERIODS.map((p) => (
             <button
