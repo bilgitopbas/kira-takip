@@ -55,7 +55,10 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Şifre</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-slate-700">Şifre</label>
+              <a href="/forgot-password" className="text-xs text-[#17B6AE] font-medium">Şifremi Unuttum</a>
+            </div>
             <input
               type="password"
               required

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, createSession } from "@/lib/auth";
+import { sendWelcomeEmail } from "@/lib/mail";
 
 export async function POST(req: NextRequest) {
   try {
@@ -65,6 +66,12 @@ export async function POST(req: NextRequest) {
     });
 
     await createSession({ userId: user.id, role: user.role });
+
+    try {
+      await sendWelcomeEmail(user.email, user.fullName);
+    } catch (mailErr) {
+      console.error("Hoş geldin e-postası gönderilemedi:", mailErr);
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {

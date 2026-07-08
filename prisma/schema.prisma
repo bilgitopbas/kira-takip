@@ -93,6 +93,14 @@ model User {
   trialEndsAt       DateTime
   subscriptionStatus SubscriptionStatus @default(TRIAL)
 
+  passwordResetToken   String?   @unique
+  passwordResetExpires DateTime?
+
+  notifyPaymentOverdue  Boolean @default(true)
+  notifyRenewalUpcoming Boolean @default(true)
+  notifyFiveYear        Boolean @default(true)
+  notifyMonthlySummary  Boolean @default(true)
+
   properties        Property[]
   supportTickets    SupportTicket[]
   notifications     Notification[]

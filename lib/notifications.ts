@@ -28,6 +28,17 @@ export async function generateNotificationsForOwner(ownerId: string) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  const owner = await prisma.user.findUnique({
+    where: { id: ownerId },
+    select: {
+      notifyPaymentOverdue: true,
+      notifyRenewalUpcoming: true,
+      notifyFiveYear: true,
+      notifyMonthlySummary: true,
+    },
+  });
+  if (!owner) return;
+
   const tenants = await prisma.tenant.findMany({
     where: { property: { ownerId } },
     select: {
@@ -47,26 +58,28 @@ export async function generateNotificationsForOwner(ownerId: string) {
 
   for (const tenant of tenants) {
     // 1. Geciken ödeme (vade + 1 gün ve sonrası)
-    for (const debt of tenant.debts) {
-      const due = new Date(debt.dueDate);
-      due.setHours(0, 0, 0, 0);
-      const oneDayAfter = new Date(due);
-      oneDayAfter.setDate(oneDayAfter.getDate() + 1);
+    if (owner.notifyPaymentOverdue) {
+      for (const debt of tenant.debts) {
+        const due = new Date(debt.dueDate);
+        due.setHours(0, 0, 0, 0);
+        const oneDayAfter = new Date(due);
+        oneDayAfter.setDate(oneDayAfter.getDate() + 1);
 
-      if (today >= oneDayAfter && getEffectiveDebtStatus(debt) !== "PAID") {
-        await createIfMissing({
-          userId: ownerId,
-          type: "PAYMENT_OVERDUE",
-          title: "Gecikmiş Ödeme",
-          message: `${tenant.fullName} kirasını ödemedi, ödendi ise lütfen tahsilat giriniz.`,
-          link: `/dashboard/kiraci/${tenant.id}`,
-          dedupeKey: `overdue:${debt.id}`,
-        });
+        if (today >= oneDayAfter && getEffectiveDebtStatus(debt) !== "PAID") {
+          await createIfMissing({
+            userId: ownerId,
+            type: "PAYMENT_OVERDUE",
+            title: "Gecikmiş Ödeme",
+            message: `${tenant.fullName} kirasını ödemedi, ödendi ise lütfen tahsilat giriniz.`,
+            link: `/dashboard/kiraci/${tenant.id}`,
+            dedupeKey: `overdue:${debt.id}`,
+          });
+        }
       }
     }
 
     // 2. Zam / borçlandırma hatırlatma (son borç vadesine 15 gün kala)
-    if (tenant.debts.length > 0) {
+    if (owner.notifyRenewalUpcoming && tenant.debts.length > 0) {
       const dueDates = tenant.debts.map((d) => new Date(d.dueDate));
       const renewalDate = getRenewalNotificationDate(dueDates);
       if (renewalDate) {
@@ -86,7 +99,7 @@ export async function generateNotificationsForOwner(ownerId: string) {
     }
 
     // 3. 5. yıl (3 ay önce / 1 ay önce / dolduğunda)
-    if (tenant.contractStart) {
+    if (owner.notifyFiveYear && tenant.contractStart) {
       const fiveYearDate = getFiveYearDate(new Date(tenant.contractStart));
       const threeMonthsBefore = new Date(fiveYearDate);
       threeMonthsBefore.setMonth(threeMonthsBefore.getMonth() - 3);
@@ -127,30 +140,32 @@ export async function generateNotificationsForOwner(ownerId: string) {
   }
 
   // 4. Aylık tahsilat özeti (bir önceki ay bittiyse)
-  const prevMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
-  if (today > prevMonthEnd) {
-    const year = prevMonthEnd.getFullYear();
-    const month = prevMonthEnd.getMonth() + 1;
-    const monthStart = new Date(year, month - 1, 1);
-    const monthEnd = new Date(year, month, 1);
+  if (owner.notifyMonthlySummary) {
+    const prevMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+    if (today > prevMonthEnd) {
+      const year = prevMonthEnd.getFullYear();
+      const month = prevMonthEnd.getMonth() + 1;
+      const monthStart = new Date(year, month - 1, 1);
+      const monthEnd = new Date(year, month, 1);
 
-    const payments = await prisma.payment.findMany({
-      where: {
-        tenant: { property: { ownerId } },
-        paidAt: { gte: monthStart, lt: monthEnd },
-      },
-      select: { amount: true },
-    });
+      const payments = await prisma.payment.findMany({
+        where: {
+          tenant: { property: { ownerId } },
+          paidAt: { gte: monthStart, lt: monthEnd },
+        },
+        select: { amount: true },
+      });
 
-    const total = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+      const total = payments.reduce((sum, p) => sum + Number(p.amount), 0);
 
-    await createIfMissing({
-      userId: ownerId,
-      type: "MONTHLY_SUMMARY",
-      title: "Aylık Tahsilat Özeti",
-      message: `${month}.${year} ayında toplam ${total.toLocaleString("tr-TR")} ₺ tahsilat yapıldı.`,
-      link: "/dashboard/finans-raporlari",
-      dedupeKey: `summary:${year}-${month}`,
-    });
+      await createIfMissing({
+        userId: ownerId,
+        type: "MONTHLY_SUMMARY",
+        title: "Aylık Tahsilat Özeti",
+        message: `${month}.${year} ayında toplam ${total.toLocaleString("tr-TR")} ₺ tahsilat yapıldı.`,
+        link: "/dashboard/finans-raporlari",
+        dedupeKey: `summary:${year}-${month}`,
+      });
+    }
   }
 }

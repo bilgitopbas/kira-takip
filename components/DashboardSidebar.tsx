@@ -48,7 +48,7 @@ export default function DashboardSidebar() {
         <div className={soon}><span>Kira Artış Hesapla</span><SoonBadge /></div>
         <a href="/dashboard/blog" className={lc("/dashboard/blog")}>Blog</a>
         <a href="/dashboard/destek" className={lc("/dashboard/destek",true)}>Yardım &amp; Destek</a>
-        <div className={soon}><span>Ayarlar</span><SoonBadge /></div>
+        <a href="/dashboard/ayarlar" className={lc("/dashboard/ayarlar",true)}>Ayarlar</a>
       </nav>
       <div className="px-4 pb-6 pt-3 border-t border-gray-100">
         <div className="flex items-center gap-3 px-4 py-3 mb-1">
