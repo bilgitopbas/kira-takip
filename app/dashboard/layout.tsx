@@ -1,12 +1,20 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import DashboardSidebar from "@/components/DashboardSidebar";
+import { generateNotificationsForOwner } from "@/lib/notifications";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
   if (!session) {
     redirect("/login");
   }
+
+  try {
+    await generateNotificationsForOwner(session.userId);
+  } catch {
+    // bildirim üretimi sayfayı bloklamamalı
+  }
+
   return (
     <div className="min-h-screen bg-[#F8F9FB] flex">
       <DashboardSidebar />

@@ -1,8 +1,17 @@
 "use client";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 export default function DashboardSidebar() {
   const p = usePathname();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    fetch("/api/dashboard/notifications/unread-count")
+      .then((r) => r.json())
+      .then((d) => setUnreadCount(d.count || 0))
+      .catch(() => {});
+  }, [p]);
   const lc = (href: string, exact = false) => {
     const a = exact ? p === href : p.startsWith(href);
     return a ? "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold bg-[#17B6AE] text-white shadow-md shadow-[#17B6AE]/30 mb-0.5" : "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-500 hover:bg-[#17B6AE]/10 hover:text-[#17B6AE] mb-0.5 transition-all";
@@ -27,11 +36,18 @@ export default function DashboardSidebar() {
         <p className={sec}>Finans</p>
         <a href="/dashboard/finans-raporlari" className={lc("/dashboard/finans-raporlari",true)}>Finans Raporları</a>
         <p className={sec}>Diğer</p>
-        <div className={soon}><span>Bildirimler</span><SoonBadge /></div>
+        <a href="/dashboard/bildirimler" className={`${lc("/dashboard/bildirimler",true)} justify-between`}>
+          <span>Bildirimler</span>
+          {unreadCount > 0 && (
+            <span className="text-[10px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+              {unreadCount}
+            </span>
+          )}
+        </a>
         <div className={soon}><span>Kira Sözleşmesi</span><SoonBadge /></div>
         <div className={soon}><span>Kira Artış Hesapla</span><SoonBadge /></div>
-        <a href="/blog" className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-500 hover:bg-[#17B6AE]/10 hover:text-[#17B6AE] mb-0.5 transition-all">Blog</a>
-        <div className={soon}><span>Destek</span><SoonBadge /></div>
+        <a href="/dashboard/blog" className={lc("/dashboard/blog")}>Blog</a>
+        <a href="/dashboard/destek" className={lc("/dashboard/destek",true)}>Yardım &amp; Destek</a>
         <div className={soon}><span>Ayarlar</span><SoonBadge /></div>
       </nav>
       <div className="px-4 pb-6 pt-3 border-t border-gray-100">

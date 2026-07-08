@@ -17,3 +17,11 @@ export function getRenewalReminderDate(debtDueDates: Date[]) {
   const latest = debtDueDates.reduce((max, d) => (d > max ? d : max));
   return addMonthsClamped(latest, -1);
 }
+
+export function getRenewalNotificationDate(debtDueDates: Date[]) {
+  if (debtDueDates.length === 0) return null;
+  const latest = debtDueDates.reduce((max, d) => (d > max ? d : max));
+  const result = new Date(latest);
+  result.setDate(result.getDate() - 15);
+  return result;
+}

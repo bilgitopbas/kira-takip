@@ -94,6 +94,8 @@ model User {
   subscriptionStatus SubscriptionStatus @default(TRIAL)
 
   properties        Property[]
+  supportTickets    SupportTicket[]
+  notifications     Notification[]
 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -249,4 +251,47 @@ model BlogPost {
   createdAt      DateTime @default(now())
 
   @@map("blog_posts")
+}
+
+enum SupportTicketStatus {
+  OPEN
+  CLOSED
+}
+
+model SupportTicket {
+  id          String              @id @default(cuid())
+  user        User                @relation(fields: [userId], references: [id])
+  userId      String
+  subject     String
+  description String
+  status      SupportTicketStatus @default(OPEN)
+  createdAt   DateTime            @default(now())
+
+  @@map("support_tickets")
+}
+
+enum NotificationType {
+  PAYMENT_OVERDUE
+  RENEWAL_UPCOMING
+  FIVE_YEAR_3_MONTHS
+  FIVE_YEAR_1_MONTH
+  FIVE_YEAR_REACHED
+  MONTHLY_SUMMARY
+  ANNOUNCEMENT
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  user      User             @relation(fields: [userId], references: [id])
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  link      String?
+  dedupeKey String
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@unique([userId, dedupeKey])
+  @@map("notifications")
 }
