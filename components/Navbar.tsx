@@ -8,6 +8,7 @@ const MENU_ITEMS = [
   { label: "Paketlerimiz", href: "#paketler" },
   { label: "Referanslarımız", href: "#referanslar" },
   { label: "S.S.S.", href: "#sss" },
+  { label: "Blog", href: "/blog" },
   { label: "İletişim", href: "#iletisim" },
 ];
 

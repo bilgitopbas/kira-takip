@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, use } from "react";
 import Modal from "@/components/Modal";
 import {
   getEffectiveDebtStatus,
+  getTotalPaid,
   DEBT_STATUS_LABELS,
   DEBT_STATUS_STYLES,
 } from "@/lib/debtStatus";
@@ -15,6 +16,7 @@ type Debt = {
   amount: string;
   dueDate: string;
   status: string;
+  payments: { amount: string }[];
 };
 
 type Tenant = {
@@ -76,9 +78,20 @@ function Stars({ rating }: { rating: number | null }) {
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between py-2 text-sm">
+    <div className="flex items-center justify-between py-2.5 text-[15px]">
       <span className="text-slate-500">{label}</span>
-      <span className="text-slate-800 font-medium text-right">{value ?? "—"}</span>
+      <span className="text-slate-800 font-semibold text-right">{value ?? "—"}</span>
+    </div>
+  );
+}
+
+function CardHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
+  return (
+    <div className="flex items-center gap-2.5 mb-3">
+      <div className="w-8 h-8 rounded-lg bg-[#17B6AE]/10 text-[#17B6AE] flex items-center justify-center flex-shrink-0">
+        {icon}
+      </div>
+      <h2 className="text-base font-bold text-slate-800">{title}</h2>
     </div>
   );
 }
@@ -169,7 +182,8 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
 
   function openPayModal(debt: Debt) {
     setPayDebt(debt);
-    setPayAmount(debt.amount);
+    const remaining = Number(debt.amount) - getTotalPaid(debt.payments);
+    setPayAmount(remaining > 0 ? String(remaining) : debt.amount);
     setPayDate(new Date().toISOString().slice(0, 10));
     setPayNotes("");
     setPayFile(null);
@@ -236,7 +250,16 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
           <p className="text-xs font-semibold text-[#17B6AE] uppercase tracking-wider mb-1">
             {tenant.property.title}
           </p>
-          <h1 className="text-3xl font-bold text-slate-900">{tenant.fullName}</h1>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">{tenant.fullName}</h1>
+          {tenant.contractStart && (
+            <span className="inline-flex items-center gap-1.5 bg-[#17B6AE]/10 text-[#17B6AE] text-sm font-semibold px-3 py-1.5 rounded-full">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 2v4M8 2v4M3 10h18" />
+              </svg>
+              Sözleşme Başlangıcı: {new Date(tenant.contractStart).toLocaleDateString("tr-TR")}
+            </span>
+          )}
         </div>
         <a
           href={`/dashboard/kiraci/${tenant.id}/duzenle`}
@@ -254,7 +277,15 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <h2 className="text-sm font-bold text-slate-800 mb-3">Kiracı Bilgileri</h2>
+          <CardHeader
+            title="Kiracı Bilgileri"
+            icon={
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <circle cx="12" cy="8" r="4" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 21v-1a8 8 0 0116 0v1" />
+              </svg>
+            }
+          />
           <InfoRow
             label="Tip"
             value={tenant.tenantType === "CORPORATE" ? "Kurumsal" : "Bireysel"}
@@ -273,10 +304,21 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <h2 className="text-sm font-bold text-slate-800 mb-3">Kira Sözleşmesi</h2>
+          <CardHeader
+            title="Kira Sözleşmesi"
+            icon={
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6M9 8h6M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" />
+              </svg>
+            }
+          />
           <InfoRow
             label="Aylık Kira"
-            value={`${Number(tenant.monthlyRent).toLocaleString("tr-TR")} ₺`}
+            value={
+              <span className="text-[#17B6AE] text-lg font-bold">
+                {Number(tenant.monthlyRent).toLocaleString("tr-TR")} ₺
+              </span>
+            }
           />
           <InfoRow
             label="Yıllık Kira"
@@ -387,7 +429,8 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {currentPeriod.map((d) => {
-                  const effective = getEffectiveDebtStatus(d.status, d.dueDate);
+                  const effective = getEffectiveDebtStatus(d);
+                  const totalPaid = getTotalPaid(d.payments);
                   return (
                     <tr key={d.id} className="hover:bg-gray-50/60 transition-colors">
                       <td className="px-5 py-3.5 text-slate-800 font-semibold border-r border-gray-100">
@@ -395,6 +438,11 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
                       </td>
                       <td className="px-5 py-3.5 text-slate-700 border-r border-gray-100">
                         {Number(d.amount).toLocaleString("tr-TR")} ₺
+                        {effective === "PARTIAL" && (
+                          <div className="text-xs text-blue-600 font-medium mt-0.5">
+                            Ödenen: {totalPaid.toLocaleString("tr-TR")} / {Number(d.amount).toLocaleString("tr-TR")} ₺
+                          </div>
+                        )}
                       </td>
                       <td className="px-5 py-3.5 border-r border-gray-100">
                         <span className={`text-xs px-3 py-1.5 rounded-full font-semibold ${DEBT_STATUS_STYLES[effective]}`}>

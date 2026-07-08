@@ -28,6 +28,7 @@ export default function Footer() {
               <li><a href="#paketler" className="hover:text-white transition">Paketlerimiz</a></li>
               <li><a href="#sss" className="hover:text-white transition">S.S.S.</a></li>
               <li><a href="#referanslar" className="hover:text-white transition">Referanslarımız</a></li>
+              <li><a href="/blog" className="hover:text-white transition">Blog</a></li>
             </ul>
           </div>
 

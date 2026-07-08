@@ -19,23 +19,27 @@ type Props = {
 
 const COLORS: Record<EffectiveDebtStatus, string> = {
   PAID: "#10B981",
+  PARTIAL: "#3B82F6",
   PENDING: "#F59E0B",
   UNPAID: "#EF4444",
 };
 
 const DOT_STYLES: Record<EffectiveDebtStatus, string> = {
   PAID: "bg-emerald-500",
+  PARTIAL: "bg-blue-500",
   PENDING: "bg-amber-500",
   UNPAID: "bg-red-500",
 };
 
+const STATUS_ORDER: EffectiveDebtStatus[] = ["PAID", "PARTIAL", "PENDING", "UNPAID"];
+
 export default function MonthlyPaymentsPie({ items }: Props) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
-  const counts: Record<EffectiveDebtStatus, number> = { PAID: 0, PENDING: 0, UNPAID: 0 };
+  const counts: Record<EffectiveDebtStatus, number> = { PAID: 0, PARTIAL: 0, PENDING: 0, UNPAID: 0 };
   for (const item of items) counts[item.status]++;
 
-  const data = (["PAID", "PENDING", "UNPAID"] as EffectiveDebtStatus[])
+  const data = STATUS_ORDER
     .map((status) => ({ status, value: counts[status] }))
     .filter((d) => d.value > 0);
 
@@ -77,7 +81,7 @@ export default function MonthlyPaymentsPie({ items }: Props) {
           </PieChart>
         </div>
         <div className="space-y-1.5">
-          {(["PAID", "PENDING", "UNPAID"] as EffectiveDebtStatus[]).map((status) => (
+          {STATUS_ORDER.map((status) => (
             <div key={status} className="flex items-center gap-2 text-sm">
               <span className={`w-2.5 h-2.5 rounded-full ${DOT_STYLES[status]}`} />
               <span className="text-slate-600">{DEBT_STATUS_LABELS[status]}</span>

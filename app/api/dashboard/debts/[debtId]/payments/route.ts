@@ -16,7 +16,7 @@ export async function POST(
 
   const debt = await prisma.debt.findUnique({
     where: { id: debtId },
-    include: { tenant: { include: { property: true } } },
+    include: { tenant: { include: { property: true } }, payments: true },
   });
   if (!debt || debt.tenant.property.ownerId !== session.userId) {
     return NextResponse.json({ error: "Borç kaydı bulunamadı." }, { status: 404 });
@@ -50,7 +50,11 @@ export async function POST(
           receiptFileUrl,
         },
       });
-      await tx.debt.update({ where: { id: debt.id }, data: { status: "PAID" } });
+      const totalPaid =
+        debt.payments.reduce((sum, p) => sum + Number(p.amount), 0) + amount;
+      if (totalPaid >= Number(debt.amount)) {
+        await tx.debt.update({ where: { id: debt.id }, data: { status: "PAID" } });
+      }
       return created;
     });
 

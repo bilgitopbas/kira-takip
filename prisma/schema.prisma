@@ -236,3 +236,17 @@ model ContactRequest {
 
   @@map("contact_requests")
 }
+
+model BlogPost {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  title          String
+  excerpt        String
+  content        String
+  coverImageUrl  String?
+  readingMinutes Int      @default(5)
+  publishedAt    DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  @@map("blog_posts")
+}

@@ -8,6 +8,7 @@ export type CalendarEvent = {
   tenantName: string;
   propertyTitle: string;
   contractStart: string;
+  currentRent: number;
 };
 
 const WEEKDAYS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
@@ -22,6 +23,10 @@ function dateKey(d: Date) {
 
 function todayKey() {
   return dateKey(new Date());
+}
+
+function firstName(fullName: string) {
+  return fullName.split(" ")[0];
 }
 
 export default function CalendarGrid({
@@ -69,7 +74,7 @@ export default function CalendarGrid({
   const today = todayKey();
 
   return (
-    <div>
+    <div className="animate-calendar-pop">
       <div className="flex items-center justify-between mb-4">
         <button
           type="button"
@@ -105,28 +110,63 @@ export default function CalendarGrid({
           const dayEvents = eventsByDate.get(key) || [];
           const isToday = key === today;
           const isSelected = key === selectedDate;
+          const hasEvents = dayEvents.length > 0;
           return (
-            <button
-              type="button"
-              key={i}
-              onClick={() => dayEvents.length > 0 && onDayClick(key)}
-              className={`aspect-square rounded-xl flex flex-col items-center justify-center text-sm transition-all duration-150 ${
-                isSelected
-                  ? "bg-[#17B6AE] text-white shadow-lg shadow-[#17B6AE]/30 scale-105"
-                  : isToday
-                  ? "border-2 border-[#17B6AE] text-slate-800 font-semibold"
-                  : dayEvents.length > 0
-                  ? "hover:scale-110 hover:shadow-md hover:-translate-y-0.5 cursor-pointer text-slate-700 font-medium bg-gray-50"
-                  : "text-slate-500"
-              }`}
-            >
-              <span>{cell.date.getDate()}</span>
-              {dayEvents.length > 0 && (
-                <span
-                  className={`w-1.5 h-1.5 rounded-full mt-0.5 ${isSelected ? "bg-white" : dotColorClass}`}
-                />
+            <div key={i} className="relative group">
+              <button
+                type="button"
+                onClick={() => hasEvents && onDayClick(key)}
+                className={`w-full aspect-square rounded-xl flex flex-col items-center justify-center text-sm transition-all duration-150 ${
+                  isSelected
+                    ? "bg-[#17B6AE] text-white shadow-lg shadow-[#17B6AE]/30 scale-105"
+                    : isToday
+                    ? "border-2 border-[#17B6AE] text-slate-800 font-semibold"
+                    : hasEvents
+                    ? "hover:scale-110 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer text-slate-700 font-medium bg-gray-50"
+                    : "text-slate-500"
+                }`}
+              >
+                <span>{cell.date.getDate()}</span>
+                {hasEvents && (
+                  <>
+                    <span
+                      className={`w-2 h-2 rounded-full mt-0.5 ${
+                        isSelected ? "bg-white" : `${dotColorClass} animate-pulse`
+                      }`}
+                    />
+                    <span
+                      className={`text-[8px] leading-tight mt-0.5 max-w-full px-0.5 truncate font-semibold ${
+                        isSelected ? "text-white" : "text-slate-500"
+                      }`}
+                    >
+                      {firstName(dayEvents[0].tenantName)}
+                      {dayEvents.length > 1 ? ` +${dayEvents.length - 1}` : ""}
+                    </span>
+                  </>
+                )}
+              </button>
+
+              {hasEvents && (
+                <div className="pointer-events-none absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-150 origin-bottom">
+                  <div className="bg-slate-900 text-white rounded-xl shadow-xl p-3 space-y-1.5">
+                    {dayEvents.map((e) => (
+                      <div key={e.tenantId} className={dayEvents.length > 1 ? "border-b border-white/10 pb-1.5 last:border-0 last:pb-0" : ""}>
+                        <p className="text-xs font-bold">{e.tenantName}</p>
+                        {e.contractStart && (
+                          <p className="text-[11px] text-white/70 mt-0.5">
+                            Sözleşme: {new Date(e.contractStart).toLocaleDateString("tr-TR")}
+                          </p>
+                        )}
+                        <p className="text-[11px] text-white/70">
+                          Güncel Kira: {e.currentRent.toLocaleString("tr-TR")} ₺
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="w-3 h-3 bg-slate-900 rotate-45 mx-auto -mt-1.5" />
+                </div>
               )}
-            </button>
+            </div>
           );
         })}
       </div>

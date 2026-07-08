@@ -21,6 +21,9 @@ function EventInfoPanel({ date, events }: { date: string | null; events: Calenda
               Sözleşme Başlangıcı: {new Date(e.contractStart).toLocaleDateString("tr-TR")}
             </p>
           )}
+          <p className="text-xs text-slate-400">
+            Güncel Aylık Kira: {e.currentRent.toLocaleString("tr-TR")} ₺
+          </p>
         </a>
       ))}
     </div>

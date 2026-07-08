@@ -52,6 +52,7 @@ async function getStats(ownerId: string) {
         amount: true,
         status: true,
         dueDate: true,
+        payments: { select: { amount: true } },
         tenant: { select: { id: true, fullName: true } },
       },
     }),
@@ -79,7 +80,7 @@ async function getStats(ownerId: string) {
     tenantId: d.tenant.id,
     tenantName: d.tenant.fullName,
     amount: Number(d.amount),
-    status: getEffectiveDebtStatus(d.status, d.dueDate),
+    status: getEffectiveDebtStatus(d),
   }));
 
   return {

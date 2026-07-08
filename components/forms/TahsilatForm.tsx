@@ -2,10 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getEffectiveDebtStatus, DEBT_STATUS_LABELS, DEBT_STATUS_STYLES } from "@/lib/debtStatus";
+import { getEffectiveDebtStatus, getTotalPaid, DEBT_STATUS_LABELS, DEBT_STATUS_STYLES } from "@/lib/debtStatus";
 
 type Tenant = { id: string; fullName: string; property: { title: string } };
-type Debt = { id: string; year: number; month: number; amount: string; dueDate: string; status: string };
+type Debt = {
+  id: string;
+  year: number;
+  month: number;
+  amount: string;
+  dueDate: string;
+  status: string;
+  payments: { amount: string }[];
+};
 
 const MONTH_NAMES = [
   "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
@@ -53,7 +61,7 @@ export default function TahsilatForm({ onSuccess, onCancel }: { onSuccess: () =>
       if (res.ok) {
         const data = await res.json();
         const unpaid: Debt[] = (data.tenant.debts || []).filter(
-          (d: Debt) => getEffectiveDebtStatus(d.status, d.dueDate) !== "PAID"
+          (d: Debt) => getEffectiveDebtStatus(d) !== "PAID"
         );
         setDebts(unpaid);
       }
@@ -67,7 +75,10 @@ export default function TahsilatForm({ onSuccess, onCancel }: { onSuccess: () =>
   function handleSelectDebt(id: string) {
     setDebtId(id);
     const debt = debts.find((d) => d.id === id);
-    if (debt) setAmount(debt.amount);
+    if (debt) {
+      const remaining = Number(debt.amount) - getTotalPaid(debt.payments);
+      setAmount(remaining > 0 ? String(remaining) : debt.amount);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -139,7 +150,7 @@ export default function TahsilatForm({ onSuccess, onCancel }: { onSuccess: () =>
           ) : (
             <div className="grid grid-cols-2 gap-2">
               {debts.map((d) => {
-                const effective = getEffectiveDebtStatus(d.status, d.dueDate);
+                const effective = getEffectiveDebtStatus(d);
                 return (
                   <button
                     key={d.id}

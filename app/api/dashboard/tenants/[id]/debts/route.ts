@@ -45,9 +45,15 @@ export async function POST(
     );
   }
 
-  await prisma.debt.createMany({
-    data: newDebts.map((d) => ({ ...d, tenantId: id })),
-  });
+  await prisma.$transaction([
+    prisma.debt.createMany({
+      data: newDebts.map((d) => ({ ...d, tenantId: id })),
+    }),
+    prisma.tenant.update({
+      where: { id },
+      data: { monthlyRent: rent },
+    }),
+  ]);
 
   return NextResponse.json({ success: true, created: newDebts.length });
 }

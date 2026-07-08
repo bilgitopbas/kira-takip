@@ -30,7 +30,7 @@ export default function DashboardSidebar() {
         <div className={soon}><span>Bildirimler</span><SoonBadge /></div>
         <div className={soon}><span>Kira Sözleşmesi</span><SoonBadge /></div>
         <div className={soon}><span>Kira Artış Hesapla</span><SoonBadge /></div>
-        <div className={soon}><span>Blog</span><SoonBadge /></div>
+        <a href="/blog" className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-500 hover:bg-[#17B6AE]/10 hover:text-[#17B6AE] mb-0.5 transition-all">Blog</a>
         <div className={soon}><span>Destek</span><SoonBadge /></div>
         <div className={soon}><span>Ayarlar</span><SoonBadge /></div>
       </nav>

@@ -11,13 +11,23 @@ async function getEvents(ownerId: string) {
       id: true,
       fullName: true,
       contractStart: true,
+      monthlyRent: true,
       property: { select: { title: true } },
       debts: { select: { dueDate: true } },
     },
   });
 
-  const fiveYearEvents: { date: string; tenantId: string; tenantName: string; propertyTitle: string; contractStart: string }[] = [];
-  const renewalEvents: { date: string; tenantId: string; tenantName: string; propertyTitle: string; contractStart: string }[] = [];
+  type CalendarEventData = {
+    date: string;
+    tenantId: string;
+    tenantName: string;
+    propertyTitle: string;
+    contractStart: string;
+    currentRent: number;
+  };
+
+  const fiveYearEvents: CalendarEventData[] = [];
+  const renewalEvents: CalendarEventData[] = [];
 
   for (const t of tenants) {
     if (t.contractStart) {
@@ -28,6 +38,7 @@ async function getEvents(ownerId: string) {
         tenantName: t.fullName,
         propertyTitle: t.property.title,
         contractStart: t.contractStart.toISOString(),
+        currentRent: Number(t.monthlyRent),
       });
     }
 
@@ -39,6 +50,7 @@ async function getEvents(ownerId: string) {
         tenantName: t.fullName,
         propertyTitle: t.property.title,
         contractStart: t.contractStart ? t.contractStart.toISOString() : "",
+        currentRent: Number(t.monthlyRent),
       });
     }
   }
