@@ -1,69 +1,149 @@
 "use client";
 
 import { WordsReveal, FadeInView } from "@/components/motion/Reveal";
+import TiltCard from "@/components/motion/TiltCard";
 
-const FEATURES = [
-  {
-    icon: "📊",
-    color: "from-[#17B6AE] to-[#0d8b84]",
-    title: "Excel ile Toplu İçe Aktarma",
-    desc: "Mevcut mülk ve kiracı listenizi Excel dosyanızdan tek seferde sisteme aktarın. Elle tek tek girmeye gerek yok.",
-  },
-  {
-    icon: "🔔",
-    color: "from-blue-500 to-blue-700",
-    title: "Otomatik Bildirim Sistemi",
-    desc: "Geciken ödemeler, yaklaşan zam dönemleri ve önemli tarihler için anlık bildirim alın — hiçbir şeyi kaçırmayın.",
-  },
-  {
-    icon: "📈",
-    color: "from-amber-500 to-amber-700",
-    title: "Aylık / Yıllık Finansal Raporlar",
-    desc: "Tahsilat oranınızı, mülk bazlı gelir kırılımınızı ve tüm ödeme geçmişinizi tek tıkla raporlayın, Excel'e aktarın.",
-  },
-  {
-    icon: "🗂️",
-    color: "from-violet-500 to-violet-700",
-    title: "Kira Sözleşmelerini Dijital Saklama",
-    desc: "Tüm sözleşme ve evraklarınız güvenli bulutta saklanır, ihtiyaç duyduğunuz anda tek tıkla erişirsiniz.",
-  },
-  {
-    icon: "🏢",
-    color: "from-rose-500 to-rose-700",
-    title: "Mülk & Kiracı Yönetimi",
-    desc: "Tüm taşınmazlarınızı ve kiracılarınızı tek merkezden, doluluk durumuyla birlikte kolayca yönetin.",
-  },
-  {
-    icon: "🧮",
-    color: "from-slate-500 to-slate-700",
-    title: "Kira Artış Hesaplama",
-    desc: "TÜİK verileriyle güncel kira artış oranını otomatik hesaplayın.",
-  },
+const TENANTS = [
+  { initials: "AY", color: "bg-blue-100 text-blue-600", name: "Ayşe Yılmaz", property: "Kadıköy Daire", status: "Ödendi", statusStyle: "bg-emerald-100 text-emerald-600", amount: "18.500 ₺" },
+  { initials: "MK", color: "bg-amber-100 text-amber-600", name: "Mehmet Kara", property: "Beylikdüzü", status: "3 gün geç", statusStyle: "bg-red-100 text-red-600", amount: "22.000 ₺" },
+  { initials: "EÇ", color: "bg-violet-100 text-violet-600", name: "Elif Çelik", property: "Bağdat Cad.", status: "Yarın", statusStyle: "bg-amber-100 text-amber-600", amount: "32.000 ₺" },
+];
+
+const PROPERTIES = [
+  { id: "001", name: "Kadıköy Daire", loc: "İstanbul · 3+1", status: "Kirada" },
+  { id: "002", name: "Beylikdüzü Daire", loc: "İstanbul · 2+1", status: "Kirada" },
+  { id: "003", name: "Bağdat Cad.", loc: "İstanbul · 4+1", status: "Boş" },
+  { id: "004", name: "Çankaya Daire", loc: "Ankara · 2+1", status: "Kirada" },
+  { id: "005", name: "Bornova Daire", loc: "İzmir · 3+1", status: "Kirada" },
 ];
 
 export default function FeatureGrid() {
   return (
     <section id="neler-yapiyoruz" className="bg-gray-50 py-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <WordsReveal
-          as="h2"
-          text="Neler Yapıyoruz?"
-          className="text-3xl font-semibold text-slate-800 text-center mb-12 block"
-        />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {FEATURES.map((f, i) => (
-            <FadeInView key={f.title} delay={i * 0.08}>
-              <div className="group bg-white rounded-3xl border border-gray-100 p-8 h-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${f.color} flex items-center justify-center text-2xl shadow-lg mb-5`}>
-                  {f.icon}
+        <div className="text-center max-w-2xl mx-auto mb-14">
+          <span className="inline-block text-xs font-bold text-[#17B6AE] bg-[#17B6AE]/10 px-4 py-1.5 rounded-full mb-4 uppercase tracking-widest">
+            Neler Yapıyoruz?
+          </span>
+          <WordsReveal
+            as="h2"
+            text="Geleneksel yöntemlere veda — tek panelde her şey."
+            className="text-3xl sm:text-4xl font-bold text-slate-800 leading-tight block"
+          />
+          <p className="text-slate-500 mt-4">
+            Ev sahipleri için tasarlanmış, kullanımı en kolay kira takip programı.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 lg:grid-rows-2 gap-5">
+          {/* Büyük kart: Kiracı Takibi */}
+          <FadeInView className="lg:col-span-2 lg:row-start-1">
+            <TiltCard className="h-full rounded-3xl bg-gradient-to-br from-[#17B6AE]/10 to-[#17B6AE]/[0.03] border border-[#17B6AE]/10 p-8">
+              <div className="flex items-start justify-between mb-6">
+                <div className="w-11 h-11 rounded-2xl bg-white text-[#17B6AE] flex items-center justify-center shadow-sm">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+                  </svg>
                 </div>
-                <h3 className="font-semibold text-slate-800 text-lg mb-2 group-hover:text-[#17B6AE] transition">
-                  {f.title}
-                </h3>
-                <p className="text-sm text-slate-500 leading-relaxed">{f.desc}</p>
+                <span className="text-[10px] font-bold text-[#17B6AE] bg-white px-2.5 py-1 rounded-full uppercase tracking-widest shadow-sm">
+                  En Çok Kullanılan
+                </span>
               </div>
-            </FadeInView>
-          ))}
+              <h3 className="text-xl font-semibold text-slate-800 mb-2">
+                Profesyonel <span className="text-[#17B6AE]">kiracı takibi</span>
+              </h3>
+              <p className="text-sm text-slate-500 mb-6 max-w-md">
+                Tüm kiracıların — ödemeler, sözleşmeler, bakiyeler tek ekranda. Kim ödedi, kim geçti, anında gör.
+              </p>
+              <div className="space-y-2.5">
+                {TENANTS.map((t) => (
+                  <div key={t.name} className="flex items-center justify-between bg-white rounded-2xl px-4 py-3 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <span className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold ${t.color}`}>
+                        {t.initials}
+                      </span>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800">{t.name}</p>
+                        <p className="text-xs text-slate-400">{t.property}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${t.statusStyle}`}>{t.status}</span>
+                      <span className="text-sm font-semibold text-slate-700">{t.amount}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </TiltCard>
+          </FadeInView>
+
+          {/* Sağ, uzun kart: Mülk Yönetimi */}
+          <FadeInView delay={0.1} className="lg:col-start-3 lg:row-span-2">
+            <TiltCard className="h-full rounded-3xl bg-white border border-gray-100 p-8 shadow-sm">
+              <div className="w-11 h-11 rounded-2xl bg-[#17B6AE]/10 text-[#17B6AE] flex items-center justify-center mb-6">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 21V12h6v9" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-slate-800 mb-2">Kapsamlı mülk yönetimi</h3>
+              <p className="text-sm text-slate-500 mb-6">
+                Her mülk için sözleşme, doluluk durumu, kiracı bilgisi — hepsi tek yerde, güvende.
+              </p>
+              <div className="space-y-2">
+                {PROPERTIES.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-3.5 py-2.5">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-bold text-slate-400">{p.id}</span>
+                      <div>
+                        <p className="text-xs font-semibold text-slate-700">{p.name}</p>
+                        <p className="text-[10px] text-slate-400">{p.loc}</p>
+                      </div>
+                    </div>
+                    <span
+                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                        p.status === "Kirada" ? "bg-emerald-100 text-emerald-600" : "bg-slate-200 text-slate-500"
+                      }`}
+                    >
+                      {p.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </TiltCard>
+          </FadeInView>
+
+          {/* Küçük kart: Finansal Raporlama */}
+          <FadeInView delay={0.15} className="lg:row-start-2">
+            <TiltCard className="h-full rounded-3xl bg-white border border-gray-100 p-8 shadow-sm">
+              <div className="w-11 h-11 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center mb-5">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-slate-800 mb-2">Finansal raporlama</h3>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                Aylık ve yıllık gelir raporları, tahsilat oranı — tek tıkla Excel&apos;e aktarın.
+              </p>
+            </TiltCard>
+          </FadeInView>
+
+          {/* Küçük kart: Bulut Tabanlı Erişim */}
+          <FadeInView delay={0.2} className="lg:col-start-2 lg:row-start-2">
+            <TiltCard className="h-full rounded-3xl bg-white border border-gray-100 p-8 shadow-sm">
+              <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center mb-5">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.5 19H9a5 5 0 110-10 6.5 6.5 0 0112.6 2.1A4.5 4.5 0 0117.5 19z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-slate-800 mb-2">Bulut tabanlı erişim</h3>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                Bilgisayar, tablet, telefon — her yerden erişin, veriniz güvende.
+              </p>
+            </TiltCard>
+          </FadeInView>
         </div>
       </div>
     </section>

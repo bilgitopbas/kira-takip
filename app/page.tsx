@@ -9,7 +9,7 @@ import HowItWorks from "@/components/HowItWorks";
 import HeroSection from "@/components/HeroSection";
 import FeatureGrid from "@/components/FeatureGrid";
 import PricingSection from "@/components/PricingSection";
-import { WordsReveal } from "@/components/motion/Reveal";
+import MobileAppSection from "@/components/MobileAppSection";
 
 export default function HomePage() {
   return (
@@ -23,6 +23,9 @@ export default function HomePage() {
 
       {/* RAKAMLARLA MİZAN */}
       <StatsSection />
+
+      {/* MOBİL UYGULAMA */}
+      <MobileAppSection />
 
       {/* SMS & EPOSTA */}
       <NotificationFlow />
@@ -39,12 +42,6 @@ export default function HomePage() {
 
       {/* SSS + İLETİŞİM */}
       <FaqContact />
-
-      {/* CTA */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-        <WordsReveal as="h2" text="Hemen Ücretsiz Deneyin" className="text-3xl font-semibold text-slate-800 mb-4 block" />
-        <p className="text-slate-500 mb-8">45 gün boyunca hiçbir ücret ödemeden tüm özellikleri kullanın.</p>
-      </section>
 
       <Footer />
     </div>
