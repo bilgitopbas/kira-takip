@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from "recharts";
 
 type Props = {
-  data: { ay: string; tutar: number }[];
+  data: { ay: string; tutar: number; borc?: number }[];
 };
 
 const PERIODS = [
@@ -21,7 +21,7 @@ export default function MonthlyIncomeChart({ data }: Props) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-bold text-slate-800">Tahsilat Grafiği</h2>
+        <h2 className="text-sm font-bold text-slate-800">Borç / Tahsilat Grafiği</h2>
         <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1">
           {PERIODS.map((p) => (
             <button
@@ -58,10 +58,15 @@ export default function MonthlyIncomeChart({ data }: Props) {
             />
             <Tooltip
               cursor={{ fill: "#17B6AE", fillOpacity: 0.06 }}
-              formatter={(value) => [`${Number(value).toLocaleString("tr-TR")} ₺`, "Tahsilat"]}
+              formatter={(value, name) => [`${Number(value).toLocaleString("tr-TR")} ₺`, name === "borc" ? "Borç" : "Tahsilat"]}
               contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F0", fontSize: 13 }}
             />
-            <Bar dataKey="tutar" fill="#17B6AE" radius={[6, 6, 0, 0]} maxBarSize={36} />
+            <Legend
+              wrapperStyle={{ fontSize: 12 }}
+              formatter={(value) => (value === "borc" ? "Borç" : "Tahsilat")}
+            />
+            <Bar dataKey="borc" fill="#CBD5E1" radius={[6, 6, 0, 0]} maxBarSize={28} />
+            <Bar dataKey="tutar" fill="#17B6AE" radius={[6, 6, 0, 0]} maxBarSize={28} />
           </BarChart>
         </ResponsiveContainer>
       </div>

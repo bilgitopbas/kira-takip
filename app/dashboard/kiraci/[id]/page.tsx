@@ -237,7 +237,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
     <div>
       <a
         href="/dashboard/kiraci"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-4"
+        className="no-print inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-4"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -261,12 +261,24 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
             </span>
           )}
         </div>
-        <a
-          href={`/dashboard/kiraci/${tenant.id}/duzenle`}
-          className="bg-white border border-gray-200 hover:border-[#17B6AE] text-slate-700 font-semibold px-4 py-2 rounded-xl transition text-sm"
-        >
-          Düzenle
-        </a>
+        <div className="no-print flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="bg-white border border-gray-200 hover:border-[#17B6AE] text-slate-700 font-semibold px-4 py-2 rounded-xl transition text-sm inline-flex items-center gap-1.5"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z" />
+            </svg>
+            Ekstre / Yazdır
+          </button>
+          <a
+            href={`/dashboard/kiraci/${tenant.id}/duzenle`}
+            className="bg-white border border-gray-200 hover:border-[#17B6AE] text-slate-700 font-semibold px-4 py-2 rounded-xl transition text-sm"
+          >
+            Düzenle
+          </a>
+        </div>
       </div>
 
       {error && (
@@ -376,7 +388,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
           <h2 className="text-base font-bold text-slate-800">Ödeme Planı</h2>
           <button
             onClick={openDebtModal}
-            className="bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-4 py-2 rounded-xl transition text-sm"
+            className="no-print bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-4 py-2 rounded-xl transition text-sm"
           >
             Kiracıyı Borçlandır
           </button>
@@ -388,7 +400,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
           </p>
         ) : (
           <>
-            <div className="flex items-center justify-center gap-4 px-6 py-3 border-b border-gray-100 bg-gray-50/50">
+            <div className="no-print flex items-center justify-center gap-4 px-6 py-3 border-b border-gray-100 bg-gray-50/50">
               <button
                 type="button"
                 onClick={() => setPeriodIndex((i) => Math.max(0, i - 1))}
@@ -424,7 +436,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
                   <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider border-r border-gray-100">Ay / Yıl</th>
                   <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider border-r border-gray-100">Tutar</th>
                   <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider border-r border-gray-100">Durum</th>
-                  <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">İşlem</th>
+                  <th className="no-print px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">İşlem</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -449,7 +461,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
                           {DEBT_STATUS_LABELS[effective]}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 text-right">
+                      <td className="no-print px-5 py-3.5 text-right">
                         {effective !== "PAID" && (
                           <button
                             onClick={() => openPayModal(d)}

@@ -28,7 +28,9 @@ async function getStats(ownerId: string) {
     monthCollections,
     yearCollections,
     longRangePayments,
+    longRangeDebts,
     monthDebts,
+    overdueDebts,
   ] = await Promise.all([
     prisma.property.count({ where: { ownerId } }),
     prisma.property.count({ where: { ownerId, isOccupied: true } }),
@@ -46,6 +48,10 @@ async function getStats(ownerId: string) {
       select: { amount: true, paidAt: true },
     }),
     prisma.debt.findMany({
+      where: { tenant: { property: { ownerId } }, dueDate: { gte: fiveYearsAgoStart } },
+      select: { amount: true, dueDate: true },
+    }),
+    prisma.debt.findMany({
       where: { tenant: { property: { ownerId } }, dueDate: { gte: monthStart, lt: monthEnd } },
       select: {
         id: true,
@@ -56,12 +62,23 @@ async function getStats(ownerId: string) {
         tenant: { select: { id: true, fullName: true } },
       },
     }),
+    prisma.debt.findMany({
+      where: {
+        tenant: { property: { ownerId } },
+        status: { not: "PAID" },
+        dueDate: { lt: now },
+      },
+      select: { amount: true, dueDate: true, payments: { select: { amount: true } } },
+    }),
   ]);
 
   const monthlyTotals = new Map<string, number>();
+  const monthlyDebtTotals = new Map<string, number>();
   for (let i = 59; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    monthlyTotals.set(`${d.getFullYear()}-${d.getMonth()}`, 0);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    monthlyTotals.set(key, 0);
+    monthlyDebtTotals.set(key, 0);
   }
   for (const p of longRangePayments) {
     const d = new Date(p.paidAt);
@@ -70,9 +87,20 @@ async function getStats(ownerId: string) {
       monthlyTotals.set(key, monthlyTotals.get(key)! + Number(p.amount));
     }
   }
+  for (const d of longRangeDebts) {
+    const due = new Date(d.dueDate);
+    const key = `${due.getFullYear()}-${due.getMonth()}`;
+    if (monthlyDebtTotals.has(key)) {
+      monthlyDebtTotals.set(key, monthlyDebtTotals.get(key)! + Number(d.amount));
+    }
+  }
   const chartData = Array.from(monthlyTotals.entries()).map(([key, total]) => {
     const [year, month] = key.split("-").map(Number);
-    return { ay: `${MONTH_SHORT[month]} '${String(year).slice(2)}`, tutar: total };
+    return {
+      ay: `${MONTH_SHORT[month]} '${String(year).slice(2)}`,
+      tutar: total,
+      borc: monthlyDebtTotals.get(key) || 0,
+    };
   });
 
   const monthlyPayments = monthDebts.map((d) => ({
@@ -83,15 +111,27 @@ async function getStats(ownerId: string) {
     status: getEffectiveDebtStatus(d),
   }));
 
+  const monthTotalDebt = monthDebts.reduce((sum, d) => sum + Number(d.amount), 0);
+  const monthCollectedAmount = monthCollections._sum.amount ? Number(monthCollections._sum.amount) : 0;
+  const collectionRate = monthTotalDebt > 0 ? Math.min(100, Math.round((monthCollectedAmount / monthTotalDebt) * 100)) : null;
+
+  const overdueRemaining = overdueDebts.reduce((sum, d) => {
+    const paid = d.payments.reduce((s, p) => s + Number(p.amount), 0);
+    return sum + Math.max(0, Number(d.amount) - paid);
+  }, 0);
+
   return {
     propertyCount,
     occupiedCount,
     vacantCount: propertyCount - occupiedCount,
     tenantCount,
-    collected: monthCollections._sum.amount ? Number(monthCollections._sum.amount) : 0,
+    collected: monthCollectedAmount,
     yearlyCollected: yearCollections._sum.amount ? Number(yearCollections._sum.amount) : 0,
     chartData,
     monthlyPayments,
+    collectionRate,
+    overdueCount: overdueDebts.length,
+    overdueAmount: overdueRemaining,
   };
 }
 
@@ -137,24 +177,29 @@ export default async function DashboardPage() {
     yearlyCollected,
     chartData,
     monthlyPayments,
+    collectionRate,
+    overdueCount,
+    overdueAmount,
   } = await getStats(session.userId);
 
   const CARDS = [
     { label: "Toplam Mülk", value: `${propertyCount}`, icon: CARD_ICONS.properties, color: "text-blue-500 bg-blue-50" },
     { label: "Toplam Kiracı", value: `${tenantCount}`, icon: CARD_ICONS.tenants, color: "text-violet-500 bg-violet-50" },
-    { label: "Bu Ay Tahsilat", value: `${collected.toLocaleString("tr-TR")} ₺`, icon: CARD_ICONS.month, color: "text-[#17B6AE] bg-[#17B6AE]/8" },
+    { label: "Bu Ay Tahsilat", value: `${collected.toLocaleString("tr-TR")} ₺`, icon: CARD_ICONS.month, color: "text-[#17B6AE] bg-[#17B6AE]/8", progress: collectionRate },
     { label: "Bu Yıl Toplam Kira Geliri", value: `${yearlyCollected.toLocaleString("tr-TR")} ₺`, icon: CARD_ICONS.year, color: "text-amber-500 bg-amber-50" },
   ];
 
   const primaryBtn = "inline-flex bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm";
   const secondaryBtn = "inline-flex bg-white hover:bg-gray-50 text-slate-700 font-semibold px-4 py-2.5 rounded-xl transition text-sm border border-gray-200";
 
+  const updatedAt = new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+
   return (
     <div>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Kontrol Paneli</h1>
-          <p className="text-sm text-slate-500 mt-1">Mülklerinizin genel durumu</p>
+          <p className="text-sm text-slate-500 mt-1">Mülklerinizin genel durumu · Son güncelleme: Bugün {updatedAt}</p>
         </div>
         <div className="flex items-center gap-2">
           <MulkEkleButton className={primaryBtn} />
@@ -162,6 +207,14 @@ export default async function DashboardPage() {
           <TahsilatEkleButton className={secondaryBtn} />
         </div>
       </div>
+
+      {overdueCount > 0 && (
+        <div className="flex items-center gap-3 bg-white rounded-xl border-l-4 border-orange-400 border-y border-r border-gray-100 shadow-sm px-5 py-3 mb-6">
+          <span className="text-orange-500 text-sm font-bold">Toplam Gecikmiş</span>
+          <span className="text-sm font-bold text-slate-800">{overdueAmount.toLocaleString("tr-TR")} ₺</span>
+          <span className="text-xs text-slate-400">({overdueCount} kayıt)</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
         {CARDS.map((card) => (
@@ -174,6 +227,17 @@ export default async function DashboardPage() {
             </div>
             <p className="text-xs font-medium text-slate-500 mb-1">{card.label}</p>
             <p className="text-2xl font-bold text-slate-900">{card.value}</p>
+            {card.progress !== undefined && card.progress !== null && (
+              <div className="mt-3">
+                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-[#17B6AE] rounded-full transition-all"
+                    style={{ width: `${card.progress}%` }}
+                  />
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">%{card.progress} Tahsilat</p>
+              </div>
+            )}
           </div>
         ))}
       </div>
