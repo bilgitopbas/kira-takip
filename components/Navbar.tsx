@@ -4,12 +4,11 @@ import { useState } from "react";
 import Image from "next/image";
 
 const MENU_ITEMS = [
-  { label: "Neler Yapıyoruz?", href: "#neler-yapiyoruz" },
-  { label: "Paketlerimiz", href: "#paketler" },
-  { label: "Referanslarımız", href: "#referanslar" },
-  { label: "S.S.S.", href: "#sss" },
+  { label: "Neler Yapıyoruz?", href: "/#neler-yapiyoruz" },
+  { label: "Paketlerimiz", href: "/#paketler" },
+  { label: "Referanslarımız", href: "/#referanslar" },
+  { label: "S.S.S. & İletişim", href: "/#sss" },
   { label: "Blog", href: "/blog" },
-  { label: "İletişim", href: "#iletisim" },
 ];
 
 export default function Navbar() {

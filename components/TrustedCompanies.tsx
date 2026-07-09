@@ -9,7 +9,7 @@ export default function TrustedCompanies() {
   const doubled = [...LOGOS, ...LOGOS];
 
   return (
-    <section className="py-14 bg-white border-y border-gray-100 overflow-hidden">
+    <section id="referanslar" className="py-14 bg-white border-y border-gray-100 overflow-hidden">
       <p className="text-center text-sm text-slate-400 mb-8 font-medium tracking-wide uppercase">
         Güvenle Tercih Eden Firmalar
       </p>

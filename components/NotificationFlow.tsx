@@ -24,12 +24,9 @@ export default function NotificationFlow() {
           <span className="inline-block text-xs font-medium text-[#17B6AE] bg-[#17B6AE]/10 px-3 py-1 rounded-full mb-3">
             SMS &amp; E-POSTA ENTEGRASYONU
           </span>
-          <h2 className="text-3xl font-semibold text-white mb-2">
-            Otomatik Bildirim &amp; Hatırlatma
+          <h2 className="text-3xl font-semibold text-white mb-4">
+            Bildirim &amp; Hatırlatma
           </h2>
-          <div className="flex items-center gap-2 mb-4">
-            <span className="bg-[#17B6AE] text-white text-xs font-bold px-2.5 py-1 rounded-md">OTOMATİK</span>
-          </div>
           <p className="text-slate-400 leading-relaxed">
             Kira hatırlatması, ödeme onayı, sözleşme bilgilendirmesi — Mizan Mülk
             Yönetimi tüm bu bildirimleri otomatik olarak SMS ve e-posta ile
