@@ -36,10 +36,10 @@ export default function FeatureGrid() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 lg:grid-rows-2 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 lg:grid-rows-2 gap-5 lg:items-start">
           {/* Büyük kart: Kiracı Takibi */}
           <FadeInView className="lg:col-span-2 lg:row-start-1">
-            <TiltCard className="h-full rounded-3xl bg-gradient-to-br from-[#17B6AE]/10 to-[#17B6AE]/[0.03] border border-[#17B6AE]/10 p-8">
+            <TiltCard className="rounded-3xl bg-gradient-to-br from-[#17B6AE]/10 to-[#17B6AE]/[0.03] border border-[#17B6AE]/10 p-8">
               <div className="flex items-start justify-between mb-6">
                 <div className="w-11 h-11 rounded-2xl bg-white text-[#17B6AE] flex items-center justify-center shadow-sm">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -82,7 +82,7 @@ export default function FeatureGrid() {
 
           {/* Sağ, uzun kart: Mülk Yönetimi */}
           <FadeInView delay={0.1} className="lg:col-start-3 lg:row-span-2">
-            <TiltCard className="h-full rounded-3xl bg-white border border-gray-100 p-8 shadow-sm">
+            <TiltCard className="rounded-3xl bg-white border border-gray-100 p-8 shadow-sm">
               <div className="w-11 h-11 rounded-2xl bg-[#17B6AE]/10 text-[#17B6AE] flex items-center justify-center mb-6">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" />
@@ -118,13 +118,13 @@ export default function FeatureGrid() {
 
           {/* Küçük kart: Finansal Raporlama */}
           <FadeInView delay={0.15} className="lg:row-start-2">
-            <TiltCard className="h-full rounded-3xl bg-white border border-gray-100 p-8 shadow-sm">
-              <div className="w-11 h-11 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center mb-5">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <TiltCard className="rounded-3xl bg-white border border-gray-100 p-6 shadow-sm">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center mb-4">
+                <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-slate-800 mb-2">Finansal raporlama</h3>
+              <h3 className="text-base font-semibold text-slate-800 mb-1.5">Finansal raporlama</h3>
               <p className="text-sm text-slate-500 leading-relaxed">
                 Aylık ve yıllık gelir raporları, tahsilat oranı — tek tıkla Excel&apos;e aktarın.
               </p>
@@ -133,13 +133,13 @@ export default function FeatureGrid() {
 
           {/* Küçük kart: Bulut Tabanlı Erişim */}
           <FadeInView delay={0.2} className="lg:col-start-2 lg:row-start-2">
-            <TiltCard className="h-full rounded-3xl bg-white border border-gray-100 p-8 shadow-sm">
-              <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center mb-5">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <TiltCard className="rounded-3xl bg-white border border-gray-100 p-6 shadow-sm">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center mb-4">
+                <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17.5 19H9a5 5 0 110-10 6.5 6.5 0 0112.6 2.1A4.5 4.5 0 0117.5 19z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-slate-800 mb-2">Bulut tabanlı erişim</h3>
+              <h3 className="text-base font-semibold text-slate-800 mb-1.5">Bulut tabanlı erişim</h3>
               <p className="text-sm text-slate-500 leading-relaxed">
                 Bilgisayar, tablet, telefon — her yerden erişin, veriniz güvende.
               </p>
