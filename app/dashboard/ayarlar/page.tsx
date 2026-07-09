@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Profile = { fullName: string; email: string; phone: string | null };
 type Preferences = {
@@ -25,6 +26,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 }
 
 export default function AyarlarPage() {
+  const router = useRouter();
   const [profile, setProfile] = useState<Profile>({ fullName: "", email: "", phone: "" });
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileSaving, setProfileSaving] = useState(false);
@@ -35,6 +37,11 @@ export default function AyarlarPage() {
   const [passwordMsg, setPasswordMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const [prefs, setPrefs] = useState<Preferences | null>(null);
+
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleteStep, setDeleteStep] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   useEffect(() => {
     fetch("/api/dashboard/profile")
@@ -109,6 +116,22 @@ export default function AyarlarPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ [key]: value }),
     });
+  }
+
+  async function handleDeleteAccount() {
+    setDeleteError("");
+    if (deleteConfirmText !== "HESABIMI SİL") {
+      setDeleteError('Onaylamak için kutuya tam olarak "HESABIMI SİL" yazın.');
+      return;
+    }
+    setDeleting(true);
+    const res = await fetch("/api/dashboard/profile/delete-account", { method: "DELETE" });
+    if (!res.ok) {
+      setDeleting(false);
+      setDeleteError("Hesap silinemedi, lütfen tekrar deneyin.");
+      return;
+    }
+    router.push("/login");
   }
 
   return (
@@ -265,6 +288,55 @@ export default function AyarlarPage() {
                   <p className="text-xs text-slate-500">Her ay sonunda toplam tahsilat özeti bildirimi al.</p>
                 </div>
                 <Toggle checked={prefs.notifyMonthlySummary} onChange={(v) => updatePref("notifyMonthlySummary", v)} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-6 lg:col-span-2">
+          <h2 className="text-base font-bold text-red-600 mb-1">Tehlikeli Bölge</h2>
+          <p className="text-sm text-slate-500 mb-4">
+            Hesabınızı sildiğinizde tüm mülkleriniz, kiracılarınız, borç/tahsilat kayıtlarınız ve davet ettiğiniz
+            kullanıcılar kalıcı olarak silinir. Bu işlem geri alınamaz.
+          </p>
+
+          {!deleteStep ? (
+            <button
+              type="button"
+              onClick={() => setDeleteStep(true)}
+              className="text-sm px-5 py-2.5 rounded-xl font-semibold bg-red-50 text-red-600 hover:bg-red-100 transition"
+            >
+              Hesabı Sil
+            </button>
+          ) : (
+            <div className="bg-red-50 border border-red-100 rounded-xl p-4 max-w-md">
+              <p className="text-sm text-red-700 font-medium mb-3">
+                Emin misiniz? Onaylamak için aşağıya <strong>HESABIMI SİL</strong> yazın.
+              </p>
+              {deleteError && <p className="text-xs text-red-600 mb-2">{deleteError}</p>}
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-red-200 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-red-300"
+                placeholder="HESABIMI SİL"
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleDeleteAccount}
+                  disabled={deleting}
+                  className="text-sm px-4 py-2 rounded-lg font-semibold bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white transition"
+                >
+                  {deleting ? "Siliniyor..." : "Kalıcı Olarak Sil"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setDeleteStep(false); setDeleteConfirmText(""); setDeleteError(""); }}
+                  className="text-sm px-4 py-2 rounded-lg font-semibold bg-white text-slate-600 hover:bg-gray-50 border border-gray-200 transition"
+                >
+                  Vazgeç
+                </button>
               </div>
             </div>
           )}

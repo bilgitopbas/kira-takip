@@ -7,24 +7,32 @@ export async function POST(req: NextRequest) {
     const { email, password } = await req.json();
 
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
+    if (user) {
+      const valid = await verifyPassword(password, user.passwordHash);
+      if (!valid) {
+        return NextResponse.json({ error: "E-posta veya şifre hatalı." }, { status: 401 });
+      }
+      await createSession({ userId: user.id, role: user.role });
+      return NextResponse.json({ success: true, role: user.role });
+    }
+
+    const member = await prisma.accountMember.findUnique({ where: { email } });
+    if (member && member.passwordHash) {
+      const valid = await verifyPassword(password, member.passwordHash);
+      if (!valid) {
+        return NextResponse.json({ error: "E-posta veya şifre hatalı." }, { status: 401 });
+      }
+      await createSession({ userId: member.ownerId, role: "CUSTOMER" });
+      return NextResponse.json({ success: true, role: "CUSTOMER" });
+    }
+    if (member && !member.passwordHash) {
       return NextResponse.json(
-        { error: "E-posta veya şifre hatalı." },
+        { error: "Daveti henüz kabul etmediniz. Lütfen e-postanızdaki bağlantıyla şifrenizi belirleyin." },
         { status: 401 }
       );
     }
 
-    const valid = await verifyPassword(password, user.passwordHash);
-    if (!valid) {
-      return NextResponse.json(
-        { error: "E-posta veya şifre hatalı." },
-        { status: 401 }
-      );
-    }
-
-    await createSession({ userId: user.id, role: user.role });
-
-    return NextResponse.json({ success: true, role: user.role });
+    return NextResponse.json({ error: "E-posta veya şifre hatalı." }, { status: 401 });
   } catch (err) {
     console.error(err);
     return NextResponse.json(

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import TiltCard from "@/components/motion/TiltCard";
 
 const ACCOUNT_TYPES = [
@@ -124,17 +125,19 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-10">
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-6">
-          <TiltCard>
-            <Image
-              src="/logo-yeni-white.png"
-              alt="Mizan Mülk Yönetimi"
-              width={311}
-              height={100}
-              className="h-14 w-auto object-contain drop-shadow-[0_8px_16px_rgba(23,182,174,0.25)]"
-              style={{ width: "auto" }}
-              priority
-            />
-          </TiltCard>
+          <Link href="/">
+            <TiltCard>
+              <Image
+                src="/logo-yeni-white.png"
+                alt="Mizan Mülk Yönetimi"
+                width={311}
+                height={100}
+                className="h-14 w-auto object-contain drop-shadow-[0_8px_16px_rgba(23,182,174,0.25)]"
+                style={{ width: "auto" }}
+                priority
+              />
+            </TiltCard>
+          </Link>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">

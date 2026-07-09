@@ -66,6 +66,24 @@ export async function sendWelcomeEmail(to: string, fullName: string) {
   await sendMail(to, "🎉 Hoş Geldiniz - MizanMülk", html);
 }
 
+export async function sendInviteEmail(to: string, inviterName: string, inviteLink: string) {
+  const html = emailShell(`
+    <h1 style="font-size:20px; color:#0f172a; margin:0 0 16px;">Davet Edildiniz</h1>
+    <p style="font-size:14px; color:#334155; line-height:1.6;">Merhaba,</p>
+    <p style="font-size:14px; color:#334155; line-height:1.6;">
+      <strong>${inviterName}</strong>, MizanMülk Yönetimi hesabını sizinle birlikte kullanmak için sizi davet etti.
+      Bu davet ile aynı hesaptaki mülkleri, kiracıları ve tahsilat bilgilerini kendi e-posta adresiniz ve
+      belirleyeceğiniz şifre ile görüntüleyip yönetebileceksiniz.
+    </p>
+    <p style="font-size:14px; color:#334155; line-height:1.6;">Başlamak için aşağıdaki bağlantıya tıklayıp şifrenizi belirleyin. Bu bağlantı 48 saat süreyle geçerlidir.</p>
+    <p style="text-align:center; margin:24px 0;">
+      <a href="${inviteLink}" style="background:#17B6AE; color:#ffffff; text-decoration:none; font-weight:600; font-size:14px; padding:12px 24px; border-radius:10px; display:inline-block;">Şifremi Belirle ve Katıl</a>
+    </p>
+    <p style="font-size:12px; color:#94a3b8; line-height:1.6;">Bu daveti siz talep etmediyseniz bu e-postayı görmezden gelebilirsiniz.</p>
+  `);
+  await sendMail(to, `${inviterName} sizi MizanMülk hesabına davet etti`, html);
+}
+
 export async function sendPasswordResetEmail(to: string, fullName: string, resetLink: string) {
   const html = emailShell(`
     <h1 style="font-size:20px; color:#0f172a; margin:0 0 16px;">Şifre Sıfırlama Talebi</h1>

@@ -23,11 +23,7 @@ const ICONS = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
     </svg>
   ),
-  reports: (
-    <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
-    </svg>
-  ),
+  reports: <span className="text-[18px] font-bold leading-none w-[18px] inline-flex items-center justify-center">₺</span>,
   bell: (
     <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -146,7 +142,7 @@ export default function DashboardSidebar() {
 
   return (
     <aside className="no-print w-64 sticky top-0 h-screen bg-white dark:bg-slate-900 border-r border-gray-100 dark:border-slate-800 flex flex-col shadow-sm transition-colors">
-      <div className="h-20 flex items-center px-6 border-b border-gray-100 dark:border-slate-800 flex-shrink-0">
+      <Link href="/dashboard" className="h-20 flex items-center px-6 border-b border-gray-100 dark:border-slate-800 flex-shrink-0">
         <Image
           src="/logo-yeni-white.png"
           alt="Mizan"
@@ -155,7 +151,7 @@ export default function DashboardSidebar() {
           className="h-11 w-auto object-contain drop-shadow-[0_6px_14px_rgba(23,182,174,0.3)]"
           style={{ width: "auto" }}
         />
-      </div>
+      </Link>
 
       <nav className="flex-1 px-3 py-4 overflow-y-auto">
         {NAV_ITEMS.map((item) => (
@@ -175,6 +171,28 @@ export default function DashboardSidebar() {
             )}
           </a>
         ))}
+
+        <a
+          href="/dashboard/asistan"
+          className={`relative flex items-center gap-3 px-4 py-2.5 rounded-xl text-[15px] font-semibold mb-1 mt-1 overflow-hidden transition-all ${
+            p === "/dashboard/asistan"
+              ? "bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-md shadow-violet-500/25"
+              : "bg-gradient-to-r from-violet-50 to-fuchsia-50 dark:from-violet-500/10 dark:to-fuchsia-500/10 text-violet-600 dark:text-violet-300 hover:from-violet-100 hover:to-fuchsia-100"
+          }`}
+        >
+          <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.9L12 3z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 15l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8L19 15z" />
+          </svg>
+          <span className="flex-1">Mizan Asistan</span>
+          <span
+            className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-widest ${
+              p === "/dashboard/asistan" ? "bg-white/20 text-white" : "bg-violet-500/10 text-violet-500"
+            }`}
+          >
+            Beta
+          </span>
+        </a>
       </nav>
 
       <div className="relative px-3 pb-4 pt-3 border-t border-gray-100 dark:border-slate-800 flex-shrink-0" ref={menuRef}>
@@ -201,6 +219,19 @@ export default function DashboardSidebar() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9c.23.5.7.83 1.25.83H21a2 2 0 010 4h-.09c-.55 0-1.02.33-1.25.83z" />
               </svg>
               Ayarlar
+            </Link>
+
+            <Link
+              href="/dashboard/kullanici-ekle"
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition mb-0.5"
+            >
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                <circle cx="8.5" cy="7" r="4" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M20 8v6M23 11h-6" />
+              </svg>
+              Kullanıcı Ekle
             </Link>
 
             <div className="flex items-center justify-between px-3 py-2.5">

@@ -2,6 +2,7 @@ import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendPasswordResetEmail } from "@/lib/mail";
+import { resolveAppUrl } from "@/lib/url";
 
 const GENERIC_SUCCESS = {
   success: true,
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
       data: { passwordResetToken: token, passwordResetExpires: expires },
     });
 
-    const resetLink = `${req.nextUrl.origin}/reset-password?token=${token}`;
+    const resetLink = `${resolveAppUrl(req)}/reset-password?token=${token}`;
 
     try {
       await sendPasswordResetEmail(user.email, user.fullName, resetLink);
