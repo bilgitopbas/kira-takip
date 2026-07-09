@@ -4,17 +4,17 @@ import { WordsReveal, FadeInView } from "@/components/motion/Reveal";
 import TiltCard from "@/components/motion/TiltCard";
 
 const TENANTS = [
-  { initials: "AY", color: "bg-blue-100 text-blue-600", name: "Ayşe Yılmaz", property: "Kadıköy Daire", status: "Ödendi", statusStyle: "bg-emerald-100 text-emerald-600", amount: "18.500 ₺" },
-  { initials: "MK", color: "bg-amber-100 text-amber-600", name: "Mehmet Kara", property: "Beylikdüzü", status: "3 gün geç", statusStyle: "bg-red-100 text-red-600", amount: "22.000 ₺" },
-  { initials: "EÇ", color: "bg-violet-100 text-violet-600", name: "Elif Çelik", property: "Bağdat Cad.", status: "Yarın", statusStyle: "bg-amber-100 text-amber-600", amount: "32.000 ₺" },
+  { initials: "DA", color: "bg-blue-100 text-blue-600", name: "Deniz Aydın", property: "Ataşehir Daire", status: "Ödendi", statusStyle: "bg-emerald-100 text-emerald-600", amount: "24.000 ₺" },
+  { initials: "BŞ", color: "bg-amber-100 text-amber-600", name: "Burak Şahin", property: "Maslak Ofis", status: "2 gün geç", statusStyle: "bg-red-100 text-red-600", amount: "41.500 ₺" },
+  { initials: "CY", color: "bg-violet-100 text-violet-600", name: "Cemre Yıldız", property: "Nişantaşı Daire", status: "Yarın", statusStyle: "bg-amber-100 text-amber-600", amount: "29.000 ₺" },
 ];
 
 const PROPERTIES = [
-  { id: "001", name: "Kadıköy Daire", loc: "İstanbul · 3+1", status: "Kirada" },
-  { id: "002", name: "Beylikdüzü Daire", loc: "İstanbul · 2+1", status: "Kirada" },
-  { id: "003", name: "Bağdat Cad.", loc: "İstanbul · 4+1", status: "Boş" },
-  { id: "004", name: "Çankaya Daire", loc: "Ankara · 2+1", status: "Kirada" },
-  { id: "005", name: "Bornova Daire", loc: "İzmir · 3+1", status: "Kirada" },
+  { id: "101", name: "Ataşehir Daire", loc: "İstanbul · 3+1", status: "Kirada" },
+  { id: "102", name: "Maslak Ofis", loc: "İstanbul · 120m²", status: "Kirada" },
+  { id: "103", name: "Nişantaşı Daire", loc: "İstanbul · 2+1", status: "Kirada" },
+  { id: "104", name: "Konak Daire", loc: "İzmir · 3+1", status: "Boş" },
+  { id: "105", name: "Alsancak Ofis", loc: "İzmir · 90m²", status: "Kirada" },
 ];
 
 export default function FeatureGrid() {
@@ -27,11 +27,12 @@ export default function FeatureGrid() {
           </span>
           <WordsReveal
             as="h2"
-            text="Geleneksel yöntemlere veda — tek panelde her şey."
+            text="Karmaşık tablolara değil, tek panele ihtiyacınız var."
             className="text-3xl sm:text-4xl font-bold text-slate-800 leading-tight block"
           />
           <p className="text-slate-500 mt-4">
-            Ev sahipleri için tasarlanmış, kullanımı en kolay kira takip programı.
+            Kiracı takibinden tahsilata, mülk yönetiminden raporlamaya — Mizan Mülk Yönetimi
+            tüm süreçlerinizi tek ekranda birleştirir, size sadece kontrol etmek kalır.
           </p>
         </div>
 

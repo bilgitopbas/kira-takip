@@ -1,7 +1,6 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import TrustedCompanies from "@/components/TrustedCompanies";
-import NotificationFlow from "@/components/NotificationFlow";
 import Testimonials from "@/components/Testimonials";
 import FaqContact from "@/components/FaqContact";
 import StatsSection from "@/components/StatsSection";
@@ -10,6 +9,7 @@ import HeroSection from "@/components/HeroSection";
 import FeatureGrid from "@/components/FeatureGrid";
 import PricingSection from "@/components/PricingSection";
 import MobileAppSection from "@/components/MobileAppSection";
+import BlogPreviewSection from "@/components/BlogPreviewSection";
 
 export default function HomePage() {
   return (
@@ -18,17 +18,14 @@ export default function HomePage() {
 
       <HeroSection />
 
+      {/* MOBİL UYGULAMA */}
+      <MobileAppSection />
+
       {/* NELER YAPIYORUZ */}
       <FeatureGrid />
 
       {/* RAKAMLARLA MİZAN */}
       <StatsSection />
-
-      {/* MOBİL UYGULAMA */}
-      <MobileAppSection />
-
-      {/* SMS & EPOSTA */}
-      <NotificationFlow />
 
       {/* NASIL KULLANILIR */}
       <HowItWorks />
@@ -39,6 +36,9 @@ export default function HomePage() {
       {/* REFERANSLAR */}
       <TrustedCompanies />
       <Testimonials />
+
+      {/* BLOG */}
+      <BlogPreviewSection />
 
       {/* SSS + İLETİŞİM */}
       <FaqContact />
