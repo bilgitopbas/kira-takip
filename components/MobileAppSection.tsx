@@ -27,6 +27,77 @@ function GooglePlayLogo() {
   );
 }
 
+const MOCK_TENANTS = [
+  { name: "Deniz Aydın", property: "Ataşehir Daire", status: "Ödendi", style: "bg-emerald-100 text-emerald-600" },
+  { name: "Burak Şahin", property: "Maslak Ofis", status: "Bekliyor", style: "bg-amber-100 text-amber-600" },
+  { name: "Cemre Yıldız", property: "Nişantaşı Daire", status: "Ödendi", style: "bg-emerald-100 text-emerald-600" },
+];
+
+function PhoneAppMockup() {
+  const occupancy = 78;
+  const circumference = 2 * Math.PI * 34;
+  const offset = circumference * (1 - occupancy / 100);
+
+  return (
+    <div className="relative w-[260px] h-[540px]">
+      <div className="absolute inset-0 bg-black rounded-[3rem] p-3 shadow-2xl">
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-full z-10" />
+        <div className="relative w-full h-full bg-gray-50 rounded-[2.3rem] overflow-hidden pt-9 px-4 pb-5 flex flex-col">
+          <div className="flex items-center gap-2 mb-5">
+            <div className="w-7 h-7 rounded-lg bg-[#17B6AE]/10 text-[#17B6AE] flex items-center justify-center text-xs font-bold">
+              M
+            </div>
+            <span className="text-xs font-semibold text-slate-700">Mizan Mülk Yönetimi</span>
+            <span className="ml-auto w-6 h-6 rounded-full bg-white shadow-sm flex items-center justify-center text-[#17B6AE] text-xs">
+              🔔
+            </span>
+          </div>
+
+          <div className="bg-white rounded-2xl p-4 shadow-sm mb-4">
+            <p className="text-[11px] text-slate-400 mb-1">Bu Ay Tahsilat</p>
+            <p className="text-xl font-bold text-slate-800 mb-2">102.000 ₺</p>
+            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-full bg-[#17B6AE] rounded-full" style={{ width: "85%" }} />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-4 shadow-sm mb-4 flex items-center gap-4">
+            <div className="relative w-16 h-16 shrink-0">
+              <svg viewBox="0 0 80 80" className="w-full h-full -rotate-90">
+                <circle cx="40" cy="40" r="34" fill="none" stroke="#F1F5F9" strokeWidth="8" />
+                <circle
+                  cx="40" cy="40" r="34" fill="none" stroke="#17B6AE" strokeWidth="8"
+                  strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-xs font-bold text-slate-800">%{occupancy}</span>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-slate-700">Doluluk Oranı</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">7 / 9 mülk dolu</p>
+            </div>
+          </div>
+
+          <p className="text-[11px] font-semibold text-slate-400 mb-2 uppercase tracking-wide">Kiracılar</p>
+          <div className="space-y-2 flex-1">
+            {MOCK_TENANTS.map((t) => (
+              <div key={t.name} className="flex items-center justify-between bg-white rounded-xl px-3 py-2.5 shadow-sm">
+                <div>
+                  <p className="text-xs font-semibold text-slate-700">{t.name}</p>
+                  <p className="text-[10px] text-slate-400">{t.property}</p>
+                </div>
+                <span className={`text-[10px] font-semibold px-2 py-1 rounded-full ${t.style}`}>{t.status}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MobileAppSection() {
   return (
     <section className="bg-slate-900 py-24 overflow-hidden">
@@ -70,18 +141,7 @@ export default function MobileAppSection() {
         </div>
 
         <FadeInView className="flex justify-center">
-          <div className="relative w-[260px] h-[540px]">
-            <div className="absolute inset-0 bg-black rounded-[3rem] p-3 shadow-2xl">
-              <div className="absolute top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-full z-10" />
-              <div className="relative w-full h-full bg-white rounded-[2.3rem] overflow-hidden">
-                <img
-                  src="/mobile-preview.png"
-                  alt="Mizan Mülk Yönetimi Mobil Uygulama"
-                  className="w-full h-full object-cover object-top"
-                />
-              </div>
-            </div>
-          </div>
+          <PhoneAppMockup />
         </FadeInView>
       </div>
     </section>

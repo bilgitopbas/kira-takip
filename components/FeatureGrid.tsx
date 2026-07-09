@@ -12,16 +12,14 @@ const TENANTS = [
 const PROPERTIES = [
   { id: "101", name: "Ataşehir Daire", loc: "İstanbul · 3+1", status: "Kirada" },
   { id: "102", name: "Maslak Ofis", loc: "İstanbul · 120m²", status: "Kirada" },
-  { id: "103", name: "Nişantaşı Daire", loc: "İstanbul · 2+1", status: "Kirada" },
-  { id: "104", name: "Konak Daire", loc: "İzmir · 3+1", status: "Boş" },
-  { id: "105", name: "Alsancak Ofis", loc: "İzmir · 90m²", status: "Kirada" },
+  { id: "103", name: "Nişantaşı Daire", loc: "İstanbul · 2+1", status: "Boş" },
 ];
 
 export default function FeatureGrid() {
   return (
-    <section id="neler-yapiyoruz" className="bg-gray-50 py-20">
+    <section id="neler-yapiyoruz" className="bg-gray-50 py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-14">
+        <div className="text-center max-w-2xl mx-auto mb-10">
           <span className="inline-block text-xs font-bold text-[#17B6AE] bg-[#17B6AE]/10 px-4 py-1.5 rounded-full mb-4 uppercase tracking-widest">
             Neler Yapıyoruz?
           </span>
