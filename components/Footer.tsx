@@ -55,11 +55,11 @@ export default function Footer() {
           <div>
             <div className="bg-white inline-block rounded-xl p-3 mb-4">
               <Image
-                src="/logo.png"
+                src="/logo-yeni-white.png"
                 alt="Mizan Mülk Yönetimi"
-                width={180}
-                height={54}
-                className="h-14 w-auto object-contain"
+                width={311}
+                height={100}
+                className="h-12 w-auto object-contain"
                 style={{ width: "auto" }}
               />
             </div>

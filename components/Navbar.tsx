@@ -23,11 +23,11 @@ export default function Navbar() {
             <span className="absolute -left-4 -top-2 w-24 h-24 bg-[#17B6AE]/20 rounded-full blur-2xl pointer-events-none" />
             <TiltCard className="relative">
               <Image
-                src="/logo.png"
+                src="/logo-yeni-white.png"
                 alt="Mizan Mülk Yönetimi"
-                width={260}
-                height={78}
-                className="h-16 sm:h-20 w-auto object-contain drop-shadow-[0_8px_16px_rgba(23,182,174,0.25)]"
+                width={311}
+                height={100}
+                className="h-14 sm:h-16 w-auto object-contain drop-shadow-[0_8px_16px_rgba(23,182,174,0.25)]"
                 style={{ width: "auto" }}
                 priority
               />
