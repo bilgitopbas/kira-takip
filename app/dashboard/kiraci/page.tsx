@@ -75,7 +75,10 @@ export default function KiraciListPage() {
           <p className="text-sm text-slate-500 mt-1">Mülklerinizdeki tüm kiracılar.</p>
         </div>
         <div className="flex items-center gap-2">
-          <ExcelIceAktarButton className="inline-flex bg-white hover:bg-gray-50 text-slate-700 font-semibold px-5 py-2.5 rounded-xl transition text-sm border border-gray-200" />
+          <ExcelIceAktarButton
+            className="inline-flex bg-white hover:bg-gray-50 text-slate-700 font-semibold px-5 py-2.5 rounded-xl transition text-sm border border-gray-200"
+            onComplete={loadTenants}
+          />
           <KiraciEkleButton
             className="inline-flex bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-5 py-2.5 rounded-xl transition text-sm"
             onCreated={loadTenants}

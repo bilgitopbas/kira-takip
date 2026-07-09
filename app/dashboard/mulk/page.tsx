@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import MulkEkleButton from "@/components/MulkEkleButton";
+import ExcelIceAktarButton from "@/components/ExcelIceAktarButton";
 
 type Property = {
   id: string;
@@ -59,7 +60,13 @@ export default function MulkListPage() {
           <h1 className="text-2xl font-bold text-slate-800">Mülklerim</h1>
           <p className="text-sm text-slate-500 mt-1">Kayıtlı tüm mülkleriniz.</p>
         </div>
-        <MulkEkleButton className="inline-flex bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-5 py-2.5 rounded-xl transition text-sm" />
+        <div className="flex items-center gap-2">
+          <ExcelIceAktarButton
+            className="inline-flex bg-white hover:bg-gray-50 text-slate-700 font-semibold px-5 py-2.5 rounded-xl transition text-sm border border-gray-200"
+            onComplete={loadProperties}
+          />
+          <MulkEkleButton className="inline-flex bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-5 py-2.5 rounded-xl transition text-sm" />
+        </div>
       </div>
 
       {error && (
