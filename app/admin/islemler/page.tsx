@@ -8,7 +8,7 @@ type Customer = {
   email: string;
   city: string;
   wantsManagement: boolean;
-  subscriptionStatus: "TRIAL" | "ACTIVE" | "PASSIVE";
+  subscriptionStatus: "TRIAL" | "ACTIVE" | "PASSIVE" | "DANISMAN";
 };
 
 export default function AdminIslemlerPage() {
@@ -20,13 +20,14 @@ export default function AdminIslemlerPage() {
       .then((r) => r.json())
       .then((d) => {
         const all = d.customers || [];
-        setCustomers(all.filter((c: Customer) => c.wantsManagement === true));
+        setCustomers(all.filter((c: Customer) => c.subscriptionStatus === "DANISMAN"));
         setLoading(false);
       });
   }, []);
 
-  function goPanele(id: string) {
-    window.location.href = "/dashboard?as=" + id;
+  async function goPanele(id: string) {
+    const res = await fetch(`/api/admin/customers/${id}/impersonate`, { method: "POST" });
+    if (res.ok) window.location.href = "/dashboard";
   }
 
   return (

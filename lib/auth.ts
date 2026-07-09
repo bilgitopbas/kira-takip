@@ -17,6 +17,7 @@ export async function verifyPassword(password: string, hash: string) {
 type SessionPayload = {
   userId: string;
   role: "ADMIN" | "CUSTOMER";
+  impersonatedBy?: string;
 };
 
 export async function createSession(payload: SessionPayload) {

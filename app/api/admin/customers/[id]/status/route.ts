@@ -14,7 +14,7 @@ export async function PATCH(
   const { id } = await params;
   const { status } = await req.json();
 
-  if (!["ACTIVE", "PASSIVE", "TRIAL"].includes(status)) {
+  if (!["ACTIVE", "PASSIVE", "TRIAL", "DANISMAN"].includes(status)) {
     return NextResponse.json({ error: "Geçersiz durum." }, { status: 400 });
   }
 

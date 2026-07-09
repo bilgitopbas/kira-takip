@@ -9,7 +9,7 @@ type Customer = {
   city: string;
   phone: string | null;
   wantsManagement: boolean;
-  subscriptionStatus: "TRIAL" | "ACTIVE" | "PASSIVE";
+  subscriptionStatus: "TRIAL" | "ACTIVE" | "PASSIVE" | "DANISMAN";
   trialEndsAt: string;
   createdAt: string;
   propertyLimit: number | null;
@@ -19,9 +19,15 @@ const STATUS_STYLES = {
   TRIAL: "bg-amber-50 text-amber-600 border border-amber-100",
   ACTIVE: "bg-emerald-50 text-emerald-600 border border-emerald-100",
   PASSIVE: "bg-red-50 text-red-500 border border-red-100",
+  DANISMAN: "bg-violet-50 text-violet-600 border border-violet-100",
 };
 
-const STATUS_LABELS = { TRIAL: "Deneme", ACTIVE: "Aktif", PASSIVE: "Pasif" };
+const STATUS_LABELS = {
+  TRIAL: "Mizan Ücretsiz",
+  ACTIVE: "Mizan Pro",
+  PASSIVE: "Pasif",
+  DANISMAN: "Mizan Danışman",
+};
 
 export default function AdminKullanicilarPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -39,12 +45,11 @@ export default function AdminKullanicilarPage() {
 
   useEffect(() => { loadCustomers(); }, []);
 
-  async function toggleStatus(id: string, current: string) {
-    const newStatus = current === "PASSIVE" ? "ACTIVE" : "PASSIVE";
+  async function changeTier(id: string, status: string) {
     await fetch(`/api/admin/customers/${id}/status`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus }),
+      body: JSON.stringify({ status }),
     });
     loadCustomers();
   }
@@ -69,6 +74,11 @@ export default function AdminKullanicilarPage() {
     loadCustomers();
   }
 
+  async function goToPanel(id: string) {
+    const res = await fetch(`/api/admin/customers/${id}/impersonate`, { method: "POST" });
+    if (res.ok) window.location.href = "/dashboard";
+  }
+
   const filtered = customers.filter((c) =>
     c.fullName.toLowerCase().includes(search.toLowerCase()) ||
     c.email.toLowerCase().includes(search.toLowerCase())
@@ -78,8 +88,8 @@ export default function AdminKullanicilarPage() {
     <div>
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Kullanicilar</h1>
-          <p className="text-sm text-slate-400 mt-1">Tum kayitli musteriler.</p>
+          <h1 className="text-2xl font-bold text-slate-800">Kullanıcılar</h1>
+          <p className="text-sm text-slate-400 mt-1">Tüm kayıtlı müşteriler.</p>
         </div>
         <div className="relative">
           <input
@@ -101,19 +111,19 @@ export default function AdminKullanicilarPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-left">
-                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Kullanici</th>
-                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Sehir</th>
-                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Durum</th>
-                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Deneme Bitis</th>
+                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Kullanıcı</th>
+                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Şehir</th>
+                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Müşteri Tipi</th>
+                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Deneme Bitiş</th>
                 <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Mizan Pro Limiti</th>
-                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Islemler</th>
+                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">İşlemler</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={6} className="text-center text-slate-400 py-12 text-sm">
-                    Kullanici bulunamadi.
+                    Kullanıcı bulunamadı.
                   </td>
                 </tr>
               )}
@@ -134,9 +144,15 @@ export default function AdminKullanicilarPage() {
                   </td>
                   <td className="px-5 py-4 text-slate-500">{c.city || "—"}</td>
                   <td className="px-5 py-4">
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${STATUS_STYLES[c.subscriptionStatus]}`}>
-                      {STATUS_LABELS[c.subscriptionStatus]}
-                    </span>
+                    <select
+                      value={c.subscriptionStatus}
+                      onChange={(e) => changeTier(c.id, e.target.value)}
+                      className={`text-xs px-2.5 py-1.5 rounded-full font-medium border cursor-pointer ${STATUS_STYLES[c.subscriptionStatus]}`}
+                    >
+                      {Object.entries(STATUS_LABELS).map(([v, l]) => (
+                        <option key={v} value={v}>{l}</option>
+                      ))}
+                    </select>
                   </td>
                   <td className="px-5 py-4 text-slate-500 text-xs">
                     {new Date(c.trialEndsAt).toLocaleDateString("tr-TR")}
@@ -168,19 +184,18 @@ export default function AdminKullanicilarPage() {
                             ? "bg-[#17B6AE]/10 text-[#17B6AE] border-[#17B6AE]/30 hover:bg-[#17B6AE]/20"
                             : "bg-gray-50 text-slate-400 border-gray-200 hover:bg-gray-100"
                         }`}
+                        title="Profesyonel Mülk Yönetimi Hizmeti talebi"
                       >
-                        Danisман
+                        Yönetim Talebi
                       </button>
-                      <button
-                        onClick={() => toggleStatus(c.id, c.subscriptionStatus)}
-                        className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition ${
-                          c.subscriptionStatus === "PASSIVE"
-                            ? "bg-emerald-500 text-white hover:bg-emerald-600"
-                            : "bg-red-500 text-white hover:bg-red-600"
-                        }`}
-                      >
-                        {c.subscriptionStatus === "PASSIVE" ? "Aktif Et" : "Pasif Et"}
-                      </button>
+                      {c.subscriptionStatus === "DANISMAN" && (
+                        <button
+                          onClick={() => goToPanel(c.id)}
+                          className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-[#17B6AE] text-white hover:bg-[#149891] transition"
+                        >
+                          Panele Gir
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

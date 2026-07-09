@@ -16,6 +16,7 @@ enum SubscriptionStatus {
   TRIAL
   ACTIVE
   PASSIVE
+  DANISMAN
 }
 
 enum PaymentStatus {
@@ -305,6 +306,8 @@ enum NotificationType {
   FIVE_YEAR_REACHED
   MONTHLY_SUMMARY
   ANNOUNCEMENT
+  NEW_CUSTOMER
+  IYZICO_PAYMENT
 }
 
 model Notification {

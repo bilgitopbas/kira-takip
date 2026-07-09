@@ -1,7 +1,20 @@
 import { prisma } from "@/lib/prisma";
 
 async function getStats() {
-  const [userCount, propertyCount, tenantCount, recentUsers] = await Promise.all([
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
+
+  const [
+    userCount,
+    propertyCount,
+    tenantCount,
+    recentUsers,
+    trialCount,
+    activeCount,
+    danismanCount,
+    passiveCount,
+    churnedTrialCount,
+  ] = await Promise.all([
     prisma.user.count({ where: { role: "CUSTOMER" } }),
     prisma.property.count(),
     prisma.tenant.count(),
@@ -11,24 +24,53 @@ async function getStats() {
       take: 5,
       select: { id: true, fullName: true, email: true, subscriptionStatus: true, createdAt: true },
     }),
+    prisma.user.count({ where: { role: "CUSTOMER", subscriptionStatus: "TRIAL" } }),
+    prisma.user.count({ where: { role: "CUSTOMER", subscriptionStatus: "ACTIVE" } }),
+    prisma.user.count({ where: { role: "CUSTOMER", subscriptionStatus: "DANISMAN" } }),
+    prisma.user.count({ where: { role: "CUSTOMER", subscriptionStatus: "PASSIVE" } }),
+    prisma.user.count({
+      where: {
+        role: "CUSTOMER",
+        subscriptionStatus: { in: ["TRIAL", "PASSIVE"] },
+        trialEndsAt: { gte: thirtyDaysAgo, lte: now },
+      },
+    }),
   ]);
-  return { userCount, propertyCount, tenantCount, recentUsers };
+
+  return {
+    userCount,
+    propertyCount,
+    tenantCount,
+    recentUsers,
+    tierCounts: { TRIAL: trialCount, ACTIVE: activeCount, DANISMAN: danismanCount, PASSIVE: passiveCount },
+    churnedTrialCount,
+  };
 }
 
 const STATUS_STYLES = {
   TRIAL: "bg-amber-50 text-amber-600 border border-amber-100",
   ACTIVE: "bg-emerald-50 text-emerald-600 border border-emerald-100",
   PASSIVE: "bg-red-50 text-red-500 border border-red-100",
+  DANISMAN: "bg-violet-50 text-violet-600 border border-violet-100",
 };
 
 const STATUS_LABELS = {
-  TRIAL: "Deneme",
-  ACTIVE: "Aktif",
+  TRIAL: "Mizan Ücretsiz",
+  ACTIVE: "Mizan Pro",
   PASSIVE: "Pasif",
+  DANISMAN: "Mizan Danışman",
+};
+
+const TIER_BAR_STYLES: Record<string, string> = {
+  TRIAL: "bg-amber-400",
+  ACTIVE: "bg-emerald-500",
+  DANISMAN: "bg-violet-500",
+  PASSIVE: "bg-red-400",
 };
 
 export default async function AdminDashboard() {
-  const { userCount, propertyCount, tenantCount, recentUsers } = await getStats();
+  const { userCount, propertyCount, tenantCount, recentUsers, tierCounts, churnedTrialCount } = await getStats();
+  const tierTotal = Math.max(1, tierCounts.TRIAL + tierCounts.ACTIVE + tierCounts.DANISMAN + tierCounts.PASSIVE);
 
   const CARDS = [
     {
@@ -64,6 +106,16 @@ export default async function AdminDashboard() {
       ),
       color: "text-violet-500 bg-violet-50",
     },
+    {
+      label: "Son 30 Günde Kaybedilen Deneme",
+      value: churnedTrialCount,
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13 17h8m0 0l-3-3m3 3l-3 3M3 7h8m0 0L8 4m3 3L8 10" />
+        </svg>
+      ),
+      color: "text-orange-500 bg-orange-50",
+    },
   ];
 
   return (
@@ -75,7 +127,7 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Stat kartları */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         {CARDS.map((card) => (
           <div
             key={card.label}
@@ -90,6 +142,31 @@ export default async function AdminDashboard() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Müşteri Tipi Dağılımı */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-8">
+        <h2 className="text-sm font-semibold text-slate-700 mb-4">Müşteri Tipi Dağılımı</h2>
+        <div className="w-full h-3 rounded-full overflow-hidden flex mb-4 bg-gray-100">
+          {(Object.keys(tierCounts) as (keyof typeof tierCounts)[]).map((key) => (
+            <div
+              key={key}
+              className={TIER_BAR_STYLES[key]}
+              style={{ width: `${(tierCounts[key] / tierTotal) * 100}%` }}
+            />
+          ))}
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {(Object.keys(tierCounts) as (keyof typeof tierCounts)[]).map((key) => (
+            <div key={key} className="flex items-center gap-2">
+              <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${TIER_BAR_STYLES[key]}`} />
+              <div>
+                <p className="text-xs text-slate-400">{STATUS_LABELS[key]}</p>
+                <p className="text-sm font-bold text-slate-700">{tierCounts[key]}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Son kayıtlar */}

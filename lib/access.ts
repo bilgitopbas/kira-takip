@@ -6,7 +6,7 @@ const PRICE_PER_PROPERTY = 75;
 export type AccessState = "TRIAL" | "GRACE" | "LOCKED" | "ACTIVE";
 
 export function computeAccessState(user: {
-  subscriptionStatus: "TRIAL" | "ACTIVE" | "PASSIVE";
+  subscriptionStatus: "TRIAL" | "ACTIVE" | "PASSIVE" | "DANISMAN";
   trialEndsAt: Date;
 }): { state: AccessState; trialDaysLeft: number; graceDaysLeft: number; graceEndsAt: Date } {
   const trialEnd = new Date(user.trialEndsAt);
@@ -16,7 +16,7 @@ export function computeAccessState(user: {
   if (user.subscriptionStatus === "PASSIVE") {
     return { state: "LOCKED", trialDaysLeft: 0, graceDaysLeft: 0, graceEndsAt: graceEnd };
   }
-  if (user.subscriptionStatus === "ACTIVE") {
+  if (user.subscriptionStatus === "ACTIVE" || user.subscriptionStatus === "DANISMAN") {
     return { state: "ACTIVE", trialDaysLeft: 0, graceDaysLeft: 0, graceEndsAt: graceEnd };
   }
 

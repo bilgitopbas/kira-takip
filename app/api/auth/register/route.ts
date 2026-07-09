@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, createSession } from "@/lib/auth";
 import { sendWelcomeEmail } from "@/lib/mail";
+import { notifyAdminsNewCustomer } from "@/lib/adminNotifications";
 
 export async function POST(req: NextRequest) {
   try {
@@ -71,6 +72,12 @@ export async function POST(req: NextRequest) {
       await sendWelcomeEmail(user.email, user.fullName);
     } catch (mailErr) {
       console.error("Hoş geldin e-postası gönderilemedi:", mailErr);
+    }
+
+    try {
+      await notifyAdminsNewCustomer(user);
+    } catch (notifyErr) {
+      console.error("Admin bildirimi oluşturulamadı:", notifyErr);
     }
 
     return NextResponse.json({ success: true });
