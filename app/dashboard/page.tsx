@@ -158,9 +158,7 @@ const CARD_ICONS = {
     </svg>
   ),
   year: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
-    </svg>
+    <span className="text-lg font-bold leading-none">₺</span>
   ),
 };
 
@@ -202,7 +200,7 @@ export default async function DashboardPage() {
     <div>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Kontrol Paneli</h1>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Kontrol Paneli</h1>
           <p className="text-sm text-slate-500 mt-1">Mülklerinizin genel durumu · Son güncelleme: Bugün {updatedAt}</p>
         </div>
         <div className="flex items-center gap-2">

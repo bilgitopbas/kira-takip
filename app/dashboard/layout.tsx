@@ -23,7 +23,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   });
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] flex">
+    <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-950 flex transition-colors">
       <DashboardSidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <DashboardHeader fullName={user?.fullName || ""} />
