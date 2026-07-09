@@ -12,6 +12,7 @@ type Customer = {
   subscriptionStatus: "TRIAL" | "ACTIVE" | "PASSIVE";
   trialEndsAt: string;
   createdAt: string;
+  propertyLimit: number | null;
 };
 
 const STATUS_STYLES = {
@@ -26,6 +27,7 @@ export default function AdminKullanicilarPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [limitInputs, setLimitInputs] = useState<Record<string, string>>({});
 
   async function loadCustomers() {
     setLoading(true);
@@ -52,6 +54,17 @@ export default function AdminKullanicilarPage() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ wantsManagement: !current }),
+    });
+    loadCustomers();
+  }
+
+  async function saveLimit(id: string) {
+    const value = limitInputs[id];
+    if (!value) return;
+    await fetch(`/api/admin/customers/${id}/subscription`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ propertyCount: Number(value) }),
     });
     loadCustomers();
   }
@@ -92,13 +105,14 @@ export default function AdminKullanicilarPage() {
                 <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Sehir</th>
                 <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Durum</th>
                 <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Deneme Bitis</th>
+                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Mizan Pro Limiti</th>
                 <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Islemler</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="text-center text-slate-400 py-12 text-sm">
+                  <td colSpan={6} className="text-center text-slate-400 py-12 text-sm">
                     Kullanici bulunamadi.
                   </td>
                 </tr>
@@ -126,6 +140,24 @@ export default function AdminKullanicilarPage() {
                   </td>
                   <td className="px-5 py-4 text-slate-500 text-xs">
                     {new Date(c.trialEndsAt).toLocaleDateString("tr-TR")}
+                  </td>
+                  <td className="px-5 py-4">
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min={1}
+                        placeholder={c.propertyLimit ? String(c.propertyLimit) : "—"}
+                        value={limitInputs[c.id] ?? ""}
+                        onChange={(e) => setLimitInputs({ ...limitInputs, [c.id]: e.target.value })}
+                        className="w-16 px-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
+                      />
+                      <button
+                        onClick={() => saveLimit(c.id)}
+                        className="text-xs px-2.5 py-1.5 rounded-lg font-semibold bg-[#17B6AE]/10 text-[#17B6AE] hover:bg-[#17B6AE]/20 transition"
+                      >
+                        Kaydet
+                      </button>
+                    </div>
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-2 justify-end">

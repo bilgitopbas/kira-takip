@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-type Profile = { fullName: string; email: string; phone: string | null; wantsManagement?: boolean };
+type Profile = { fullName: string; email: string; phone: string | null };
 type Preferences = {
   notifyPaymentOverdue: boolean;
   notifyRenewalUpcoming: boolean;
@@ -35,8 +35,6 @@ export default function AyarlarPage() {
   const [passwordMsg, setPasswordMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const [prefs, setPrefs] = useState<Preferences | null>(null);
-  const [wantsManagement, setWantsManagement] = useState(false);
-  const [managementSaving, setManagementSaving] = useState(false);
 
   useEffect(() => {
     fetch("/api/dashboard/profile")
@@ -44,7 +42,6 @@ export default function AyarlarPage() {
       .then((d) => {
         if (d.user) {
           setProfile(d.user);
-          setWantsManagement(Boolean(d.user.wantsManagement));
         }
         setProfileLoading(false);
       });
@@ -101,17 +98,6 @@ export default function AyarlarPage() {
     }
     setPasswordForm({ currentPassword: "", newPassword: "", newPasswordRepeat: "" });
     setPasswordMsg({ type: "success", text: "Şifreniz güncellendi." });
-  }
-
-  async function updateWantsManagement(value: boolean) {
-    setWantsManagement(value);
-    setManagementSaving(true);
-    await fetch("/api/dashboard/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ wantsManagement: value }),
-    });
-    setManagementSaving(false);
   }
 
   async function updatePref(key: keyof Preferences, value: boolean) {
@@ -282,21 +268,6 @@ export default function AyarlarPage() {
               </div>
             </div>
           )}
-        </div>
-
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 lg:col-span-2">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h2 className="text-base font-bold text-slate-800 mb-1">Profesyonel Mülk Yönetimi Hizmeti</h2>
-              <p className="text-sm text-slate-500 max-w-xl">
-                Bu hizmeti seçerseniz, ekibimiz sizin adınıza mülk ve kiracı yönetiminde destek sağlar —
-                kiracı takibi, tahsilat hatırlatmaları ve sözleşme süreçlerini sizin yerinize yönetebiliriz.
-                Şu an ücretsiz olarak sunulmaktadır.
-              </p>
-            </div>
-            <Toggle checked={wantsManagement} onChange={updateWantsManagement} />
-          </div>
-          {managementSaving && <p className="text-xs text-slate-400 mt-2">Kaydediliyor...</p>}
         </div>
       </div>
     </div>

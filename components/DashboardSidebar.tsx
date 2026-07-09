@@ -28,6 +28,19 @@ export default function DashboardSidebar() {
         <Image src="/logo.png" alt="Mizan" width={140} height={42} className="h-9 w-auto object-contain" style={{width:"auto"}} />
       </div>
       <nav className="flex-1 px-3 py-4 overflow-y-auto">
+        <a
+          href="/dashboard/mizan-pro"
+          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-bold mb-2 transition-all ${
+            p.startsWith("/dashboard/mizan-pro")
+              ? "bg-gradient-to-r from-[#17B6AE] to-[#0f9089] text-white shadow-lg shadow-[#17B6AE]/30"
+              : "bg-gradient-to-r from-[#17B6AE]/10 to-[#17B6AE]/5 text-[#0f9089] hover:from-[#17B6AE]/20 hover:to-[#17B6AE]/10 shadow-sm"
+          }`}
+        >
+          <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          Mizan Pro
+        </a>
         <a href="/dashboard" className={lc("/dashboard",true)}>Ana Sayfa</a>
         <a href="/dashboard/takvim" className={lc("/dashboard/takvim",true)}>Takvim</a>
         <a href="/dashboard/mulk" className={lc("/dashboard/mulk",true)}>Mülklerim</a>

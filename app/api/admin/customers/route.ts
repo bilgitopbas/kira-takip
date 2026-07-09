@@ -24,5 +24,15 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json({ customers });
+  const subscriptions = await prisma.subscription.findMany({
+    where: { userId: { in: customers.map((c) => c.id) } },
+  });
+  const subByUser = new Map(subscriptions.map((s) => [s.userId, s]));
+
+  const withPlan = customers.map((c) => ({
+    ...c,
+    propertyLimit: subByUser.get(c.id)?.propertyCount || null,
+  }));
+
+  return NextResponse.json({ customers: withPlan });
 }

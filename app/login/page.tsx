@@ -13,7 +13,6 @@ export default function LoginPage() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [illustrationFailed, setIllustrationFailed] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -38,25 +37,23 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex bg-gray-50">
-      {/* Sol: Form */}
-      <div className="w-full lg:w-[52%] flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-md">
-          <div className="flex justify-center mb-6">
-            <TiltCard>
-              <Image
-                src="/logo-yeni-white.png"
-                alt="Mizan Mülk Yönetimi"
-                width={311}
-                height={100}
-                className="h-14 w-auto object-contain drop-shadow-[0_8px_16px_rgba(23,182,174,0.25)]"
-                style={{ width: "auto" }}
-                priority
-              />
-            </TiltCard>
-          </div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-10">
+      <div className="w-full max-w-md">
+        <div className="flex justify-center mb-6">
+          <TiltCard>
+            <Image
+              src="/logo-yeni-white.png"
+              alt="Mizan Mülk Yönetimi"
+              width={311}
+              height={100}
+              className="h-14 w-auto object-contain drop-shadow-[0_8px_16px_rgba(23,182,174,0.25)]"
+              style={{ width: "auto" }}
+              priority
+            />
+          </TiltCard>
+        </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
             <h1 className="text-2xl font-semibold text-slate-800 mb-6 text-center">Giriş Yap</h1>
 
             {error && (
@@ -104,22 +101,7 @@ export default function LoginPage() {
               Hesabınız yok mu?{" "}
               <a href="/register" className="text-[#17B6AE] font-medium">Kayıt Ol</a>
             </p>
-          </div>
         </div>
-      </div>
-
-      {/* Sağ: Görsel Panel */}
-      <div className="hidden lg:flex w-[48%] items-center justify-center bg-gradient-to-br from-[#17B6AE]/15 via-[#17B6AE]/5 to-white relative overflow-hidden">
-        <div className="absolute w-96 h-96 bg-[#17B6AE]/20 rounded-full blur-3xl -top-20 -right-20" />
-        <div className="absolute w-72 h-72 bg-[#17B6AE]/10 rounded-full blur-3xl bottom-0 left-0" />
-        {!illustrationFailed && (
-          <img
-            src="/register-illustration.png"
-            alt="Mizan Mülk Yönetimi"
-            className="relative z-10 max-w-[85%] max-h-[80%] object-contain"
-            onError={() => setIllustrationFailed(true)}
-          />
-        )}
       </div>
     </div>
   );

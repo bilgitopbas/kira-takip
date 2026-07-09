@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getEffectiveDebtStatus } from "@/lib/debtStatus";
 import { getFiveYearDate, getRenewalNotificationDate, toDateKey } from "@/lib/calendarEvents";
+import { getAccessStateForUser } from "@/lib/access";
 
 async function createIfMissing(data: {
   userId: string;
@@ -25,6 +26,9 @@ async function createIfMissing(data: {
 }
 
 export async function generateNotificationsForOwner(ownerId: string) {
+  const access = await getAccessStateForUser(ownerId);
+  if (!access || access.state === "LOCKED") return;
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 

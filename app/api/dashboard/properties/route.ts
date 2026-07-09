@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { requireWriteAccess, checkPropertyLimit } from "@/lib/access";
 
 export async function GET() {
   const session = await getSession();
@@ -21,6 +22,15 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Yetkisiz erişim." }, { status: 401 });
+  }
+
+  const access = await requireWriteAccess(session.userId);
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: 403 });
+  }
+  const limit = await checkPropertyLimit(session.userId);
+  if (!limit.ok) {
+    return NextResponse.json({ error: limit.error }, { status: 403 });
   }
 
   const { title, address, city, district, squareMeters, propertyType, notes, isOccupied } =

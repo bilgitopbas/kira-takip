@@ -7,7 +7,9 @@ import MonthlyPaymentsPie from "@/components/MonthlyPaymentsPie";
 import MulkEkleButton from "@/components/MulkEkleButton";
 import KiraciEkleButton from "@/components/KiraciEkleButton";
 import TahsilatEkleButton from "@/components/TahsilatEkleButton";
+import TrialBanner from "@/components/TrialBanner";
 import { getEffectiveDebtStatus } from "@/lib/debtStatus";
+import { getAccessStateForUser } from "@/lib/access";
 
 const MONTH_SHORT = [
   "Oca", "Sub", "Mar", "Nis", "May", "Haz",
@@ -182,6 +184,8 @@ export default async function DashboardPage() {
     overdueAmount,
   } = await getStats(session.userId);
 
+  const access = await getAccessStateForUser(session.userId);
+
   const CARDS = [
     { label: "Toplam Mülk", value: `${propertyCount}`, icon: CARD_ICONS.properties, color: "text-blue-500 bg-blue-50" },
     { label: "Toplam Kiracı", value: `${tenantCount}`, icon: CARD_ICONS.tenants, color: "text-violet-500 bg-violet-50" },
@@ -207,6 +211,10 @@ export default async function DashboardPage() {
           <TahsilatEkleButton className={secondaryBtn} />
         </div>
       </div>
+
+      {access && (
+        <TrialBanner state={access.state} trialDaysLeft={access.trialDaysLeft} graceDaysLeft={access.graceDaysLeft} />
+      )}
 
       {overdueCount > 0 && (
         <div className="flex items-center gap-3 bg-white rounded-xl border-l-4 border-orange-400 border-y border-r border-gray-100 shadow-sm px-5 py-3 mb-6">

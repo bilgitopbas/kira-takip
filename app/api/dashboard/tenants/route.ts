@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { saveUploadedFile } from "@/lib/uploads";
 import { generateMonthlyDebts } from "@/lib/debts";
 import { parseTenantFormData } from "@/lib/tenantForm";
+import { requireWriteAccess } from "@/lib/access";
 
 export async function GET() {
   const session = await getSession();
@@ -24,6 +25,11 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Yetkisiz erişim." }, { status: 401 });
+  }
+
+  const access = await requireWriteAccess(session.userId);
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: 403 });
   }
 
   const formData = await req.formData();
