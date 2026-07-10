@@ -1,15 +1,16 @@
 const TESTIMONIALS = [
   {
-    name: "Şükrü Özgül",
-    role: "Özgül Trailer",
-    photo: "/photo-ozgul.jpg",
+    name: "AHMED AL-NASERI",
+    role: "Mülk Sahibi",
+    photo: "/photo-ahmed.jpg",
+    photoZoom: true,
     text: "İşimiz gereği sürekli seyahat ediyorum. Eskiden kira takibi, ödemeler ve sözleşmeler ciddi zaman alıyordu. Mizan Mülk Yönetimi ile tüm mülklerimi tek bir uygulama üzerinden takip edebiliyorum.",
   },
   {
     name: "Mevlüt Topbaş",
     role: "Opt. Dr. — Genel Cerrahi Uzmanı",
     photo: "/photo-topbas.jpg",
-    text: "Mizan Mülk Yönetimi benim için ciddi bir kolaylık sağladı. Gayrimenkullerle ilgili süreçleri düzenli, şeffaf ve sistemli şekilde takip edebiliyorum.",
+    text: "Mizan Profesyonel Mülk Yönetimi benim için ciddi bir kolaylık sağladı. Gayrimenkullerle ilgili süreçleri düzenli, şeffaf ve sistemli şekilde takip edebiliyorum.",
   },
   {
     name: "Hasan Çıbık",
@@ -37,11 +38,13 @@ export default function Testimonials() {
             >
               <div className="flex items-center gap-4">
                 {t.photo ? (
-                  <img
-                    src={t.photo}
-                    alt={t.name}
-                    className="w-16 h-16 rounded-2xl object-cover object-top shadow-sm flex-shrink-0"
-                  />
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-sm flex-shrink-0">
+                    <img
+                      src={t.photo}
+                      alt={t.name}
+                      className={`w-full h-full object-cover object-top ${t.photoZoom ? "scale-125" : ""}`}
+                    />
+                  </div>
                 ) : (
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#17B6AE] to-[#0d8b84] flex items-center justify-center text-white font-bold text-lg flex-shrink-0 shadow-sm">
                     {t.initials}
