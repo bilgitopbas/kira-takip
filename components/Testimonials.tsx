@@ -16,7 +16,7 @@ const TESTIMONIALS = [
     role: "Mülk Sahibi",
     photo: null,
     initials: "HÇ",
-    text: "Eski usul yöntemlerle sözleşme tarihi takip etmek, kim ödedi, kim gecikti diye Excel tutmak tam bir kabustu. Mizan Mülk Yönetimi sayesinde artık ne fiziki bir evrak arıyorum ne de manuel olarak mesaj atmak zorunda kalıyorum.",
+    text: "Eski usul yöntemlerle sözleşme tarihi takip etmek, kim ödedi, kim gecikti diye Excel tutmak çok karışıktı. Mizan Mülk Yönetimi uygulaması ile fiziki evraklara rahatlıkla erişebiliyor finans raporları ile mülkümün değerini analiz edebiliyorum.",
   },
 ];
 

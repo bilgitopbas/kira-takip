@@ -7,7 +7,7 @@ const FAQS = [
   {
     icon: (<svg viewBox="0 0 48 48" fill="none" className="w-10 h-10"><circle cx="24" cy="24" r="24" fill="#17B6AE" fillOpacity="0.10"/><path d="M16 20h16M16 24h10" stroke="#17B6AE" strokeWidth="2.5" strokeLinecap="round"/><circle cx="34" cy="34" r="7" fill="#17B6AE"/><path d="M34 31v3.5l2 1.5" stroke="white" strokeWidth="1.8" strokeLinecap="round"/></svg>),
     q: "Fiyatlandırma nasıl çalışıyor?",
-    a: "Kademeli mülk bazlı fiyatlandırma uyguluyoruz — detaylar için yukarıdaki Fiyatlandırma bölümüne göz atın. Tüm planlar 45 günlük ücretsiz denemeyle gelir.",
+    a: "Aylık mülk başına 75 TL karşılığında tüm özelliklerden yararlanabilirsiniz. Tüm planlar 45 günlük ücretsiz denemeyle gelir.",
   },
   {
     icon: (<svg viewBox="0 0 48 48" fill="none" className="w-10 h-10"><circle cx="24" cy="24" r="24" fill="#17B6AE" fillOpacity="0.10"/><path d="M24 14v10l6 4" stroke="#17B6AE" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="24" cy="24" r="10" stroke="#17B6AE" strokeWidth="2.2"/></svg>),
@@ -27,7 +27,7 @@ const FAQS = [
   {
     icon: (<svg viewBox="0 0 48 48" fill="none" className="w-10 h-10"><circle cx="24" cy="24" r="24" fill="#17B6AE" fillOpacity="0.10"/><path d="M24 14c-4.4 0-8 3.6-8 8 0 3 1.6 5.6 4 7v3h8v-3c2.4-1.4 4-4 4-7 0-4.4-3.6-8-8-8z" stroke="#17B6AE" strokeWidth="2.2" strokeLinejoin="round"/><path d="M20 32h8" stroke="#17B6AE" strokeWidth="2" strokeLinecap="round"/></svg>),
     q: "Profesyonel Mülk Yönetimi hizmeti nedir?",
-    a: "Kayıt sırasında bu hizmeti seçerseniz, ekibimiz sizin adınıza mülk ve kiracı yönetiminde destek sağlayabilir. Kiracı takibi, tahsilat hatırlatmaları ve sözleşme süreçlerini sizin yerinize yönetebiliriz. Şu an ücretsiz olarak sunulmaktadır.",
+    a: "Kayıt sırasında bu hizmeti seçerseniz, ekibimiz sizin adınıza mülk ve kiracı yönetiminde destek sağlayabilir. Kiracı takibi, tahsilat hatırlatmaları ve sözleşme süreçlerini sizin yerinize yönetebiliriz.",
   },
   {
     icon: (<svg viewBox="0 0 48 48" fill="none" className="w-10 h-10"><circle cx="24" cy="24" r="24" fill="#17B6AE" fillOpacity="0.10"/><rect x="17" y="11" width="14" height="26" rx="4" stroke="#17B6AE" strokeWidth="2.2"/><circle cx="24" cy="33" r="1.5" fill="#17B6AE"/></svg>),
