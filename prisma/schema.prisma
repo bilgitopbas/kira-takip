@@ -151,6 +151,7 @@ model Property {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@index([ownerId, createdAt])
   @@map("properties")
 }
 
@@ -190,6 +191,7 @@ model Tenant {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  @@index([propertyId])
   @@map("tenants")
 }
 
@@ -210,6 +212,8 @@ model Debt {
   updatedAt   DateTime      @updatedAt
 
   @@unique([tenantId, year, month])
+  @@index([tenantId])
+  @@index([dueDate])
   @@map("debts")
 }
 
@@ -229,6 +233,8 @@ model Payment {
 
   createdAt   DateTime @default(now())
 
+  @@index([tenantId])
+  @@index([paidAt])
   @@map("payments")
 }
 
@@ -296,6 +302,7 @@ model SupportTicket {
   status      SupportTicketStatus @default(OPEN)
   createdAt   DateTime            @default(now())
 
+  @@index([userId])
   @@map("support_tickets")
 }
 
@@ -324,6 +331,7 @@ model Notification {
   createdAt DateTime         @default(now())
 
   @@unique([userId, dedupeKey])
+  @@index([userId])
   @@map("notifications")
 }
 

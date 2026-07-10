@@ -42,7 +42,7 @@ export default function TahsilatForm({ onSuccess, onCancel }: { onSuccess: () =>
   useEffect(() => {
     async function load() {
       setLoadingTenants(true);
-      const res = await fetch("/api/dashboard/tenants");
+      const res = await fetch("/api/dashboard/tenants?all=1");
       const data = await res.json();
       setTenants(data.tenants || []);
       setLoadingTenants(false);

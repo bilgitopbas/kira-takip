@@ -35,6 +35,7 @@ export async function generateNotificationsForOwner(ownerId: string) {
   const owner = await prisma.user.findUnique({
     where: { id: ownerId },
     select: {
+      createdAt: true,
       notifyPaymentOverdue: true,
       notifyRenewalUpcoming: true,
       notifyFiveYear: true,
@@ -42,6 +43,10 @@ export async function generateNotificationsForOwner(ownerId: string) {
     },
   });
   if (!owner) return;
+
+  // Kayıt tarihinden önce gerçekleşmiş olaylar için geriye dönük bildirim üretilmez.
+  const cutoff = new Date(owner.createdAt);
+  cutoff.setHours(0, 0, 0, 0);
 
   const tenants = await prisma.tenant.findMany({
     where: { property: { ownerId } },
@@ -69,7 +74,7 @@ export async function generateNotificationsForOwner(ownerId: string) {
         const oneDayAfter = new Date(due);
         oneDayAfter.setDate(oneDayAfter.getDate() + 1);
 
-        if (today >= oneDayAfter && getEffectiveDebtStatus(debt) !== "PAID") {
+        if (oneDayAfter >= cutoff && today >= oneDayAfter && getEffectiveDebtStatus(debt) !== "PAID") {
           await createIfMissing({
             userId: ownerId,
             type: "PAYMENT_OVERDUE",
@@ -89,7 +94,7 @@ export async function generateNotificationsForOwner(ownerId: string) {
       if (renewalDate) {
         renewalDate.setHours(0, 0, 0, 0);
         const latest = dueDates.reduce((max, d) => (d > max ? d : max));
-        if (today >= renewalDate) {
+        if (renewalDate >= cutoff && today >= renewalDate) {
           await createIfMissing({
             userId: ownerId,
             type: "RENEWAL_UPCOMING",
@@ -110,7 +115,7 @@ export async function generateNotificationsForOwner(ownerId: string) {
       const oneMonthBefore = new Date(fiveYearDate);
       oneMonthBefore.setMonth(oneMonthBefore.getMonth() - 1);
 
-      if (today >= threeMonthsBefore) {
+      if (threeMonthsBefore >= cutoff && today >= threeMonthsBefore) {
         await createIfMissing({
           userId: ownerId,
           type: "FIVE_YEAR_3_MONTHS",
@@ -120,7 +125,7 @@ export async function generateNotificationsForOwner(ownerId: string) {
           dedupeKey: `five-year-3m:${tenant.id}`,
         });
       }
-      if (today >= oneMonthBefore) {
+      if (oneMonthBefore >= cutoff && today >= oneMonthBefore) {
         await createIfMissing({
           userId: ownerId,
           type: "FIVE_YEAR_1_MONTH",
@@ -130,7 +135,7 @@ export async function generateNotificationsForOwner(ownerId: string) {
           dedupeKey: `five-year-1m:${tenant.id}`,
         });
       }
-      if (today >= fiveYearDate) {
+      if (fiveYearDate >= cutoff && today >= fiveYearDate) {
         await createIfMissing({
           userId: ownerId,
           type: "FIVE_YEAR_REACHED",
@@ -146,7 +151,7 @@ export async function generateNotificationsForOwner(ownerId: string) {
   // 4. Aylık tahsilat özeti (bir önceki ay bittiyse)
   if (owner.notifyMonthlySummary) {
     const prevMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
-    if (today > prevMonthEnd) {
+    if (prevMonthEnd >= cutoff && today > prevMonthEnd) {
       const year = prevMonthEnd.getFullYear();
       const month = prevMonthEnd.getMonth() + 1;
       const monthStart = new Date(year, month - 1, 1);

@@ -68,7 +68,7 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
     async function load() {
       setLoading(true);
       const [propsRes, tenantRes] = await Promise.all([
-        fetch("/api/dashboard/properties"),
+        fetch("/api/dashboard/properties?all=1"),
         fetch(`/api/dashboard/tenants/${id}`),
       ]);
       const propsData = await propsRes.json();

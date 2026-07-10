@@ -64,7 +64,7 @@ export default function KiraciForm({ onSuccess, onCancel }: { onSuccess: () => v
   useEffect(() => {
     async function loadProperties() {
       setLoadingProperties(true);
-      const res = await fetch("/api/dashboard/properties");
+      const res = await fetch("/api/dashboard/properties?all=1");
       const data = await res.json();
       const list: Property[] = data.properties || [];
       setProperties(list);

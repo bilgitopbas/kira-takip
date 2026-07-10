@@ -73,6 +73,12 @@ export default function BildirimlerPage() {
     await fetch("/api/dashboard/notifications/mark-all-read", { method: "POST" });
   }
 
+  async function deleteAll() {
+    if (!confirm("Tüm bildirimleriniz kalıcı olarak silinecek. Emin misiniz?")) return;
+    setNotifications([]);
+    await fetch("/api/dashboard/notifications/delete-all", { method: "POST" });
+  }
+
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
@@ -84,14 +90,24 @@ export default function BildirimlerPage() {
             {unreadCount > 0 ? `${unreadCount} okunmamış bildirim` : "Tüm bildirimler okundu"}
           </p>
         </div>
-        {unreadCount > 0 && (
-          <button
-            onClick={markAllRead}
-            className="text-sm font-semibold text-[#17B6AE] hover:text-[#149891] transition"
-          >
-            Tümünü Okundu İşaretle
-          </button>
-        )}
+        <div className="flex items-center gap-4">
+          {unreadCount > 0 && (
+            <button
+              onClick={markAllRead}
+              className="text-sm font-semibold text-[#17B6AE] hover:text-[#149891] transition"
+            >
+              Tümünü Okundu İşaretle
+            </button>
+          )}
+          {notifications.length > 0 && (
+            <button
+              onClick={deleteAll}
+              className="text-sm font-semibold text-red-500 hover:text-red-600 transition"
+            >
+              Tümünü Sil
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">

@@ -26,20 +26,54 @@ const TYPE_LABELS: Record<string, string> = {
 
 export default function MulkListPage() {
   const [properties, setProperties] = useState<Property[]>([]);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
 
-  async function loadProperties() {
-    setLoading(true);
-    const res = await fetch("/api/dashboard/properties");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [type, setType] = useState("");
+  const [city, setCity] = useState("");
+  const [cities, setCities] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch("/api/dashboard/properties/cities")
+      .then((r) => r.json())
+      .then((d) => setCities(d.cities || []));
+  }, []);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 350);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  async function loadProperties(targetPage: number, append: boolean) {
+    if (append) setLoadingMore(true);
+    else setLoading(true);
+
+    const params = new URLSearchParams({ page: String(targetPage) });
+    if (debouncedSearch) params.set("q", debouncedSearch);
+    if (type) params.set("type", type);
+    if (city) params.set("city", city);
+
+    const res = await fetch(`/api/dashboard/properties?${params.toString()}`);
     const data = await res.json();
-    setProperties(data.properties || []);
+
+    setProperties((prev) => (append ? [...prev, ...(data.properties || [])] : data.properties || []));
+    setTotal(data.total || 0);
+    setHasMore(!!data.hasMore);
+    setPage(targetPage);
     setLoading(false);
+    setLoadingMore(false);
   }
 
   useEffect(() => {
-    loadProperties();
-  }, []);
+    loadProperties(1, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, type, city]);
 
   async function handleDelete(id: string) {
     if (!confirm("Bu mülkü silmek istediğinize emin misiniz?")) return;
@@ -50,12 +84,14 @@ export default function MulkListPage() {
       setError(data.error || "Mülk silinemedi.");
       return;
     }
-    loadProperties();
+    loadProperties(1, false);
   }
+
+  const hasActiveFilters = !!(search || type || city);
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Mülklerim</h1>
           <p className="text-sm text-slate-500 mt-1">Kayıtlı tüm mülkleriniz.</p>
@@ -63,10 +99,57 @@ export default function MulkListPage() {
         <div className="flex items-center gap-2">
           <ExcelIceAktarButton
             className="inline-flex bg-white hover:bg-gray-50 text-slate-700 font-semibold px-5 py-2.5 rounded-xl transition text-sm border border-gray-200"
-            onComplete={loadProperties}
+            onComplete={() => loadProperties(1, false)}
           />
           <MulkEkleButton className="inline-flex bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-5 py-2.5 rounded-xl transition text-sm" />
         </div>
+      </div>
+
+      <div className="mb-6 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[200px]">
+          <svg className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Mülk ara (başlık, adres)..."
+            className="w-full pl-10 pr-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
+          />
+        </div>
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          className="px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30 bg-white text-slate-700"
+        >
+          <option value="">Tüm Tipler</option>
+          {Object.entries(TYPE_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>{label}</option>
+          ))}
+        </select>
+        <select
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+          className="px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30 bg-white text-slate-700"
+        >
+          <option value="">Tüm İller</option>
+          {cities.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+        {hasActiveFilters && (
+          <button
+            onClick={() => {
+              setSearch("");
+              setType("");
+              setCity("");
+            }}
+            className="text-sm font-medium text-slate-500 hover:text-red-500 transition"
+          >
+            Filtreleri Temizle
+          </button>
+        )}
       </div>
 
       {error && (
@@ -82,8 +165,14 @@ export default function MulkListPage() {
           </div>
         ) : properties.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-sm text-slate-500 mb-4">Henüz mülk eklemediniz.</p>
-            <MulkEkleButton className="text-sm text-[#17B6AE] font-medium hover:underline" />
+            {hasActiveFilters ? (
+              <p className="text-sm text-slate-500">Filtrelere uyan mülk bulunamadı.</p>
+            ) : (
+              <>
+                <p className="text-sm text-slate-500 mb-4">Henüz mülk eklemediniz.</p>
+                <MulkEkleButton className="text-sm text-[#17B6AE] font-medium hover:underline" />
+              </>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -143,6 +232,23 @@ export default function MulkListPage() {
           </div>
         )}
       </div>
+
+      {!loading && properties.length > 0 && (
+        <div className="mt-5 flex flex-col items-center gap-3">
+          <p className="text-xs text-slate-400">
+            {properties.length} / {total} mülk gösteriliyor
+          </p>
+          {hasMore && (
+            <button
+              onClick={() => loadProperties(page + 1, true)}
+              disabled={loadingMore}
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 bg-white border border-gray-200 hover:bg-gray-50 transition disabled:opacity-60"
+            >
+              {loadingMore ? "Yükleniyor..." : "Daha Fazla Yükle"}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -3,19 +3,64 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { requireWriteAccess, checkPropertyLimit } from "@/lib/access";
 
-export async function GET() {
+const PAGE_SIZE = 10;
+
+export async function GET(req: NextRequest) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Yetkisiz erişim." }, { status: 401 });
   }
 
-  const properties = await prisma.property.findMany({
-    where: { ownerId: session.userId },
-    include: { _count: { select: { tenants: true } } },
-    orderBy: { createdAt: "desc" },
-  });
+  const { searchParams } = new URL(req.url);
+  const page = Math.max(1, Number(searchParams.get("page")) || 1);
+  const q = searchParams.get("q")?.trim() || "";
+  const type = searchParams.get("type")?.trim() || "";
+  const city = searchParams.get("city")?.trim() || "";
 
-  return NextResponse.json({ properties });
+  // Form seçicileri (kiracı ekle/düzenle) için hafif, sayfalanmamış tam liste
+  if (searchParams.get("all") === "1") {
+    const properties = await prisma.property.findMany({
+      where: { ownerId: session.userId },
+      select: { id: true, title: true },
+      orderBy: { title: "asc" },
+    });
+    return NextResponse.json({ properties });
+  }
+
+  const where = {
+    ownerId: session.userId,
+    ...(q
+      ? {
+          OR: [
+            { title: { contains: q, mode: "insensitive" as const } },
+            { address: { contains: q, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+    ...(type ? { propertyType: type as never } : {}),
+    ...(city ? { city } : {}),
+  };
+
+  const [properties, total] = await Promise.all([
+    prisma.property.findMany({
+      where,
+      select: {
+        id: true,
+        title: true,
+        address: true,
+        city: true,
+        isOccupied: true,
+        propertyType: true,
+        _count: { select: { tenants: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+    prisma.property.count({ where }),
+  ]);
+
+  return NextResponse.json({ properties, total, hasMore: page * PAGE_SIZE < total });
 }
 
 export async function POST(req: NextRequest) {

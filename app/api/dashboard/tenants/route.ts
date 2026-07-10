@@ -6,19 +6,56 @@ import { generateMonthlyDebts } from "@/lib/debts";
 import { parseTenantFormData } from "@/lib/tenantForm";
 import { requireWriteAccess } from "@/lib/access";
 
-export async function GET() {
+const PAGE_SIZE = 10;
+
+export async function GET(req: NextRequest) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Yetkisiz erişim." }, { status: 401 });
   }
 
-  const tenants = await prisma.tenant.findMany({
-    where: { property: { ownerId: session.userId } },
-    include: { property: { select: { title: true } } },
-    orderBy: { createdAt: "desc" },
-  });
+  const { searchParams } = new URL(req.url);
+  const page = Math.max(1, Number(searchParams.get("page")) || 1);
+  const q = searchParams.get("q")?.trim() || "";
+  const city = searchParams.get("city")?.trim() || "";
 
-  return NextResponse.json({ tenants });
+  // Tahsilat formu gibi seçiciler için hafif, sayfalanmamış tam liste
+  if (searchParams.get("all") === "1") {
+    const tenants = await prisma.tenant.findMany({
+      where: { property: { ownerId: session.userId } },
+      select: { id: true, fullName: true, property: { select: { title: true } } },
+      orderBy: { fullName: "asc" },
+    });
+    return NextResponse.json({ tenants });
+  }
+
+  const where = {
+    property: {
+      ownerId: session.userId,
+      ...(city ? { city } : {}),
+    },
+    ...(q ? { fullName: { contains: q, mode: "insensitive" as const } } : {}),
+  };
+
+  const [tenants, total] = await Promise.all([
+    prisma.tenant.findMany({
+      where,
+      select: {
+        id: true,
+        fullName: true,
+        monthlyRent: true,
+        contractStart: true,
+        rating: true,
+        property: { select: { title: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+    prisma.tenant.count({ where }),
+  ]);
+
+  return NextResponse.json({ tenants, total, hasMore: page * PAGE_SIZE < total });
 }
 
 export async function POST(req: NextRequest) {

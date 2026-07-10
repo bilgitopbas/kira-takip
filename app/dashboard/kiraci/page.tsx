@@ -39,20 +39,52 @@ function MiniStars({ rating }: { rating: number | null }) {
 export default function KiraciListPage() {
   const router = useRouter();
   const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
 
-  async function loadTenants() {
-    setLoading(true);
-    const res = await fetch("/api/dashboard/tenants");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [city, setCity] = useState("");
+  const [cities, setCities] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch("/api/dashboard/properties/cities")
+      .then((r) => r.json())
+      .then((d) => setCities(d.cities || []));
+  }, []);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 350);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  async function loadTenants(targetPage: number, append: boolean) {
+    if (append) setLoadingMore(true);
+    else setLoading(true);
+
+    const params = new URLSearchParams({ page: String(targetPage) });
+    if (debouncedSearch) params.set("q", debouncedSearch);
+    if (city) params.set("city", city);
+
+    const res = await fetch(`/api/dashboard/tenants?${params.toString()}`);
     const data = await res.json();
-    setTenants(data.tenants || []);
+
+    setTenants((prev) => (append ? [...prev, ...(data.tenants || [])] : data.tenants || []));
+    setTotal(data.total || 0);
+    setHasMore(!!data.hasMore);
+    setPage(targetPage);
     setLoading(false);
+    setLoadingMore(false);
   }
 
   useEffect(() => {
-    loadTenants();
-  }, []);
+    loadTenants(1, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, city]);
 
   async function handleDelete(e: React.MouseEvent, id: string) {
     e.stopPropagation();
@@ -64,12 +96,14 @@ export default function KiraciListPage() {
       setError(data.error || "Kiracı silinemedi.");
       return;
     }
-    loadTenants();
+    loadTenants(1, false);
   }
+
+  const hasActiveFilters = !!(search || city);
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Kiracılar</h1>
           <p className="text-sm text-slate-500 mt-1">Mülklerinizdeki tüm kiracılar.</p>
@@ -77,13 +111,49 @@ export default function KiraciListPage() {
         <div className="flex items-center gap-2">
           <ExcelIceAktarButton
             className="inline-flex bg-white hover:bg-gray-50 text-slate-700 font-semibold px-5 py-2.5 rounded-xl transition text-sm border border-gray-200"
-            onComplete={loadTenants}
+            onComplete={() => loadTenants(1, false)}
           />
           <KiraciEkleButton
             className="inline-flex bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-5 py-2.5 rounded-xl transition text-sm"
-            onCreated={loadTenants}
+            onCreated={() => loadTenants(1, false)}
           />
         </div>
+      </div>
+
+      <div className="mb-6 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[200px]">
+          <svg className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Kiracı ara (ad soyad)..."
+            className="w-full pl-10 pr-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
+          />
+        </div>
+        <select
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+          className="px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30 bg-white text-slate-700"
+        >
+          <option value="">Tüm İller</option>
+          {cities.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+        {hasActiveFilters && (
+          <button
+            onClick={() => {
+              setSearch("");
+              setCity("");
+            }}
+            className="text-sm font-medium text-slate-500 hover:text-red-500 transition"
+          >
+            Filtreleri Temizle
+          </button>
+        )}
       </div>
 
       {error && (
@@ -98,67 +168,90 @@ export default function KiraciListPage() {
         </div>
       ) : tenants.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm text-center py-16">
-          <p className="text-sm text-slate-500 mb-4">Henüz kiracı eklemediniz.</p>
-          <KiraciEkleButton
-            className="text-sm text-[#17B6AE] font-medium hover:underline"
-            onCreated={loadTenants}
-          />
+          {hasActiveFilters ? (
+            <p className="text-sm text-slate-500">Filtrelere uyan kiracı bulunamadı.</p>
+          ) : (
+            <>
+              <p className="text-sm text-slate-500 mb-4">Henüz kiracı eklemediniz.</p>
+              <KiraciEkleButton
+                className="text-sm text-[#17B6AE] font-medium hover:underline"
+                onCreated={() => loadTenants(1, false)}
+              />
+            </>
+          )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {tenants.map((t) => (
-            <div
-              key={t.id}
-              onClick={() => router.push(`/dashboard/kiraci/${t.id}`)}
-              className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 cursor-pointer hover:border-[#17B6AE]/40 hover:shadow-md transition-all"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-full bg-[#17B6AE]/10 flex items-center justify-center flex-shrink-0">
-                    <span className="text-[#17B6AE] text-sm font-bold">
-                      {t.fullName?.charAt(0)?.toUpperCase() ?? "?"}
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {tenants.map((t) => (
+              <div
+                key={t.id}
+                onClick={() => router.push(`/dashboard/kiraci/${t.id}`)}
+                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 cursor-pointer hover:border-[#17B6AE]/40 hover:shadow-md transition-all"
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-[#17B6AE]/10 flex items-center justify-center flex-shrink-0">
+                      <span className="text-[#17B6AE] text-sm font-bold">
+                        {t.fullName?.charAt(0)?.toUpperCase() ?? "?"}
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-slate-800 truncate">{t.fullName}</p>
+                      <p className="text-xs text-slate-500 truncate">{t.property.title}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => handleDelete(e, t.id)}
+                    className="text-xs px-2.5 py-1 rounded-lg font-semibold bg-red-50 text-red-500 hover:bg-red-100 transition flex-shrink-0"
+                  >
+                    Sil
+                  </button>
+                </div>
+
+                <div className="space-y-1.5 mb-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500">Aylık Kira</span>
+                    <span className="font-semibold text-slate-800">
+                      {Number(t.monthlyRent).toLocaleString("tr-TR")} ₺
                     </span>
                   </div>
-                  <div className="min-w-0">
-                    <p className="font-semibold text-slate-800 truncate">{t.fullName}</p>
-                    <p className="text-xs text-slate-500 truncate">{t.property.title}</p>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500">Yıllık Kira</span>
+                    <span className="font-medium text-slate-700">
+                      {(Number(t.monthlyRent) * 12).toLocaleString("tr-TR")} ₺
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500">Başlangıç</span>
+                    <span className="text-slate-700">
+                      {t.contractStart ? new Date(t.contractStart).toLocaleDateString("tr-TR") : "—"}
+                    </span>
                   </div>
                 </div>
-                <button
-                  onClick={(e) => handleDelete(e, t.id)}
-                  className="text-xs px-2.5 py-1 rounded-lg font-semibold bg-red-50 text-red-500 hover:bg-red-100 transition flex-shrink-0"
-                >
-                  Sil
-                </button>
-              </div>
 
-              <div className="space-y-1.5 mb-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500">Aylık Kira</span>
-                  <span className="font-semibold text-slate-800">
-                    {Number(t.monthlyRent).toLocaleString("tr-TR")} ₺
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500">Yıllık Kira</span>
-                  <span className="font-medium text-slate-700">
-                    {(Number(t.monthlyRent) * 12).toLocaleString("tr-TR")} ₺
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500">Başlangıç</span>
-                  <span className="text-slate-700">
-                    {t.contractStart ? new Date(t.contractStart).toLocaleDateString("tr-TR") : "—"}
-                  </span>
+                <div className="pt-3 border-t border-gray-50">
+                  <MiniStars rating={t.rating} />
                 </div>
               </div>
+            ))}
+          </div>
 
-              <div className="pt-3 border-t border-gray-50">
-                <MiniStars rating={t.rating} />
-              </div>
-            </div>
-          ))}
-        </div>
+          <div className="mt-6 flex flex-col items-center gap-3">
+            <p className="text-xs text-slate-400">
+              {tenants.length} / {total} kiracı gösteriliyor
+            </p>
+            {hasMore && (
+              <button
+                onClick={() => loadTenants(page + 1, true)}
+                disabled={loadingMore}
+                className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 bg-white border border-gray-200 hover:bg-gray-50 transition disabled:opacity-60"
+              >
+                {loadingMore ? "Yükleniyor..." : "Daha Fazla Yükle"}
+              </button>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
