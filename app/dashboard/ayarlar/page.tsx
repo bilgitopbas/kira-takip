@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-type Profile = { fullName: string; email: string; phone: string | null };
+type Profile = { fullName: string; email: string; phone: string | null; hasPassword?: boolean };
 type Preferences = {
   notifyPaymentOverdue: boolean;
   notifyRenewalUpcoming: boolean;
@@ -104,6 +104,7 @@ export default function AyarlarPage() {
       return;
     }
     setPasswordForm({ currentPassword: "", newPassword: "", newPasswordRepeat: "" });
+    setProfile((prev) => ({ ...prev, hasPassword: true }));
     setPasswordMsg({ type: "success", text: "Şifreniz güncellendi." });
   }
 
@@ -199,8 +200,14 @@ export default function AyarlarPage() {
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <h2 className="text-base font-bold text-slate-800 mb-1">Şifre Değiştir</h2>
-          <p className="text-sm text-slate-500 mb-4">Hesap şifrenizi güncelleyin.</p>
+          <h2 className="text-base font-bold text-slate-800 mb-1">
+            {profile.hasPassword ? "Şifre Değiştir" : "Şifre Belirle"}
+          </h2>
+          <p className="text-sm text-slate-500 mb-4">
+            {profile.hasPassword
+              ? "Hesap şifrenizi güncelleyin."
+              : "Google ile giriş yapıyorsunuz. İsterseniz e-posta ve şifre ile de giriş yapabilmek için bir şifre belirleyin."}
+          </p>
 
           {passwordMsg && (
             <div className={`mb-4 text-sm px-4 py-3 rounded-xl ${passwordMsg.type === "success" ? "bg-emerald-50 border border-emerald-100 text-emerald-600" : "bg-red-50 border border-red-100 text-red-500"}`}>
@@ -209,16 +216,18 @@ export default function AyarlarPage() {
           )}
 
           <form onSubmit={savePassword} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Mevcut Şifre</label>
-              <input
-                type="password"
-                required
-                value={passwordForm.currentPassword}
-                onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
-              />
-            </div>
+            {profile.hasPassword && (
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Mevcut Şifre</label>
+                <input
+                  type="password"
+                  required
+                  value={passwordForm.currentPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                  className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
+                />
+              </div>
+            )}
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1.5">Yeni Şifre</label>
               <input
@@ -246,7 +255,7 @@ export default function AyarlarPage() {
               disabled={passwordSaving}
               className="bg-[#17B6AE] hover:bg-[#149891] disabled:opacity-60 text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm"
             >
-              {passwordSaving ? "Kaydediliyor..." : "Şifreyi Güncelle"}
+              {passwordSaving ? "Kaydediliyor..." : profile.hasPassword ? "Şifreyi Güncelle" : "Şifre Belirle"}
             </button>
           </form>
         </div>

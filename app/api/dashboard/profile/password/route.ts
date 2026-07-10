@@ -11,8 +11,8 @@ export async function POST(req: NextRequest) {
 
   const { currentPassword, newPassword } = await req.json();
 
-  if (!currentPassword || !newPassword) {
-    return NextResponse.json({ error: "Mevcut ve yeni şifre zorunludur." }, { status: 400 });
+  if (!newPassword) {
+    return NextResponse.json({ error: "Yeni şifre zorunludur." }, { status: 400 });
   }
 
   if (newPassword.length < 6) {
@@ -25,6 +25,9 @@ export async function POST(req: NextRequest) {
   }
 
   if (user.passwordHash) {
+    if (!currentPassword) {
+      return NextResponse.json({ error: "Mevcut şifre zorunludur." }, { status: 400 });
+    }
     const valid = await verifyPassword(currentPassword, user.passwordHash);
     if (!valid) {
       return NextResponse.json({ error: "Mevcut şifre hatalı." }, { status: 400 });

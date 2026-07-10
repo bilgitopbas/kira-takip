@@ -10,14 +10,15 @@ export async function GET() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { fullName: true, email: true, phone: true },
+    select: { fullName: true, email: true, phone: true, city: true, passwordHash: true },
   });
 
   if (!user) {
     return NextResponse.json({ error: "Kullanıcı bulunamadı." }, { status: 404 });
   }
 
-  return NextResponse.json({ user });
+  const { passwordHash, ...rest } = user;
+  return NextResponse.json({ user: { ...rest, hasPassword: !!passwordHash } });
 }
 
 export async function PATCH(req: NextRequest) {
@@ -26,7 +27,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Yetkisiz erişim." }, { status: 401 });
   }
 
-  const { fullName, email, phone } = await req.json();
+  const { fullName, email, phone, city } = await req.json();
 
   if (!fullName?.trim() || !email?.trim()) {
     return NextResponse.json({ error: "Ad soyad ve e-posta zorunludur." }, { status: 400 });
@@ -44,8 +45,9 @@ export async function PATCH(req: NextRequest) {
         fullName: fullName.trim(),
         email: email.trim(),
         phone: phone?.trim() || null,
+        ...(city !== undefined ? { city: city?.trim() || null } : {}),
       },
-      select: { fullName: true, email: true, phone: true },
+      select: { fullName: true, email: true, phone: true, city: true },
     });
     return NextResponse.json({ success: true, user });
   } catch {

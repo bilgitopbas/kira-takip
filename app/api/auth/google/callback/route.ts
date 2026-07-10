@@ -91,7 +91,9 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const res = NextResponse.redirect(`${appUrl}${user.role === "ADMIN" ? "/admin" : "/dashboard"}`);
+    const destination =
+      user.role === "ADMIN" ? "/admin" : !user.city ? "/dashboard/profili-tamamla" : "/dashboard";
+    const res = NextResponse.redirect(`${appUrl}${destination}`);
     res.cookies.delete("google_oauth_state");
     return res;
   } catch (err) {

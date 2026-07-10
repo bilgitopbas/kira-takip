@@ -183,6 +183,7 @@ export default async function DashboardPage() {
   } = await getStats(session.userId);
 
   const access = await getAccessStateForUser(session.userId);
+  const profile = await prisma.user.findUnique({ where: { id: session.userId }, select: { city: true } });
 
   const CARDS = [
     { label: "Toplam Mülk", value: `${propertyCount}`, icon: CARD_ICONS.properties, color: "text-blue-500 bg-blue-50" },
@@ -209,6 +210,21 @@ export default async function DashboardPage() {
           <TahsilatEkleButton className={secondaryBtn} />
         </div>
       </div>
+
+      {profile && !profile.city && (
+        <div className="flex items-center justify-between gap-4 bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 mb-6">
+          <p className="text-sm text-slate-700">
+            <span className="font-semibold text-amber-600">Kurulumunuz eksik.</span>{" "}
+            Şehir bilginizi tamamlayarak hesabınızı etkinleştirin.
+          </p>
+          <a
+            href="/dashboard/profili-tamamla"
+            className="text-xs font-semibold bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg transition whitespace-nowrap"
+          >
+            Şimdi Tamamla
+          </a>
+        </div>
+      )}
 
       {access && (
         <TrialBanner state={access.state} trialDaysLeft={access.trialDaysLeft} graceDaysLeft={access.graceDaysLeft} />
