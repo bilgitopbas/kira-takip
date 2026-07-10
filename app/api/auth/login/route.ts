@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyPassword, createSession } from "@/lib/auth";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    if (!checkRateLimit(`login:${ip}`, 10, 10 * 60 * 1000)) {
+      return NextResponse.json(
+        { error: "Çok fazla deneme yaptınız. Lütfen birkaç dakika sonra tekrar deneyin." },
+        { status: 429 }
+      );
+    }
+
     const { email, password } = await req.json();
 
     const user = await prisma.user.findUnique({ where: { email } });

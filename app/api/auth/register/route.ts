@@ -3,9 +3,18 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword, createSession } from "@/lib/auth";
 import { sendWelcomeEmail } from "@/lib/mail";
 import { notifyAdminsNewCustomer } from "@/lib/adminNotifications";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    if (!checkRateLimit(`register:${ip}`, 5, 60 * 60 * 1000)) {
+      return NextResponse.json(
+        { error: "Çok fazla kayıt denemesi yaptınız. Lütfen daha sonra tekrar deneyin." },
+        { status: 429 }
+      );
+    }
+
     const {
       email,
       password,

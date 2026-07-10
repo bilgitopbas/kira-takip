@@ -41,7 +41,11 @@ export async function POST(
   let receiptFileUrl: string | null = null;
   const receiptFile = formData.get("receiptFile");
   if (receiptFile instanceof File && receiptFile.size > 0) {
-    receiptFileUrl = await saveUploadedFile(receiptFile, "receipts");
+    try {
+      receiptFileUrl = await saveUploadedFile(receiptFile, "receipts");
+    } catch (err) {
+      return NextResponse.json({ error: err instanceof Error ? err.message : "Dosya yüklenemedi." }, { status: 400 });
+    }
   }
 
   try {

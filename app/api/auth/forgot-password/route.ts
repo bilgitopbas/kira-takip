@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendPasswordResetEmail } from "@/lib/mail";
 import { resolveAppUrl } from "@/lib/url";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 
 const GENERIC_SUCCESS = {
   success: true,
@@ -11,6 +12,14 @@ const GENERIC_SUCCESS = {
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    if (!checkRateLimit(`forgot-password:${ip}`, 5, 60 * 60 * 1000)) {
+      return NextResponse.json(
+        { error: "Çok fazla talep gönderildi. Lütfen daha sonra tekrar deneyin." },
+        { status: 429 }
+      );
+    }
+
     const { email } = await req.json();
     if (!email) {
       return NextResponse.json({ error: "E-posta zorunludur." }, { status: 400 });

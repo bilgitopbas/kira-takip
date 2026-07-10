@@ -47,7 +47,11 @@ export async function POST(req: NextRequest) {
   let contractFileUrl: string | null = null;
   const contractFile = formData.get("contractFile");
   if (contractFile instanceof File && contractFile.size > 0) {
-    contractFileUrl = await saveUploadedFile(contractFile, "contracts");
+    try {
+      contractFileUrl = await saveUploadedFile(contractFile, "contracts");
+    } catch (err) {
+      return NextResponse.json({ error: err instanceof Error ? err.message : "Dosya yüklenemedi." }, { status: 400 });
+    }
   }
 
   try {
