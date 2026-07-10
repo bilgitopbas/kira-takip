@@ -51,6 +51,7 @@ export default function AdminDestekPage() {
               <div className="w-6 h-6 border-2 border-[#17B6AE] border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 text-left">
@@ -94,6 +95,7 @@ export default function AdminDestekPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </div>
@@ -106,6 +108,7 @@ export default function AdminDestekPage() {
               <div className="w-6 h-6 border-2 border-[#17B6AE] border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 text-left">
@@ -152,6 +155,7 @@ export default function AdminDestekPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </div>

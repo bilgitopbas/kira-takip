@@ -63,32 +63,34 @@ export default async function AdminGelirlerPage() {
         <div className="px-6 py-4 border-b border-gray-50">
           <h2 className="text-sm font-semibold text-slate-700">Aktif Mizan Pro Abonelikleri</h2>
         </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 text-left">
-              <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Müşteri</th>
-              <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Mülk Limiti</th>
-              <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Aylık Tutar</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan={3} className="text-center text-slate-400 py-12 text-sm">Henüz aktif Mizan Pro müşterisi yok.</td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 text-left">
+                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Müşteri</th>
+                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Mülk Limiti</th>
+                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Aylık Tutar</th>
               </tr>
-            )}
-            {rows.map((r) => (
-              <tr key={r.user.id} className="hover:bg-gray-50/60 transition-colors">
-                <td className="px-5 py-4">
-                  <p className="font-medium text-slate-700">{r.user.fullName}</p>
-                  <p className="text-xs text-slate-400">{r.user.email}</p>
-                </td>
-                <td className="px-5 py-4 text-slate-500">{r.subscription!.propertyCount} mülk</td>
-                <td className="px-5 py-4 font-semibold text-slate-700">{Number(r.subscription!.monthlyPrice).toLocaleString("tr-TR")} ₺</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {rows.length === 0 && (
+                <tr>
+                  <td colSpan={3} className="text-center text-slate-400 py-12 text-sm">Henüz aktif Mizan Pro müşterisi yok.</td>
+                </tr>
+              )}
+              {rows.map((r) => (
+                <tr key={r.user.id} className="hover:bg-gray-50/60 transition-colors">
+                  <td className="px-5 py-4">
+                    <p className="font-medium text-slate-700">{r.user.fullName}</p>
+                    <p className="text-xs text-slate-400">{r.user.email}</p>
+                  </td>
+                  <td className="px-5 py-4 text-slate-500">{r.subscription!.propertyCount} mülk</td>
+                  <td className="px-5 py-4 font-semibold text-slate-700">{Number(r.subscription!.monthlyPrice).toLocaleString("tr-TR")} ₺</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">

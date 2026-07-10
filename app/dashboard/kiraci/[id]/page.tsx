@@ -430,6 +430,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
               </button>
             </div>
 
+            <div className="overflow-x-auto">
             <table className="w-full text-base">
               <thead>
                 <tr className="bg-gray-50 text-left">
@@ -476,6 +477,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
                 })}
               </tbody>
             </table>
+            </div>
           </>
         )}
       </div>

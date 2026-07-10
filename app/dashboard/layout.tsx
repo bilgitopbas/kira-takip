@@ -1,9 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import DashboardSidebar from "@/components/DashboardSidebar";
-import DashboardHeader from "@/components/DashboardHeader";
-import ImpersonationBanner from "@/components/ImpersonationBanner";
+import DashboardShell from "@/components/DashboardShell";
 import { generateNotificationsForOwner } from "@/lib/notifications";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -24,13 +22,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   });
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-950 flex transition-colors">
-      <DashboardSidebar />
-      <div className="flex-1 flex flex-col min-w-0">
-        {session.impersonatedBy && <ImpersonationBanner customerName={user?.fullName || ""} />}
-        <DashboardHeader fullName={user?.fullName || ""} />
-        <main className="flex-1 p-8 overflow-auto">{children}</main>
-      </div>
-    </div>
+    <DashboardShell fullName={user?.fullName || ""} impersonating={!!session.impersonatedBy}>
+      {children}
+    </DashboardShell>
   );
 }

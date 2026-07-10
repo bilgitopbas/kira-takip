@@ -167,6 +167,7 @@ export default function FinansRaporlari({ payments, debts }: Props) {
                 </BarChart>
               </ResponsiveContainer>
             </div>
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 text-left">
@@ -185,6 +186,7 @@ export default function FinansRaporlari({ payments, debts }: Props) {
                 ))}
               </tbody>
             </table>
+            </div>
           </>
         )}
       </div>
@@ -196,6 +198,7 @@ export default function FinansRaporlari({ payments, debts }: Props) {
         {filteredPayments.length === 0 ? (
           <p className="text-sm text-slate-500 text-center py-10">Seçili tarih aralığında tahsilat kaydı yok.</p>
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-left">
@@ -222,6 +225,7 @@ export default function FinansRaporlari({ payments, debts }: Props) {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

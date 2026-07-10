@@ -86,6 +86,7 @@ export default function MulkListPage() {
             <MulkEkleButton className="text-sm text-[#17B6AE] font-medium hover:underline" />
           </div>
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-left">
@@ -139,6 +140,7 @@ export default function MulkListPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

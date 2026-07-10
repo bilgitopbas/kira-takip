@@ -58,7 +58,13 @@ const SoonBadge = () => (
   <span className="text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded">Yakında</span>
 );
 
-export default function AdminSidebar() {
+export default function AdminSidebar({
+  mobileOpen = false,
+  onClose,
+}: {
+  mobileOpen?: boolean;
+  onClose?: () => void;
+}) {
   const p = usePathname();
   const [unreadCount, setUnreadCount] = useState(0);
   const [profile, setProfile] = useState<{ fullName: string; email: string } | null>(null);
@@ -120,17 +126,41 @@ export default function AdminSidebar() {
     : "?";
 
   return (
-    <aside className="no-print w-64 sticky top-0 h-screen bg-white dark:bg-slate-900 border-r border-gray-100 dark:border-slate-800 flex flex-col shadow-sm transition-colors">
-      <Link href="/admin" className="h-20 flex items-center px-6 border-b border-gray-100 dark:border-slate-800 flex-shrink-0">
-        <Image
-          src="/logo-yeni-white.png"
-          alt="Mizan"
-          width={311}
-          height={100}
-          className="h-11 w-auto object-contain drop-shadow-[0_6px_14px_rgba(23,182,174,0.3)]"
-          style={{ width: "auto" }}
+    <>
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden"
+          onClick={onClose}
+          aria-hidden="true"
         />
-      </Link>
+      )}
+      <aside
+        className={`no-print w-72 sm:w-64 fixed inset-y-0 left-0 lg:sticky lg:top-0 h-screen bg-white dark:bg-slate-900 border-r border-gray-100 dark:border-slate-800 flex flex-col shadow-sm transition-transform duration-200 ease-in-out z-50 lg:z-auto lg:translate-x-0 ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="h-20 flex items-center justify-between px-4 sm:px-6 border-b border-gray-100 dark:border-slate-800 flex-shrink-0">
+          <Link href="/admin">
+            <Image
+              src="/logo-yeni-white.png"
+              alt="Mizan"
+              width={311}
+              height={100}
+              className="h-11 w-auto object-contain drop-shadow-[0_6px_14px_rgba(23,182,174,0.3)]"
+              style={{ width: "auto" }}
+            />
+          </Link>
+          <button
+            type="button"
+            onClick={onClose}
+            className="lg:hidden text-slate-400 hover:text-slate-600 p-1"
+            aria-label="Menüyü kapat"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
       <nav className="flex-1 px-3 py-4 overflow-y-auto">
         <a href="/admin" className={lc("/admin", true)}>
@@ -271,6 +301,7 @@ export default function AdminSidebar() {
           </svg>
         </button>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }
