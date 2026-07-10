@@ -24,9 +24,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Kullanıcı bulunamadı." }, { status: 404 });
   }
 
-  const valid = await verifyPassword(currentPassword, user.passwordHash);
-  if (!valid) {
-    return NextResponse.json({ error: "Mevcut şifre hatalı." }, { status: 400 });
+  if (user.passwordHash) {
+    const valid = await verifyPassword(currentPassword, user.passwordHash);
+    if (!valid) {
+      return NextResponse.json({ error: "Mevcut şifre hatalı." }, { status: 400 });
+    }
   }
 
   const passwordHash = await hashPassword(newPassword);

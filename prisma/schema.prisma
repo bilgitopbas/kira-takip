@@ -76,10 +76,11 @@ enum Currency {
 model User {
   id                String   @id @default(cuid())
   email             String   @unique
-  passwordHash      String
+  passwordHash      String?
+  googleId          String?  @unique
   fullName          String
   phone             String?
-  city              String
+  city              String?
   role              Role     @default(CUSTOMER)
   wantsManagement   Boolean  @default(false)
 

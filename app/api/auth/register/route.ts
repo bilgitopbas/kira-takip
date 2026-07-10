@@ -4,6 +4,7 @@ import { hashPassword, createSession } from "@/lib/auth";
 import { sendWelcomeEmail } from "@/lib/mail";
 import { notifyAdminsNewCustomer } from "@/lib/adminNotifications";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
+import { verifyRecaptcha } from "@/lib/recaptcha";
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,11 +28,20 @@ export async function POST(req: NextRequest) {
       propertyCountRange,
       termsAccepted,
       marketingConsent,
+      recaptchaToken,
     } = await req.json();
 
     if (!email || !password || !fullName || !city || !propertyCountRange) {
       return NextResponse.json(
         { error: "Zorunlu alanları doldurmanız gerekiyor." },
+        { status: 400 }
+      );
+    }
+
+    const recaptchaOk = await verifyRecaptcha(recaptchaToken || null);
+    if (!recaptchaOk) {
+      return NextResponse.json(
+        { error: "Robot olmadığınızı doğrulayın." },
         { status: 400 }
       );
     }
