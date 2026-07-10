@@ -117,7 +117,7 @@ export default function FaqContact() {
                   </div>
                   <label className="flex items-start gap-3 text-xs text-slate-500 cursor-pointer">
                     <input type="checkbox" className="mt-0.5 flex-shrink-0 w-4 h-4 accent-[#17B6AE]" checked={form.consent} onChange={(e) => setForm({ ...form, consent: e.target.checked })} />
-                    <span>Mizan Mülk Yönetimi kampanyaları hakkında <a href="https://www.ehane.com/ticari-riza-metni/" target="_blank" rel="noopener noreferrer" className="text-[#17B6AE] underline font-semibold">elektronik ileti</a> almak istiyorum.</span>
+                    <span>Mizan Mülk Yönetimi kampanyaları hakkında elektronik ileti almak istiyorum.</span>
                   </label>
                   <button type="submit" disabled={loading} className="w-full bg-[#17B6AE] hover:bg-[#149891] text-white font-bold py-3.5 rounded-xl transition disabled:opacity-60 text-sm tracking-wide shadow-lg shadow-[#17B6AE]/20">
                     {loading ? "Gönderiliyor..." : "Teklif Al"}

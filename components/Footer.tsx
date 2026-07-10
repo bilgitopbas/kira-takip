@@ -45,6 +45,7 @@ const LEGAL_LINKS = [
   { label: "Aydınlatma Metni", href: "/aydinlatma-metni" },
   { label: "Açık Rıza Metni", href: "/acik-riza-metni" },
   { label: "Kullanım Koşulları", href: "/kullanim-kosullari" },
+  { label: "Çerez Politikası", href: "/cerez-politikasi" },
 ];
 
 export default function Footer() {
