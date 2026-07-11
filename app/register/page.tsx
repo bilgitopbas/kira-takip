@@ -107,7 +107,12 @@ export default function RegisterPage() {
     }
 
     if (!form.termsAccepted) {
-      setError("Devam etmek için Kullanıcı Sözleşmesi'ni kabul etmeniz gerekiyor.");
+      setError("Devam etmek için Kullanıcı Sözleşmesi'ni ve Aydınlatma Metni'ni kabul etmeniz gerekiyor.");
+      return;
+    }
+
+    if (!form.marketingConsent) {
+      setError("Devam etmek için Açık Rıza Metni'ni kabul etmeniz gerekiyor.");
       return;
     }
 
@@ -316,18 +321,48 @@ export default function RegisterPage() {
                   checked={form.termsAccepted}
                   onChange={(e) => setForm({ ...form, termsAccepted: e.target.checked })}
                 />
-                Kullanıcı Sözleşmesi&apos;ni okudum, anladım ve kabul ediyorum.
+                <span>
+                  <a
+                    href="/kullanim-kosullari"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#17B6AE] font-semibold hover:underline"
+                  >
+                    Kullanıcı Sözleşmesi
+                  </a>
+                  &apos;ni ve{" "}
+                  <a
+                    href="/aydinlatma-metni"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#17B6AE] font-semibold hover:underline"
+                  >
+                    Aydınlatma Metni
+                  </a>
+                  &apos;ni okudum, anladım ve kabul ediyorum. *
+                </span>
               </label>
 
               <label className="flex items-start gap-2 text-sm text-slate-600">
                 <input
                   type="checkbox"
+                  required
                   className="mt-1"
                   checked={form.marketingConsent}
                   onChange={(e) => setForm({ ...form, marketingConsent: e.target.checked })}
                 />
-                Aydınlatma Metni&apos;nde belirtilen şartlarda kişisel verilerimin işlenmesine
-                Açık Rıza gösteriyorum.
+                <span>
+                  <a
+                    href="/acik-riza-metni"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#17B6AE] font-semibold hover:underline"
+                  >
+                    Açık Rıza Metni
+                  </a>
+                  &apos;nde belirtilen şartlarda kişisel verilerimin işlenmesine açık rıza
+                  gösteriyorum. *
+                </span>
               </label>
 
               {RECAPTCHA_SITE_KEY && (

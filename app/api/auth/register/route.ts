@@ -5,6 +5,7 @@ import { sendWelcomeEmail } from "@/lib/mail";
 import { notifyAdminsNewCustomer } from "@/lib/adminNotifications";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import { verifyRecaptcha } from "@/lib/recaptcha";
+import { isValidEmailFormat, domainAcceptsMail } from "@/lib/emailValidation";
 
 export async function POST(req: NextRequest) {
   try {
@@ -38,6 +39,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!isValidEmailFormat(email)) {
+      return NextResponse.json(
+        { error: "Geçerli bir e-posta adresi girin." },
+        { status: 400 }
+      );
+    }
+
+    const emailDomainOk = await domainAcceptsMail(email);
+    if (!emailDomainOk) {
+      return NextResponse.json(
+        { error: "Girdiğiniz e-posta adresi geçerli görünmüyor. Lütfen adresi kontrol edip tekrar deneyin." },
+        { status: 400 }
+      );
+    }
+
     const recaptchaOk = await verifyRecaptcha(recaptchaToken || null);
     if (!recaptchaOk) {
       return NextResponse.json(
@@ -48,7 +64,14 @@ export async function POST(req: NextRequest) {
 
     if (!termsAccepted) {
       return NextResponse.json(
-        { error: "Devam etmek için Kullanıcı Sözleşmesi'ni kabul etmeniz gerekiyor." },
+        { error: "Devam etmek için Kullanıcı Sözleşmesi'ni ve Aydınlatma Metni'ni kabul etmeniz gerekiyor." },
+        { status: 400 }
+      );
+    }
+
+    if (!marketingConsent) {
+      return NextResponse.json(
+        { error: "Devam etmek için Açık Rıza Metni'ni kabul etmeniz gerekiyor." },
         { status: 400 }
       );
     }
