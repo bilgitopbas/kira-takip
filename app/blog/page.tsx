@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BlogListSection from "@/components/blog/BlogListSection";
 import { prisma } from "@/lib/prisma";
+
+export const metadata: Metadata = {
+  title: "Blog",
+  description: "Kira artışı, kiracı yönetimi ve mülk sahipliği hakkında güncel rehberler ve pratik bilgiler.",
+};
 
 async function getPosts() {
   return prisma.blogPost.findMany({ orderBy: { publishedAt: "desc" } });

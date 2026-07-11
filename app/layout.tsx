@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import CookieConsent from "@/components/CookieConsent";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,8 +16,36 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Mizan Mülk Yönetimi",
-  description: "Kira ve mülk yönetimini dijitalleştiren SaaS platformu.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${SITE_NAME} | Kira Takip Yazılımı`,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  keywords: [
+    "kira takip programı",
+    "mülk yönetimi yazılımı",
+    "kiracı takip",
+    "kira artış hesaplama",
+    "gayrimenkul yönetim yazılımı",
+  ],
+  openGraph: {
+    type: "website",
+    locale: "tr_TR",
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} | Kira Takip Yazılımı`,
+    description: SITE_DESCRIPTION,
+    url: SITE_URL,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE_NAME} | Kira Takip Yazılımı`,
+    description: SITE_DESCRIPTION,
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
@@ -31,6 +61,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         {children}
         <CookieConsent />
+        <GoogleAnalytics />
       </body>
     </html>
   );
