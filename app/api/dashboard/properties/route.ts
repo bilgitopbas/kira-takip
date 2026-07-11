@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
   const q = searchParams.get("q")?.trim() || "";
   const type = searchParams.get("type")?.trim() || "";
   const city = searchParams.get("city")?.trim() || "";
+  const occupied = searchParams.get("occupied")?.trim() || "";
 
   // Form seçicileri (kiracı ekle/düzenle) için hafif, sayfalanmamış tam liste
   if (searchParams.get("all") === "1") {
@@ -39,6 +40,7 @@ export async function GET(req: NextRequest) {
       : {}),
     ...(type ? { propertyType: type as never } : {}),
     ...(city ? { city } : {}),
+    ...(occupied === "true" ? { isOccupied: true } : occupied === "false" ? { isOccupied: false } : {}),
   };
 
   const [properties, total] = await Promise.all([

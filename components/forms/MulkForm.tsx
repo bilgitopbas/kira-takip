@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const PROPERTY_TYPES = [
@@ -13,8 +13,30 @@ const PROPERTY_TYPES = [
   { value: "OFIS", label: "Ofis" },
 ];
 
-export default function MulkForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
+type Property = {
+  id: string;
+  title: string;
+  address: string;
+  city: string | null;
+  district: string | null;
+  squareMeters: number | null;
+  propertyType: string | null;
+  notes: string | null;
+  isOccupied: boolean;
+};
+
+export default function MulkForm({
+  propertyId,
+  onSuccess,
+  onCancel,
+}: {
+  propertyId?: string;
+  onSuccess: () => void;
+  onCancel: () => void;
+}) {
   const router = useRouter();
+  const isEdit = !!propertyId;
+  const [loading, setLoading] = useState(isEdit);
   const [title, setTitle] = useState("");
   const [propertyType, setPropertyType] = useState("");
   const [isOccupied, setIsOccupied] = useState(false);
@@ -26,44 +48,78 @@ export default function MulkForm({ onSuccess, onCancel }: { onSuccess: () => voi
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    if (!propertyId) return;
+    async function load() {
+      const res = await fetch(`/api/dashboard/properties/${propertyId}`);
+      if (res.ok) {
+        const { property }: { property: Property } = await res.json();
+        setTitle(property.title);
+        setPropertyType(property.propertyType || "");
+        setIsOccupied(property.isOccupied);
+        setCity(property.city || "");
+        setDistrict(property.district || "");
+        setSquareMeters(property.squareMeters ? String(property.squareMeters) : "");
+        setAddress(property.address || "");
+        setNotes(property.notes || "");
+      }
+      setLoading(false);
+    }
+    load();
+  }, [propertyId]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setSubmitting(true);
 
-    const res = await fetch("/api/dashboard/properties", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title,
-        address,
-        city,
-        district,
-        squareMeters: squareMeters ? Number(squareMeters) : null,
-        propertyType: propertyType || null,
-        notes,
-        isOccupied,
-      }),
-    });
+    const res = await fetch(
+      isEdit ? `/api/dashboard/properties/${propertyId}` : "/api/dashboard/properties",
+      {
+        method: isEdit ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          address,
+          city,
+          district,
+          squareMeters: squareMeters ? Number(squareMeters) : null,
+          propertyType: propertyType || null,
+          notes,
+          isOccupied,
+        }),
+      }
+    );
 
     setSubmitting(false);
 
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error || "Mülk oluşturulamadı.");
+      setError(data.error || (isEdit ? "Mülk güncellenemedi." : "Mülk oluşturulamadı."));
       return;
     }
 
     onSuccess();
-    router.push("/dashboard/kiraci");
-    router.refresh();
+    if (!isEdit) {
+      router.push("/dashboard/kiraci");
+      router.refresh();
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="w-6 h-6 border-2 border-[#17B6AE] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="bg-[#17B6AE]/5 border border-[#17B6AE]/20 text-sm text-slate-600 px-4 py-3 rounded-xl">
-        Mülkün türünü, durumunu ve görünen adını belirleyin. Mülkünüzü ekledikten sonra kiracı
-        eklemeyi unutmayın.
+        {isEdit
+          ? "Mülk bilgilerini güncelleyin."
+          : "Mülkün türünü, durumunu ve görünen adını belirleyin. Mülkünüzü ekledikten sonra kiracı eklemeyi unutmayın."}
       </div>
 
       {error && (

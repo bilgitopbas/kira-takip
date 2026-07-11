@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@/app/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { saveUploadedFile } from "@/lib/uploads";
@@ -6,6 +7,14 @@ import { parseTenantFormData } from "@/lib/tenantForm";
 import { requireWriteAccess } from "@/lib/access";
 
 const PAGE_SIZE = 10;
+
+const SORT_OPTIONS: Record<string, Prisma.TenantOrderByWithRelationInput> = {
+  newest: { createdAt: "desc" },
+  rent_asc: { monthlyRent: "asc" },
+  rent_desc: { monthlyRent: "desc" },
+  contract_asc: { contractStart: "asc" },
+  contract_desc: { contractStart: "desc" },
+};
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
@@ -17,6 +26,8 @@ export async function GET(req: NextRequest) {
   const page = Math.max(1, Number(searchParams.get("page")) || 1);
   const q = searchParams.get("q")?.trim() || "";
   const city = searchParams.get("city")?.trim() || "";
+  const sort = searchParams.get("sort")?.trim() || "newest";
+  const orderBy = SORT_OPTIONS[sort] || SORT_OPTIONS.newest;
 
   // Tahsilat formu gibi seçiciler için hafif, sayfalanmamış tam liste
   if (searchParams.get("all") === "1") {
@@ -47,7 +58,7 @@ export async function GET(req: NextRequest) {
         rating: true,
         property: { select: { title: true } },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy,
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     }),

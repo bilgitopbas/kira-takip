@@ -4,6 +4,17 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import KiraciEkleButton from "@/components/KiraciEkleButton";
 import ExcelIceAktarButton from "@/components/ExcelIceAktarButton";
+import Pagination from "@/components/Pagination";
+
+const PAGE_SIZE = 10;
+
+const SORT_OPTIONS = [
+  { value: "newest", label: "En Yeni" },
+  { value: "rent_asc", label: "Kira: Düşükten Yükseğe" },
+  { value: "rent_desc", label: "Kira: Yüksekten Düşüğe" },
+  { value: "contract_asc", label: "Sözleşme: Eskiden Yeniye" },
+  { value: "contract_desc", label: "Sözleşme: Yeniden Eskiye" },
+];
 
 type Tenant = {
   id: string;
@@ -40,15 +51,14 @@ export default function KiraciListPage() {
   const router = useRouter();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [total, setTotal] = useState(0);
-  const [hasMore, setHasMore] = useState(false);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [city, setCity] = useState("");
+  const [sort, setSort] = useState("newest");
   const [cities, setCities] = useState<string[]>([]);
 
   useEffect(() => {
@@ -62,29 +72,26 @@ export default function KiraciListPage() {
     return () => clearTimeout(t);
   }, [search]);
 
-  async function loadTenants(targetPage: number, append: boolean) {
-    if (append) setLoadingMore(true);
-    else setLoading(true);
+  async function loadTenants(targetPage: number) {
+    setLoading(true);
 
-    const params = new URLSearchParams({ page: String(targetPage) });
+    const params = new URLSearchParams({ page: String(targetPage), sort });
     if (debouncedSearch) params.set("q", debouncedSearch);
     if (city) params.set("city", city);
 
     const res = await fetch(`/api/dashboard/tenants?${params.toString()}`);
     const data = await res.json();
 
-    setTenants((prev) => (append ? [...prev, ...(data.tenants || [])] : data.tenants || []));
+    setTenants(data.tenants || []);
     setTotal(data.total || 0);
-    setHasMore(!!data.hasMore);
     setPage(targetPage);
     setLoading(false);
-    setLoadingMore(false);
   }
 
   useEffect(() => {
-    loadTenants(1, false);
+    loadTenants(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, city]);
+  }, [debouncedSearch, city, sort]);
 
   async function handleDelete(e: React.MouseEvent, id: string) {
     e.stopPropagation();
@@ -96,7 +103,7 @@ export default function KiraciListPage() {
       setError(data.error || "Kiracı silinemedi.");
       return;
     }
-    loadTenants(1, false);
+    loadTenants(1);
   }
 
   const hasActiveFilters = !!(search || city);
@@ -111,11 +118,11 @@ export default function KiraciListPage() {
         <div className="flex items-center gap-2">
           <ExcelIceAktarButton
             className="inline-flex bg-white hover:bg-gray-50 text-slate-700 font-semibold px-5 py-2.5 rounded-xl transition text-sm border border-gray-200"
-            onComplete={() => loadTenants(1, false)}
+            onComplete={() => loadTenants(1)}
           />
           <KiraciEkleButton
             className="inline-flex bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-5 py-2.5 rounded-xl transition text-sm"
-            onCreated={() => loadTenants(1, false)}
+            onCreated={() => loadTenants(1)}
           />
         </div>
       </div>
@@ -141,6 +148,15 @@ export default function KiraciListPage() {
           <option value="">Tüm İller</option>
           {cities.map((c) => (
             <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+          className="px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30 bg-white text-slate-700"
+        >
+          {SORT_OPTIONS.map((s) => (
+            <option key={s.value} value={s.value}>{s.label}</option>
           ))}
         </select>
         {hasActiveFilters && (
@@ -175,7 +191,7 @@ export default function KiraciListPage() {
               <p className="text-sm text-slate-500 mb-4">Henüz kiracı eklemediniz.</p>
               <KiraciEkleButton
                 className="text-sm text-[#17B6AE] font-medium hover:underline"
-                onCreated={() => loadTenants(1, false)}
+                onCreated={() => loadTenants(1)}
               />
             </>
           )}
@@ -239,17 +255,9 @@ export default function KiraciListPage() {
 
           <div className="mt-6 flex flex-col items-center gap-3">
             <p className="text-xs text-slate-400">
-              {tenants.length} / {total} kiracı gösteriliyor
+              Toplam {total} kiracı — Sayfa {page} / {Math.max(1, Math.ceil(total / PAGE_SIZE))}
             </p>
-            {hasMore && (
-              <button
-                onClick={() => loadTenants(page + 1, true)}
-                disabled={loadingMore}
-                className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 bg-white border border-gray-200 hover:bg-gray-50 transition disabled:opacity-60"
-              >
-                {loadingMore ? "Yükleniyor..." : "Daha Fazla Yükle"}
-              </button>
-            )}
+            <Pagination page={page} total={total} pageSize={PAGE_SIZE} onPageChange={loadTenants} />
           </div>
         </>
       )}
