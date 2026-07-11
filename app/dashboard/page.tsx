@@ -8,6 +8,7 @@ import MulkEkleButton from "@/components/MulkEkleButton";
 import KiraciEkleButton from "@/components/KiraciEkleButton";
 import TahsilatEkleButton from "@/components/TahsilatEkleButton";
 import TrialBanner from "@/components/TrialBanner";
+import EmailVerificationBanner from "@/components/EmailVerificationBanner";
 import { getEffectiveDebtStatus } from "@/lib/debtStatus";
 import { getAccessStateForUser } from "@/lib/access";
 
@@ -185,7 +186,10 @@ export default async function DashboardPage() {
   } = await getStats(session.userId);
 
   const access = await getAccessStateForUser(session.userId);
-  const profile = await prisma.user.findUnique({ where: { id: session.userId }, select: { city: true } });
+  const profile = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { city: true, emailVerifiedAt: true },
+  });
 
   const CARDS = [
     { label: "Toplam Mülk", value: `${propertyCount}`, icon: CARD_ICONS.properties, color: "text-blue-500 bg-blue-50" },
@@ -212,6 +216,8 @@ export default async function DashboardPage() {
           <TahsilatEkleButton className={secondaryBtn} />
         </div>
       </div>
+
+      {profile && !profile.emailVerifiedAt && <EmailVerificationBanner />}
 
       {profile && !profile.city && (
         <div className="flex items-center justify-between gap-4 bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 mb-6">

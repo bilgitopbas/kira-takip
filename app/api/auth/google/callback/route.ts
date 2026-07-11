@@ -57,7 +57,11 @@ export async function GET(req: NextRequest) {
       if (existingByEmail) {
         user = await prisma.user.update({
           where: { id: existingByEmail.id },
-          data: { googleId: profile.sub },
+          data: {
+            googleId: profile.sub,
+            // Google e-postayı zaten doğruladığı için hesap henüz onaysızsa şimdi onaylanmış sayılır
+            emailVerifiedAt: existingByEmail.emailVerifiedAt ?? new Date(),
+          },
         });
       } else {
         const trialEndsAt = new Date();
@@ -70,6 +74,7 @@ export async function GET(req: NextRequest) {
             trialEndsAt,
             role: "CUSTOMER",
             subscriptionStatus: "TRIAL",
+            emailVerifiedAt: new Date(),
           },
         });
         isNewUser = true;

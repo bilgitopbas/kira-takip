@@ -106,7 +106,7 @@ export default function KiraciListPage() {
     loadTenants(1);
   }
 
-  const hasActiveFilters = !!(search || city);
+  const hasActiveFilters = !!(search || city || sort !== "newest");
 
   return (
     <div>
@@ -164,6 +164,7 @@ export default function KiraciListPage() {
             onClick={() => {
               setSearch("");
               setCity("");
+              setSort("newest");
             }}
             className="text-sm font-medium text-slate-500 hover:text-red-500 transition"
           >

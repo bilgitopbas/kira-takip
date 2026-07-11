@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, createSession } from "@/lib/auth";
-import { sendWelcomeEmail } from "@/lib/mail";
+import { sendWelcomeEmail, sendVerificationEmail } from "@/lib/mail";
 import { notifyAdminsNewCustomer } from "@/lib/adminNotifications";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import { verifyRecaptcha } from "@/lib/recaptcha";
 import { isValidEmailFormat, domainAcceptsMail } from "@/lib/emailValidation";
+import { resolveAppUrl } from "@/lib/url";
 
 export async function POST(req: NextRequest) {
   try {
@@ -89,6 +91,9 @@ export async function POST(req: NextRequest) {
     trialEndsAt.setDate(trialEndsAt.getDate() + 45);
     const now = new Date();
 
+    const emailVerificationToken = crypto.randomBytes(32).toString("hex");
+    const emailVerificationExpires = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
     const user = await prisma.user.create({
       data: {
         email,
@@ -105,6 +110,8 @@ export async function POST(req: NextRequest) {
         trialEndsAt,
         role: "CUSTOMER",
         subscriptionStatus: "TRIAL",
+        emailVerificationToken,
+        emailVerificationExpires,
       },
     });
 
@@ -114,6 +121,13 @@ export async function POST(req: NextRequest) {
       await sendWelcomeEmail(user.email, user.fullName);
     } catch (mailErr) {
       console.error("Hoş geldin e-postası gönderilemedi:", mailErr);
+    }
+
+    try {
+      const verifyLink = `${resolveAppUrl(req)}/api/auth/verify-email?token=${emailVerificationToken}`;
+      await sendVerificationEmail(user.email, user.fullName, verifyLink);
+    } catch (mailErr) {
+      console.error("Onay e-postası gönderilemedi:", mailErr);
     }
 
     try {

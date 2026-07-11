@@ -98,6 +98,10 @@ model User {
   passwordResetToken   String?   @unique
   passwordResetExpires DateTime?
 
+  emailVerifiedAt          DateTime?
+  emailVerificationToken   String?   @unique
+  emailVerificationExpires DateTime?
+
   notifyPaymentOverdue  Boolean @default(true)
   notifyRenewalUpcoming Boolean @default(true)
   notifyFiveYear        Boolean @default(true)

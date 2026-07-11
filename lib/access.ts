@@ -43,12 +43,25 @@ export async function getAccessStateForUser(userId: string) {
 
 const LOCKED_MESSAGE =
   "Deneme ve ek süreniz sona erdi. Bu işlemi yapabilmek için Mizan Pro'ya geçmeniz gerekiyor.";
+const EMAIL_NOT_VERIFIED_MESSAGE =
+  "Deneme süreniz sona erdi. Devam edebilmek için önce e-posta adresinizi onaylamanız gerekiyor. Ayarlar sayfasından onay maili tekrar gönderebilirsiniz.";
 
 export async function requireWriteAccess(userId: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const access = await getAccessStateForUser(userId);
   if (!access) return { ok: false, error: "Kullanıcı bulunamadı." };
   if (access.state === "LOCKED") {
     return { ok: false, error: LOCKED_MESSAGE };
+  }
+  // Deneme süresi boyunca serbest; deneme bitip ek süreye/aktif plana geçilince
+  // e-posta adresinin onaylanmış olması şart koşulur.
+  if (access.state !== "TRIAL") {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { emailVerifiedAt: true },
+    });
+    if (!user?.emailVerifiedAt) {
+      return { ok: false, error: EMAIL_NOT_VERIFIED_MESSAGE };
+    }
   }
   return { ok: true };
 }

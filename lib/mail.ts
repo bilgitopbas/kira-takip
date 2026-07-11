@@ -84,6 +84,19 @@ export async function sendInviteEmail(to: string, inviterName: string, inviteLin
   await sendMail(to, `${inviterName} sizi MizanMülk hesabına davet etti`, html);
 }
 
+export async function sendVerificationEmail(to: string, fullName: string, verifyLink: string) {
+  const html = emailShell(`
+    <h1 style="font-size:20px; color:#0f172a; margin:0 0 16px;">E-posta Adresinizi Onaylayın</h1>
+    <p style="font-size:14px; color:#334155; line-height:1.6;">Merhaba ${fullName},</p>
+    <p style="font-size:14px; color:#334155; line-height:1.6;">MizanMülk hesabınızı kullanmaya devam edebilmeniz için e-posta adresinizi onaylamanız gerekiyor. Aşağıdaki bağlantıya tıklayarak onaylayabilirsiniz. Bu bağlantı 7 gün süreyle geçerlidir.</p>
+    <p style="text-align:center; margin:24px 0;">
+      <a href="${verifyLink}" style="background:#17B6AE; color:#ffffff; text-decoration:none; font-weight:600; font-size:14px; padding:12px 24px; border-radius:10px; display:inline-block;">E-postamı Onayla</a>
+    </p>
+    <p style="font-size:12px; color:#94a3b8; line-height:1.6;">Bu hesabı siz oluşturmadıysanız bu e-postayı görmezden gelebilirsiniz.</p>
+  `);
+  await sendMail(to, "E-posta Adresinizi Onaylayın - MizanMülk", html);
+}
+
 export async function sendPasswordResetEmail(to: string, fullName: string, resetLink: string) {
   const html = emailShell(`
     <h1 style="font-size:20px; color:#0f172a; margin:0 0 16px;">Şifre Sıfırlama Talebi</h1>
