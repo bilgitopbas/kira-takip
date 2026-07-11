@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Mizan Mülk Yönetimi</string>
+    <string name="title_activity_main">Mizan Mülk Yönetimi</string>
+    <string name="package_name">com.mizanmulkyonetimi.app</string>
+    <string name="custom_url_scheme">com.mizanmulkyonetimi.app</string>
+</resources>

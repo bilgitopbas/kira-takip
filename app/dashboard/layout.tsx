@@ -27,7 +27,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   });
 
   return (
-    <DashboardShell fullName={user?.fullName || ""} impersonating={!!session.impersonatedBy}>
+    <DashboardShell fullName={user?.fullName || ""} userId={session.userId} impersonating={!!session.impersonatedBy}>
       {children}
     </DashboardShell>
   );

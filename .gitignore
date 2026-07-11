@@ -44,3 +44,20 @@ next-env.d.ts
 
 # yuklenen dosyalar (sozlesmeler vb.)
 /uploads
+
+# Capacitor - Android build artifacts
+/android/.gradle
+/android/build
+/android/app/build
+/android/local.properties
+/android/captures
+/android/*.iml
+/android/.idea
+
+# Capacitor - iOS build artifacts
+/ios/App/Pods
+/ios/App/build
+/ios/App/DerivedData
+/ios/App/App/public
+**/xcuserdata
+*.xcuserstate

@@ -1,29 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
+import BottomTabBar from "@/components/BottomTabBar";
+import OneSignalBridge from "@/components/OneSignalBridge";
+import { isNativeApp } from "@/lib/native";
 
 export default function DashboardShell({
   fullName,
+  userId,
   impersonating,
   children,
 }: {
   fullName: string;
+  userId: string;
   impersonating: boolean;
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [nativeApp, setNativeApp] = useState(false);
+
+  useEffect(() => {
+    setNativeApp(isNativeApp());
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-950 flex transition-colors">
+      <OneSignalBridge userId={userId} />
       <DashboardSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0">
         {impersonating && <ImpersonationBanner customerName={fullName} />}
         <DashboardHeader fullName={fullName} onMenuClick={() => setMobileOpen(true)} />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">{children}</main>
+        <main className={`flex-1 p-4 sm:p-6 lg:p-8 overflow-auto ${nativeApp ? "pb-24" : ""}`}>{children}</main>
       </div>
+      {nativeApp && <BottomTabBar />}
     </div>
   );
 }
