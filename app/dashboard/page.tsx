@@ -47,7 +47,7 @@ async function getStats(ownerId: string) {
     }),
     prisma.payment.findMany({
       where: { tenant: { property: { ownerId } }, paidAt: { gte: fiveYearsAgoStart } },
-      select: { amount: true, paidAt: true },
+      select: { amount: true, paidAt: true, debt: { select: { dueDate: true } } },
     }),
     prisma.debt.findMany({
       where: { tenant: { property: { ownerId } }, dueDate: { gte: fiveYearsAgoStart } },
@@ -83,7 +83,9 @@ async function getStats(ownerId: string) {
     monthlyDebtTotals.set(key, 0);
   }
   for (const p of longRangePayments) {
-    const d = new Date(p.paidAt);
+    // Tahsilat grafiğinde ödeme, ait olduğu borç döneminin ayına işlenir
+    // (örn. Temmuz'da tahsil edilen Mayıs kirası Mayıs'a yazılır), tahsilat tarihine değil.
+    const d = new Date(p.debt?.dueDate ?? p.paidAt);
     const key = `${d.getFullYear()}-${d.getMonth()}`;
     if (monthlyTotals.has(key)) {
       monthlyTotals.set(key, monthlyTotals.get(key)! + Number(p.amount));
