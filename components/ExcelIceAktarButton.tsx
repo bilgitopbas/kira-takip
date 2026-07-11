@@ -80,6 +80,12 @@ export default function ExcelIceAktarButton({ className, onComplete }: { classNa
       let tenantOk = false;
       let error: string | undefined;
 
+      if (!row.title.trim() || !row.tenantName.trim()) {
+        results.push({ row, propertyOk, tenantOk, error: "Mülk adı ve ad soyad zorunludur." });
+        setProgress(i + 1);
+        continue;
+      }
+
       try {
         const propRes = await fetch("/api/dashboard/properties", {
           method: "POST",
@@ -105,29 +111,26 @@ export default function ExcelIceAktarButton({ className, onComplete }: { classNa
         propertyOk = true;
         const propertyId = propData.property.id;
 
-        if (row.tenantName) {
-          const fd = new FormData();
-          fd.append("propertyId", propertyId);
-          fd.append("fullName", row.tenantName);
-          fd.append("phone", row.phone);
-          fd.append("nationalId", row.nationalId);
-          fd.append("notificationAddress", row.notificationAddress);
-          fd.append("monthlyRent", row.monthlyRent);
-          fd.append("contractStart", row.contractStart);
-          fd.append("paymentFrequency", row.paymentFrequency);
-          if (row.increaseRate) {
-            fd.append("increaseType", "CUSTOM");
-            fd.append("increaseRate", row.increaseRate);
-          }
-          fd.append("depositAmount", row.depositAmount);
+        const fd = new FormData();
+        fd.append("propertyId", propertyId);
+        fd.append("fullName", row.tenantName);
+        fd.append("phone", row.phone);
+        fd.append("nationalId", row.nationalId);
+        fd.append("notificationAddress", row.notificationAddress);
+        fd.append("contractStart", row.contractStart);
+        fd.append("paymentFrequency", row.paymentFrequency);
+        if (row.increaseRate) {
+          fd.append("increaseType", "CUSTOM");
+          fd.append("increaseRate", row.increaseRate);
+        }
+        fd.append("depositAmount", row.depositAmount);
 
-          const tenantRes = await fetch("/api/dashboard/tenants", { method: "POST", body: fd });
-          const tenantData = await tenantRes.json();
-          if (!tenantRes.ok) {
-            error = tenantData.error || "Kiracı oluşturulamadı.";
-          } else {
-            tenantOk = true;
-          }
+        const tenantRes = await fetch("/api/dashboard/tenants", { method: "POST", body: fd });
+        const tenantData = await tenantRes.json();
+        if (!tenantRes.ok) {
+          error = tenantData.error || "Kiracı oluşturulamadı.";
+        } else {
+          tenantOk = true;
         }
       } catch {
         error = "Beklenmeyen bir hata oluştu.";
@@ -163,9 +166,10 @@ export default function ExcelIceAktarButton({ className, onComplete }: { classNa
               <div className="bg-[#17B6AE]/8 border border-[#17B6AE]/20 rounded-xl px-4 py-3 mb-5 text-sm text-slate-700">
                 <p className="mb-2">
                   Excel dosyanızdaki sütun başlıkları aşağıdaki isimlerle eşleşirse otomatik olarak okunur ve her
-                  satırdan hem bir <strong>mülk</strong> hem de (varsa) o mülkün <strong>kiracısı</strong>{" "}
-                  oluşturulur. Aylık kira bedeli ve sözleşme başlangıç tarihi girilmişse kiracı otomatik olarak
-                  borçlandırılır.
+                  satırdan hem bir <strong>mülk</strong> hem de o mülkün <strong>kiracısı</strong> oluşturulur.
+                  Yalnızca <strong>Mülk Adı</strong> ve <strong>Ad Soyad</strong> zorunludur. Aylık kira bedeli
+                  Excel&apos;den alınmaz; kiracı eklendikten sonra kiracı detay sayfasındaki &quot;Kiracıyı
+                  Borçlandır&quot; ile ayrıca girilir.
                 </p>
                 <p className="text-xs text-slate-500">Beklenen sütun başlıkları:</p>
                 <div className="flex flex-wrap gap-1.5 mt-1.5">
@@ -223,13 +227,13 @@ export default function ExcelIceAktarButton({ className, onComplete }: { classNa
             <div>
               <p className="text-sm text-slate-600 mb-4">
                 {rows.length} satır bulundu. Eksik veya hatalı hücreleri düzenleyip onaylayın. Boş bırakılan
-                &quot;Mülk Adı&quot; veya &quot;Adres&quot; alanları o satırın içe aktarılmasını engeller.
+                &quot;Mülk Adı&quot; veya &quot;Ad Soyad&quot; alanları o satırın içe aktarılmasını engeller.
               </p>
               <div className="overflow-x-auto border border-gray-100 rounded-xl">
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="bg-gray-50 text-left">
-                      {["Mülk Adı", "Tip", "Durum", "Şehir", "İlçe", "Adres", "Ad Soyad", "Telefon", "Kira Bedeli", "Sözleşme Başl.", "Ödeme Şekli", "Artış Oranı", "Depozito", ""].map((h) => (
+                      {["Mülk Adı", "Tip", "Durum", "Şehir", "İlçe", "Adres", "Ad Soyad", "Telefon", "Sözleşme Başl.", "Ödeme Şekli", "Artış Oranı", "Depozito", ""].map((h) => (
                         <th key={h} className="px-2 py-2 font-semibold text-slate-500 whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -276,21 +280,18 @@ export default function ExcelIceAktarButton({ className, onComplete }: { classNa
                           <input
                             value={row.address}
                             onChange={(e) => updateRow(row.id, "address", e.target.value)}
-                            className={`w-32 px-2 py-1.5 text-xs border rounded-lg ${!row.address ? "border-red-300 bg-red-50" : "border-gray-200"}`}
+                            className="w-32 px-2 py-1.5 text-xs border border-gray-200 rounded-lg"
                           />
-                        </td>
-                        <td className="px-1 py-1">
-                          <input value={row.tenantName} onChange={(e) => updateRow(row.id, "tenantName", e.target.value)} className="w-28 px-2 py-1.5 text-xs border border-gray-200 rounded-lg" />
-                        </td>
-                        <td className="px-1 py-1">
-                          <input value={row.phone} onChange={(e) => updateRow(row.id, "phone", e.target.value)} className="w-24 px-2 py-1.5 text-xs border border-gray-200 rounded-lg" />
                         </td>
                         <td className="px-1 py-1">
                           <input
-                            value={row.monthlyRent}
-                            onChange={(e) => updateRow(row.id, "monthlyRent", e.target.value)}
-                            className={`w-20 px-2 py-1.5 text-xs border rounded-lg ${row.tenantName && !row.monthlyRent ? "border-amber-300 bg-amber-50" : "border-gray-200"}`}
+                            value={row.tenantName}
+                            onChange={(e) => updateRow(row.id, "tenantName", e.target.value)}
+                            className={`w-28 px-2 py-1.5 text-xs border rounded-lg ${!row.tenantName ? "border-red-300 bg-red-50" : "border-gray-200"}`}
                           />
+                        </td>
+                        <td className="px-1 py-1">
+                          <input value={row.phone} onChange={(e) => updateRow(row.id, "phone", e.target.value)} className="w-24 px-2 py-1.5 text-xs border border-gray-200 rounded-lg" />
                         </td>
                         <td className="px-1 py-1">
                           <input type="date" value={row.contractStart} onChange={(e) => updateRow(row.id, "contractStart", e.target.value)} className="w-32 px-2 py-1.5 text-xs border border-gray-200 rounded-lg" />

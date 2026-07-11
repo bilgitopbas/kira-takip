@@ -30,7 +30,7 @@ type Tenant = {
   notificationAddress: string | null;
   notes: string | null;
   rating: number | null;
-  monthlyRent: string;
+  monthlyRent: string | null;
   contractStart: string | null;
   contractEnd: string | null;
   rentRevisionDate: string | null;
@@ -53,6 +53,11 @@ const MONTH_NAMES = [
 ];
 
 const CURRENCY_SYMBOLS: Record<string, string> = { TRY: "₺", USD: "$", EUR: "€" };
+
+function formatDebtDate(dueDate: string) {
+  const date = new Date(dueDate);
+  return `${date.getDate()} ${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
+}
 
 function Stars({ rating }: { rating: number | null }) {
   if (!rating) return <span className="text-slate-400 text-sm">Puanlanmadı</span>;
@@ -327,14 +332,18 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
           <InfoRow
             label="Aylık Kira"
             value={
-              <span className="text-[#17B6AE] text-lg font-bold">
-                {Number(tenant.monthlyRent).toLocaleString("tr-TR")} ₺
-              </span>
+              tenant.monthlyRent ? (
+                <span className="text-[#17B6AE] text-lg font-bold">
+                  {Number(tenant.monthlyRent).toLocaleString("tr-TR")} ₺
+                </span>
+              ) : (
+                <span className="text-slate-400 text-sm font-normal">Henüz borçlandırılmadı</span>
+              )
             }
           />
           <InfoRow
             label="Yıllık Kira"
-            value={`${(Number(tenant.monthlyRent) * 12).toLocaleString("tr-TR")} ₺`}
+            value={tenant.monthlyRent ? `${(Number(tenant.monthlyRent) * 12).toLocaleString("tr-TR")} ₺` : null}
           />
           <InfoRow
             label="Sözleşme Başlangıç"
@@ -447,7 +456,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
                   return (
                     <tr key={d.id} className="hover:bg-gray-50/60 transition-colors">
                       <td className="px-5 py-3.5 text-slate-800 font-semibold border-r border-gray-100">
-                        {MONTH_NAMES[d.month - 1]} {d.year}
+                        {formatDebtDate(d.dueDate)}
                       </td>
                       <td className="px-5 py-3.5 text-slate-700 border-r border-gray-100">
                         {Number(d.amount).toLocaleString("tr-TR")} ₺

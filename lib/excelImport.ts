@@ -12,7 +12,6 @@ export type ImportRow = {
   phone: string;
   notificationAddress: string;
   contractStart: string; // yyyy-mm-dd
-  monthlyRent: string;
   paymentFrequency: string; // MONTHLY | YEARLY | ""
   increaseRate: string;
   depositAmount: string;
@@ -52,7 +51,6 @@ const HEADER_ALIASES: Record<keyof Omit<ImportRow, "id">, string[]> = {
   phone: ["telefon numarası", "telefon numarasi", "telefon", "cep telefonu"],
   notificationAddress: ["tebligat adresi"],
   contractStart: ["sözleşme başlangıç tarihi", "sozlesme baslangic tarihi", "başlangıç tarihi", "baslangic tarihi"],
-  monthlyRent: ["aylık kira bedeli", "aylik kira bedeli", "kira bedeli", "aylık kira", "aylik kira"],
   paymentFrequency: ["ödeme şekli", "odeme sekli"],
   increaseRate: ["artış oranı", "artis orani"],
   depositAmount: ["depozito"],
@@ -144,7 +142,6 @@ export function parseRows(headerRow: unknown[], dataRows: unknown[][]): ImportRo
         phone: cell(row, colByField.get("phone")),
         notificationAddress: cell(row, colByField.get("notificationAddress")),
         contractStart: excelDateToIso(contractStartRaw),
-        monthlyRent: cell(row, colByField.get("monthlyRent")).replace(/[^\d.,]/g, "").replace(",", "."),
         paymentFrequency: freqRaw.startsWith("yıl") || freqRaw.startsWith("yil") ? "YEARLY" : freqRaw.startsWith("ay") ? "MONTHLY" : "",
         increaseRate: cell(row, colByField.get("increaseRate")).replace(/[^\d.,]/g, "").replace(",", "."),
         depositAmount: cell(row, colByField.get("depositAmount")).replace(/[^\d.,]/g, "").replace(",", "."),
@@ -165,7 +162,6 @@ export const EXPECTED_COLUMNS = [
   "Telefon Numarası",
   "Tebligat Adresi",
   "Sözleşme Başlangıç Tarihi",
-  "Aylık Kira Bedeli",
   "Ödeme Şekli (Aylık/Yıllık)",
   "Artış Oranı",
   "Depozito",

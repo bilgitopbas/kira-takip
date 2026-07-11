@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { saveUploadedFile } from "@/lib/uploads";
-import { generateMonthlyDebts } from "@/lib/debts";
 import { parseTenantFormData } from "@/lib/tenantForm";
 import { requireWriteAccess } from "@/lib/access";
 
@@ -92,44 +91,31 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const tenant = await prisma.$transaction(async (tx) => {
-      const created = await tx.tenant.create({
-        data: {
-          propertyId: data.propertyId,
-          fullName: data.fullName,
-          phone: data.phone,
-          email: data.email,
-          tenantType: data.tenantType || null,
-          nationalId: data.nationalId,
-          taxNumber: data.taxNumber,
-          notificationAddress: data.notificationAddress,
-          notes: data.notes,
-          rating: data.rating,
-          monthlyRent: data.monthlyRent,
-          contractStart: data.contractStart,
-          contractEnd: data.contractEnd,
-          rentRevisionDate: data.rentRevisionDate,
-          rentPaymentDate: data.rentPaymentDate,
-          contractDurationMonths: data.contractDurationMonths,
-          paymentFrequency: data.paymentFrequency || null,
-          increaseType: data.increaseType || null,
-          increaseRate: data.increaseRate,
-          depositAmount: data.depositAmount,
-          depositCurrency: data.depositCurrency || null,
-          contractFileUrl,
-          contractNotes: data.contractNotes,
-        },
-      });
-
-      const debtStart = data.rentPaymentDate || data.contractStart;
-      if (debtStart) {
-        const debts = generateMonthlyDebts(debtStart, data.monthlyRent);
-        await tx.debt.createMany({
-          data: debts.map((d) => ({ ...d, tenantId: created.id })),
-        });
-      }
-
-      return created;
+    const tenant = await prisma.tenant.create({
+      data: {
+        propertyId: data.propertyId,
+        fullName: data.fullName,
+        phone: data.phone,
+        email: data.email,
+        tenantType: data.tenantType || null,
+        nationalId: data.nationalId,
+        taxNumber: data.taxNumber,
+        notificationAddress: data.notificationAddress,
+        notes: data.notes,
+        rating: data.rating,
+        contractStart: data.contractStart,
+        contractEnd: data.contractEnd,
+        rentRevisionDate: data.rentRevisionDate,
+        rentPaymentDate: data.rentPaymentDate,
+        contractDurationMonths: data.contractDurationMonths,
+        paymentFrequency: data.paymentFrequency || null,
+        increaseType: data.increaseType || null,
+        increaseRate: data.increaseRate,
+        depositAmount: data.depositAmount,
+        depositCurrency: data.depositCurrency || null,
+        contractFileUrl,
+        contractNotes: data.contractNotes,
+      },
     });
 
     return NextResponse.json({ success: true, tenant });

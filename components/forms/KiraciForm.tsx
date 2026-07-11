@@ -31,6 +31,7 @@ export default function KiraciForm({ onSuccess, onCancel }: { onSuccess: () => v
 
   const [properties, setProperties] = useState<Property[]>([]);
   const [loadingProperties, setLoadingProperties] = useState(true);
+  const [propertySearch, setPropertySearch] = useState("");
 
   // Adim 1
   const [propertyId, setPropertyId] = useState("");
@@ -49,7 +50,6 @@ export default function KiraciForm({ onSuccess, onCancel }: { onSuccess: () => v
   const [rentPaymentDate, setRentPaymentDate] = useState("");
   const [durationOption, setDurationOption] = useState("12");
   const [customMonths, setCustomMonths] = useState("");
-  const [monthlyRent, setMonthlyRent] = useState("");
   const [paymentFrequency, setPaymentFrequency] = useState<"MONTHLY" | "YEARLY">("MONTHLY");
   const [increaseType, setIncreaseType] = useState<"TUFE" | "CUSTOM">("TUFE");
   const [increaseRate, setIncreaseRate] = useState("");
@@ -82,7 +82,9 @@ export default function KiraciForm({ onSuccess, onCancel }: { onSuccess: () => v
       ? addMonthsClamped(new Date(contractStart), durationMonths)
       : null;
 
-  const yearlyRent = monthlyRent ? Number(monthlyRent) * 12 : 0;
+  const filteredProperties = propertySearch
+    ? properties.filter((p) => p.title.toLocaleLowerCase("tr").includes(propertySearch.toLocaleLowerCase("tr")))
+    : properties;
 
   function goToStep2(e: React.FormEvent) {
     e.preventDefault();
@@ -97,12 +99,6 @@ export default function KiraciForm({ onSuccess, onCancel }: { onSuccess: () => v
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-
-    if (!monthlyRent) {
-      setError("Aylık kira bedeli zorunludur.");
-      return;
-    }
-
     setSubmitting(true);
 
     const fd = new FormData();
@@ -120,7 +116,6 @@ export default function KiraciForm({ onSuccess, onCancel }: { onSuccess: () => v
     fd.set("rentRevisionDate", rentRevisionDate);
     fd.set("rentPaymentDate", rentPaymentDate);
     fd.set("contractDurationMonths", String(durationMonths || ""));
-    fd.set("monthlyRent", monthlyRent);
     fd.set("paymentFrequency", paymentFrequency);
     fd.set("increaseType", increaseType);
     if (increaseType === "CUSTOM") fd.set("increaseRate", increaseRate);
@@ -182,13 +177,26 @@ export default function KiraciForm({ onSuccess, onCancel }: { onSuccess: () => v
 
           <div>
             <label className="block text-xs font-semibold text-slate-600 mb-1.5">Mülk *</label>
+            <div className="relative mb-2">
+              <svg className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                value={propertySearch}
+                onChange={(e) => setPropertySearch(e.target.value)}
+                placeholder="Mülk ara..."
+                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
+              />
+            </div>
             <select
               required
               value={propertyId}
               onChange={(e) => setPropertyId(e.target.value)}
               className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30 bg-white"
             >
-              {properties.map((p) => (
+              {filteredProperties.length === 0 && <option value="">Sonuç bulunamadı</option>}
+              {filteredProperties.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.title}
                 </option>
@@ -389,24 +397,9 @@ export default function KiraciForm({ onSuccess, onCancel }: { onSuccess: () => v
             )}
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-              Aylık Kira Bedeli (₺) *
-            </label>
-            <input
-              type="number"
-              required
-              min="0"
-              step="0.01"
-              value={monthlyRent}
-              onChange={(e) => setMonthlyRent(e.target.value)}
-              className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
-            />
-            {yearlyRent > 0 && (
-              <p className="mt-1.5 text-xs text-slate-500">
-                Yıllık Kira Bedeli: <span className="font-medium text-slate-600">{yearlyRent.toLocaleString("tr-TR")} ₺</span>
-              </p>
-            )}
+          <div className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-xs text-slate-500">
+            Aylık kira bedeli burada girilmez. Kiracı kaydedildikten sonra kiracı detay sayfasındaki
+            &quot;Kiracıyı Borçlandır&quot; ile ilk dönem kira bedelini ve borçlandırma tarihini girebilirsiniz.
           </div>
 
           <div>

@@ -90,7 +90,6 @@ export async function PATCH(
         notificationAddress: data.notificationAddress,
         notes: data.notes,
         rating: data.rating,
-        monthlyRent: data.monthlyRent,
         contractStart: data.contractStart,
         contractEnd: data.contractEnd,
         rentRevisionDate: data.rentRevisionDate,

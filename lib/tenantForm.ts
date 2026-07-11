@@ -10,10 +10,9 @@ export function parseTenantFormData(formData: FormData) {
 
   const propertyId = get("propertyId");
   const fullName = get("fullName");
-  const monthlyRentRaw = get("monthlyRent");
 
-  if (!propertyId || !fullName || !monthlyRentRaw) {
-    return { error: "Mülk, ad soyad ve aylık kira zorunludur." } as const;
+  if (!propertyId || !fullName) {
+    return { error: "Mülk ve ad soyad zorunludur." } as const;
   }
 
   const tenantType = get("tenantType");
@@ -34,11 +33,6 @@ export function parseTenantFormData(formData: FormData) {
   const depositCurrency = get("depositCurrency");
   if (depositCurrency && !CURRENCIES.includes(depositCurrency)) {
     return { error: "Geçersiz para birimi." } as const;
-  }
-
-  const monthlyRent = Number(monthlyRentRaw);
-  if (Number.isNaN(monthlyRent) || monthlyRent <= 0) {
-    return { error: "Geçersiz aylık kira bedeli." } as const;
   }
 
   const ratingRaw = get("rating");
@@ -81,7 +75,6 @@ export function parseTenantFormData(formData: FormData) {
       notificationAddress: get("notificationAddress") || null,
       notes: get("notes") || null,
       rating,
-      monthlyRent,
       contractStart,
       contractEnd,
       rentRevisionDate,

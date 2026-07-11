@@ -81,8 +81,8 @@ export async function POST(req: NextRequest) {
   const { title, address, city, district, squareMeters, propertyType, notes, isOccupied } =
     await req.json();
 
-  if (!title?.trim() || !address?.trim()) {
-    return NextResponse.json({ error: "Başlık ve adres zorunludur." }, { status: 400 });
+  if (!title?.trim()) {
+    return NextResponse.json({ error: "Mülk adı zorunludur." }, { status: 400 });
   }
 
   const VALID_TYPES = ["ARSA", "AVM", "DEPO", "DEVREMULK", "FABRIKA", "KONUT", "OFIS"];
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
       data: {
         ownerId: session.userId,
         title: title.trim(),
-        address: address.trim(),
+        address: address?.trim() || "",
         city: city?.trim() || null,
         district: district?.trim() || null,
         squareMeters: squareMeters ? Number(squareMeters) : null,

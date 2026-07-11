@@ -171,7 +171,7 @@ model Tenant {
   notes        String?
   rating       Int?
 
-  monthlyRent  Decimal  @db.Decimal(10, 2)
+  monthlyRent  Decimal? @db.Decimal(10, 2)
   contractStart DateTime?
   contractEnd   DateTime?
   rentRevisionDate DateTime?

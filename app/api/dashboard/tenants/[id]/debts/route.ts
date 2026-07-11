@@ -51,15 +51,23 @@ export async function POST(
     );
   }
 
-  await prisma.$transaction([
-    prisma.debt.createMany({
-      data: newDebts.map((d) => ({ ...d, tenantId: id })),
-    }),
-    prisma.tenant.update({
+  await prisma.debt.createMany({
+    data: newDebts.map((d) => ({ ...d, tenantId: id })),
+  });
+
+  // Aylık kira bilgisi, tarihi en güncel olan borç dönemine göre belirlenir
+  // (borçlandırmaların hangi sırayla girildiğine değil, tarihe bakılır).
+  const latestDebt = await prisma.debt.findFirst({
+    where: { tenantId: id },
+    orderBy: { dueDate: "desc" },
+    select: { amount: true },
+  });
+  if (latestDebt) {
+    await prisma.tenant.update({
       where: { id },
-      data: { monthlyRent: rent },
-    }),
-  ]);
+      data: { monthlyRent: latestDebt.amount },
+    });
+  }
 
   return NextResponse.json({ success: true, created: newDebts.length });
 }

@@ -8,7 +8,7 @@ import ExcelIceAktarButton from "@/components/ExcelIceAktarButton";
 type Tenant = {
   id: string;
   fullName: string;
-  monthlyRent: string;
+  monthlyRent: string | null;
   contractStart: string | null;
   rating: number | null;
   property: { title: string };
@@ -213,13 +213,13 @@ export default function KiraciListPage() {
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-500">Aylık Kira</span>
                     <span className="font-semibold text-slate-800">
-                      {Number(t.monthlyRent).toLocaleString("tr-TR")} ₺
+                      {t.monthlyRent ? `${Number(t.monthlyRent).toLocaleString("tr-TR")} ₺` : "—"}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-500">Yıllık Kira</span>
                     <span className="font-medium text-slate-700">
-                      {(Number(t.monthlyRent) * 12).toLocaleString("tr-TR")} ₺
+                      {t.monthlyRent ? `${(Number(t.monthlyRent) * 12).toLocaleString("tr-TR")} ₺` : "—"}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">

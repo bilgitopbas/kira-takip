@@ -52,7 +52,6 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
   const [rentPaymentDate, setRentPaymentDate] = useState("");
   const [durationOption, setDurationOption] = useState("12");
   const [customMonths, setCustomMonths] = useState("");
-  const [monthlyRent, setMonthlyRent] = useState("");
   const [paymentFrequency, setPaymentFrequency] = useState<"MONTHLY" | "YEARLY">("MONTHLY");
   const [increaseType, setIncreaseType] = useState<"TUFE" | "CUSTOM">("TUFE");
   const [increaseRate, setIncreaseRate] = useState("");
@@ -99,7 +98,6 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
         if (tenant.contractDurationMonths && !DURATION_OPTIONS.some((d) => d.value === String(tenant.contractDurationMonths))) {
           setCustomMonths(String(tenant.contractDurationMonths));
         }
-        setMonthlyRent(tenant.monthlyRent || "");
         setPaymentFrequency(tenant.paymentFrequency || "MONTHLY");
         setIncreaseType(tenant.increaseType || "TUFE");
         setIncreaseRate(tenant.increaseRate || "");
@@ -120,14 +118,12 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
       ? addMonthsClamped(new Date(contractStart), durationMonths)
       : null;
 
-  const yearlyRent = monthlyRent ? Number(monthlyRent) * 12 : 0;
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
 
-    if (!propertyId || !fullName.trim() || !monthlyRent) {
-      setError("Mülk, ad soyad ve aylık kira zorunludur.");
+    if (!propertyId || !fullName.trim()) {
+      setError("Mülk ve ad soyad zorunludur.");
       return;
     }
 
@@ -148,7 +144,6 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
     fd.set("rentRevisionDate", rentRevisionDate);
     fd.set("rentPaymentDate", rentPaymentDate);
     fd.set("contractDurationMonths", String(durationMonths || ""));
-    fd.set("monthlyRent", monthlyRent);
     fd.set("paymentFrequency", paymentFrequency);
     fd.set("increaseType", increaseType);
     if (increaseType === "CUSTOM") fd.set("increaseRate", increaseRate);
@@ -382,22 +377,9 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
           )}
         </div>
 
-        <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Aylık Kira Bedeli (₺) *</label>
-          <input
-            type="number"
-            required
-            min="0"
-            step="0.01"
-            value={monthlyRent}
-            onChange={(e) => setMonthlyRent(e.target.value)}
-            className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
-          />
-          {yearlyRent > 0 && (
-            <p className="mt-1.5 text-xs text-slate-500">
-              Yıllık Kira Bedeli: <span className="font-medium text-slate-700">{yearlyRent.toLocaleString("tr-TR")} ₺</span>
-            </p>
-          )}
+        <div className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-xs text-slate-500">
+          Aylık kira bedeli burada düzenlenmez. Güncel tutar, kiracı detay sayfasındaki
+          &quot;Kiracıyı Borçlandır&quot; ile girilen en son dönemden otomatik alınır.
         </div>
 
         <div>
