@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getEffectiveDebtStatus, getTotalPaid, DEBT_STATUS_LABELS, DEBT_STATUS_STYLES } from "@/lib/debtStatus";
-import { isNativeApp } from "@/lib/native";
-import { hapticSuccess, hapticTap } from "@/lib/haptics";
+import { hapticSuccess } from "@/lib/haptics";
 
 type Tenant = { id: string; fullName: string; property: { title: string } };
 type Debt = {
@@ -40,11 +39,6 @@ export default function TahsilatForm({ onSuccess, onCancel }: { onSuccess: () =>
 
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [nativeApp, setNativeApp] = useState(false);
-
-  useEffect(() => {
-    setNativeApp(isNativeApp());
-  }, []);
 
   useEffect(() => {
     async function load() {
@@ -78,22 +72,6 @@ export default function TahsilatForm({ onSuccess, onCancel }: { onSuccess: () =>
   }, [tenantId]);
 
   const selectedDebt = debts.find((d) => d.id === debtId);
-
-  async function handleTakePhoto() {
-    await hapticTap();
-    try {
-      const { Camera, CameraResultType, CameraSource } = await import("@capacitor/camera");
-      const photo = await Camera.getPhoto({
-        resultType: CameraResultType.DataUrl,
-        source: CameraSource.Camera,
-        quality: 80,
-      });
-      if (!photo.dataUrl) return;
-      const res = await fetch(photo.dataUrl);
-      const blob = await res.blob();
-      setFile(new File([blob], `dekont-${Date.now()}.jpg`, { type: "image/jpeg" }));
-    } catch {}
-  }
 
   function handleSelectDebt(id: string) {
     setDebtId(id);
@@ -238,19 +216,6 @@ export default function TahsilatForm({ onSuccess, onCancel }: { onSuccess: () =>
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
                 className="flex-1 text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#17B6AE]/10 file:text-[#17B6AE] hover:file:bg-[#17B6AE]/20"
               />
-              {nativeApp && (
-                <button
-                  type="button"
-                  onClick={handleTakePhoto}
-                  className="flex-shrink-0 p-2.5 rounded-lg bg-[#17B6AE]/10 text-[#17B6AE] hover:bg-[#17B6AE]/20"
-                  aria-label="Fotoğraf Çek"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <circle cx="12" cy="13" r="3.5" />
-                  </svg>
-                </button>
-              )}
               {file && <span className="flex-shrink-0 text-xs text-[#17B6AE] font-medium">✓ Eklendi</span>}
             </div>
           </div>
