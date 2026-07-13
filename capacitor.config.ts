@@ -9,7 +9,7 @@ const config: CapacitorConfig = {
     cleartext: false,
   },
   ios: {
-    contentInset: "always",
+    contentInset: "never",
   },
   android: {
     allowMixedContent: false,
