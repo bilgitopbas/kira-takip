@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
 async function getStats() {
@@ -122,43 +121,9 @@ export default async function AdminDashboard() {
   return (
     <div>
       {/* Başlık */}
-      <div className="mb-6">
+      <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-800">Kontrol Paneli</h1>
         <p className="text-sm text-slate-400 mt-1">Sistemin genel durumuna buradan bakabilirsiniz.</p>
-      </div>
-
-      {/* Hızlı erişim */}
-      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 mb-8">
-        <Link
-          href="/admin"
-          className="inline-flex justify-center items-center bg-[#17B6AE] text-white font-semibold px-3 sm:px-4 py-2.5 rounded-xl transition text-sm"
-        >
-          Kontrol Paneli
-        </Link>
-        <Link
-          href="/admin/gelirler"
-          className="inline-flex justify-center items-center bg-white hover:bg-gray-50 text-slate-700 font-semibold px-3 sm:px-4 py-2.5 rounded-xl transition text-sm border border-gray-200"
-        >
-          Gelirler
-        </Link>
-        <Link
-          href="/admin/bildirimler"
-          className="inline-flex justify-center items-center bg-white hover:bg-gray-50 text-slate-700 font-semibold px-3 sm:px-4 py-2.5 rounded-xl transition text-sm border border-gray-200"
-        >
-          Bildirimler
-        </Link>
-        <Link
-          href="/admin/kullanicilar"
-          className="inline-flex justify-center items-center bg-white hover:bg-gray-50 text-slate-700 font-semibold px-3 sm:px-4 py-2.5 rounded-xl transition text-sm border border-gray-200"
-        >
-          Kullanıcılar
-        </Link>
-        <Link
-          href="/admin/ayarlar"
-          className="inline-flex justify-center items-center bg-white hover:bg-gray-50 text-slate-700 font-semibold px-3 sm:px-4 py-2.5 rounded-xl transition text-sm border border-gray-200"
-        >
-          Ayarlar
-        </Link>
       </div>
 
       {/* Stat kartları */}
