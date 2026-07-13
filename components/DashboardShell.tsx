@@ -33,7 +33,15 @@ export default function DashboardShell({
       <div className="flex-1 flex flex-col min-w-0">
         {impersonating && <ImpersonationBanner customerName={fullName} />}
         <DashboardHeader fullName={fullName} onMenuClick={() => setMobileOpen(true)} />
-        <main className={`flex-1 p-4 sm:p-6 lg:p-8 overflow-auto ${nativeApp ? "pb-24" : ""}`}>{children}</main>
+        <main
+          className={`flex-1 py-4 sm:p-6 lg:p-8 overflow-auto ${nativeApp ? "pb-24" : ""}`}
+          style={{
+            paddingLeft: "max(1rem, env(safe-area-inset-left))",
+            paddingRight: "max(1rem, env(safe-area-inset-right))",
+          }}
+        >
+          {children}
+        </main>
       </div>
       {nativeApp && <BottomTabBar />}
     </div>
