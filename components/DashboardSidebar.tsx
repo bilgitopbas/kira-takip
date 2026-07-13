@@ -156,7 +156,7 @@ export default function DashboardSidebar({
         />
       )}
       <aside
-        className={`no-print w-72 sm:w-64 fixed inset-y-0 left-0 lg:sticky lg:top-0 h-screen bg-white dark:bg-slate-900 border-r border-gray-100 dark:border-slate-800 flex flex-col shadow-sm transition-transform duration-200 ease-in-out z-50 lg:z-auto lg:translate-x-0 ${
+        className={`no-print w-72 sm:w-64 fixed inset-y-0 left-0 lg:sticky lg:top-0 lg:h-screen bg-white dark:bg-slate-900 border-r border-gray-100 dark:border-slate-800 flex flex-col shadow-sm transition-transform duration-200 ease-in-out z-50 lg:z-auto lg:translate-x-0 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
