@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: "Mizan Mülk Yönetimi",
   webDir: "capacitor-www",
   server: {
-    url: "https://mizanmulkyonetimi.com",
+    url: "https://mizanmulkyonetimi.com/login",
     cleartext: false,
   },
   ios: {
