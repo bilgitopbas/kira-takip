@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, use } from "react";
 import Modal from "@/components/Modal";
+import BackButton from "@/components/BackButton";
 import {
   getEffectiveDebtStatus,
   getTotalPaid,
@@ -240,15 +241,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div>
-      <a
-        href="/dashboard/kiraci"
-        className="no-print inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-4"
-      >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-        Geri
-      </a>
+      <BackButton className="no-print" />
 
       <div className="mb-6 flex items-start justify-between">
         <div>

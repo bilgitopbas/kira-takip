@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import KiraciEkleButton from "@/components/KiraciEkleButton";
 import ExcelIceAktarButton from "@/components/ExcelIceAktarButton";
 import Pagination from "@/components/Pagination";
@@ -49,17 +49,19 @@ function MiniStars({ rating }: { rating: number | null }) {
 
 export default function KiraciListPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [city, setCity] = useState("");
-  const [sort, setSort] = useState("newest");
+  const [search, setSearch] = useState(searchParams.get("q") || "");
+  const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get("q") || "");
+  const [city, setCity] = useState(searchParams.get("city") || "");
+  const [sort, setSort] = useState(searchParams.get("sort") || "newest");
   const [cities, setCities] = useState<string[]>([]);
+  const isFirstRun = useRef(true);
 
   useEffect(() => {
     fetch("/api/dashboard/properties/cities")
@@ -86,9 +88,15 @@ export default function KiraciListPage() {
     setTotal(data.total || 0);
     setPage(targetPage);
     setLoading(false);
+    router.replace(`/dashboard/kiraci?${params.toString()}`, { scroll: false });
   }
 
   useEffect(() => {
+    if (isFirstRun.current) {
+      isFirstRun.current = false;
+      loadTenants(Number(searchParams.get("page")) || 1);
+      return;
+    }
     loadTenants(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, city, sort]);

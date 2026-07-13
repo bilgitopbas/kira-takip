@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import StarRating from "@/components/StarRating";
+import BackButton from "@/components/BackButton";
 
 type Property = { id: string; title: string };
 
@@ -178,6 +179,7 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="max-w-2xl">
+      <BackButton />
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-800">Kiracı Düzenle</h1>
         <p className="text-sm text-slate-500 mt-1">{fullName}</p>

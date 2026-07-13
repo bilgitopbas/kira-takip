@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import MulkEkleButton from "@/components/MulkEkleButton";
 import MulkDuzenleButton from "@/components/MulkDuzenleButton";
 import ExcelIceAktarButton from "@/components/ExcelIceAktarButton";
@@ -39,18 +40,21 @@ const TYPE_STYLES: Record<string, string> = {
 };
 
 export default function MulkListPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [properties, setProperties] = useState<Property[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [type, setType] = useState("");
-  const [occupied, setOccupied] = useState("");
-  const [city, setCity] = useState("");
+  const [search, setSearch] = useState(searchParams.get("q") || "");
+  const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get("q") || "");
+  const [type, setType] = useState(searchParams.get("type") || "");
+  const [occupied, setOccupied] = useState(searchParams.get("occupied") || "");
+  const [city, setCity] = useState(searchParams.get("city") || "");
   const [cities, setCities] = useState<string[]>([]);
+  const isFirstRun = useRef(true);
 
   useEffect(() => {
     fetch("/api/dashboard/properties/cities")
@@ -79,9 +83,15 @@ export default function MulkListPage() {
     setTotal(data.total || 0);
     setPage(targetPage);
     setLoading(false);
+    router.replace(`/dashboard/mulk?${params.toString()}`, { scroll: false });
   }
 
   useEffect(() => {
+    if (isFirstRun.current) {
+      isFirstRun.current = false;
+      loadProperties(Number(searchParams.get("page")) || 1);
+      return;
+    }
     loadProperties(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, type, city, occupied]);
