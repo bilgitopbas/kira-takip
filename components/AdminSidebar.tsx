@@ -139,10 +139,7 @@ export default function AdminSidebar({
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div
-          className="flex items-center justify-between px-4 sm:px-6 border-b border-gray-100 dark:border-slate-800 flex-shrink-0"
-          style={{ height: "calc(5rem + env(safe-area-inset-top))", paddingTop: "env(safe-area-inset-top)" }}
-        >
+        <div className="h-20 flex items-center justify-between px-4 sm:px-6 border-b border-gray-100 dark:border-slate-800 flex-shrink-0">
           <Link href="/admin">
             <Image
               src="/logo-yeni-white.png"

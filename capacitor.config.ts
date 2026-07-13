@@ -5,11 +5,11 @@ const config: CapacitorConfig = {
   appName: "Mizan Mülk Yönetimi",
   webDir: "capacitor-www",
   server: {
-    url: "https://mizanmulkyonetimi.com/login",
+    url: "https://mizanmulkyonetimi.com",
     cleartext: false,
   },
   ios: {
-    contentInset: "never",
+    contentInset: "always",
   },
   android: {
     allowMixedContent: false,
