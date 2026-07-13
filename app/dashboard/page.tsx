@@ -210,10 +210,10 @@ export default async function DashboardPage() {
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Kontrol Paneli</h1>
           <p className="text-sm text-slate-500 mt-1">Mülklerinizin genel durumu · Son güncelleme: Bugün {updatedAt}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <MulkEkleButton className={primaryBtn} />
-          <KiraciEkleButton className={secondaryBtn} />
-          <TahsilatEkleButton className={secondaryBtn} />
+        <div className="grid grid-cols-3 sm:flex sm:items-center gap-2">
+          <MulkEkleButton className={`${primaryBtn} justify-center px-2 sm:px-4`} />
+          <KiraciEkleButton className={`${secondaryBtn} justify-center px-2 sm:px-4`} />
+          <TahsilatEkleButton className={`${secondaryBtn} justify-center px-2 sm:px-4`} />
         </div>
       </div>
 

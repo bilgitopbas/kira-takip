@@ -28,9 +28,6 @@ export default function DashboardShell({
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-950 flex transition-colors">
-      <div className="fixed top-0 left-0 right-0 z-[999] bg-black text-white text-[10px] text-center py-0.5">
-        TEŞHİS: native={String(nativeApp)} — build 2026-07-13-v2
-      </div>
       <OneSignalBridge userId={userId} />
       <DashboardSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0">
