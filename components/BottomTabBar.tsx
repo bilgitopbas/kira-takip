@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { hapticTap } from "@/lib/haptics";
 
 const TABS = [
   {
@@ -66,6 +67,7 @@ export default function BottomTabBar() {
           <Link
             key={tab.href}
             href={tab.href}
+            onClick={() => hapticTap()}
             className={`flex-1 flex flex-col items-center justify-center gap-1 py-2.5 text-[10px] font-medium transition-colors ${
               active ? "text-[#17B6AE]" : "text-slate-400"
             }`}

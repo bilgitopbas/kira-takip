@@ -51,5 +51,9 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Kira dekontu fotoğrafı çekmek için kameraya erişim gereklidir.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Kira dekontu fotoğrafı seçmek için galeriye erişim gereklidir.</string>
 </dict>
 </plist>

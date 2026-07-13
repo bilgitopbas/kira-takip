@@ -45,6 +45,16 @@ next-env.d.ts
 # yuklenen dosyalar (sozlesmeler vb.)
 /uploads
 
+# Imzalama anahtarlari - ASLA git'e eklenmez
+*.jks
+*.keystore
+*.p12
+*.p8
+keystore.passfile
+keystore.properties
+*.pem
+/ios-signing
+
 # Capacitor - Android build artifacts
 /android/.gradle
 /android/build
