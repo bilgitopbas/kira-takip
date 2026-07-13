@@ -14,8 +14,8 @@ export default function TrialBanner({
 
   if (state === "TRIAL") {
     return (
-      <div className="flex items-center justify-between gap-4 bg-[#17B6AE]/8 border border-[#17B6AE]/20 rounded-xl px-5 py-3 mb-6">
-        <p className="text-sm text-slate-700">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-[#17B6AE]/8 border border-[#17B6AE]/20 rounded-xl px-5 py-3 mb-6">
+        <p className="text-sm text-slate-700 flex-1 min-w-0">
           <span className="font-semibold text-[#17B6AE]">Ücretsiz deneme sürümündesiniz.</span>{" "}
           Deneme süresi bitmesine <span className="font-bold">{trialDaysLeft} gün</span> kaldı.
         </p>
@@ -28,8 +28,8 @@ export default function TrialBanner({
 
   if (state === "GRACE") {
     return (
-      <div className="flex items-center justify-between gap-4 bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 mb-6">
-        <p className="text-sm text-slate-700">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 mb-6">
+        <p className="text-sm text-slate-700 flex-1 min-w-0">
           <span className="font-semibold text-amber-600">Deneme süreniz doldu — son şansınız!</span>{" "}
           Hesabınızın kilitlenmesine <span className="font-bold">{graceDaysLeft} gün</span> kaldı.
         </p>
@@ -44,8 +44,8 @@ export default function TrialBanner({
   }
 
   return (
-    <div className="flex items-center justify-between gap-4 bg-red-50 border border-red-200 rounded-xl px-5 py-3 mb-6">
-      <p className="text-sm text-slate-700">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-red-50 border border-red-200 rounded-xl px-5 py-3 mb-6">
+      <p className="text-sm text-slate-700 flex-1 min-w-0">
         <span className="font-semibold text-red-600">Deneme ve ek süreniz sona erdi.</span>{" "}
         Verilerinizi görüntüleyebilirsiniz ancak ekleme, güncelleme, bildirim ve hesaplama yapamazsınız.
       </p>
