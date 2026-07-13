@@ -28,7 +28,11 @@ jobs:
         run: |
           KEYCHAIN_PATH="$RUNNER_TEMP/signing.keychain-db"
           KEYCHAIN_PASSWORD="$(uuidgen)"
-          echo "$IOS_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/distribution.p12"
+          echo "$IOS_P12_BASE64" | tr -d '\n\r\t ' | base64 --decode > "$RUNNER_TEMP/distribution.p12"
+          if [ ! -s "$RUNNER_TEMP/distribution.p12" ]; then
+            echo "::error::IOS_P12_BASE64 secret'i bos ya da decode edilemedi. GitHub'da secret'i kontrol edin."
+            exit 1
+          fi
 
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
@@ -42,7 +46,7 @@ jobs:
           IOS_PROVISION_PROFILE_BASE64: ${{ secrets.IOS_PROVISION_PROFILE_BASE64 }}
         run: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          echo "$IOS_PROVISION_PROFILE_BASE64" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/AppStore.mobileprovision
+          echo "$IOS_PROVISION_PROFILE_BASE64" | tr -d '\n\r\t ' | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/AppStore.mobileprovision
 
       - name: Archive
         run: |
@@ -90,7 +94,7 @@ jobs:
           APPSTORE_API_KEY_BASE64: ${{ secrets.APPSTORE_API_KEY_BASE64 }}
         run: |
           mkdir -p ~/private_keys
-          echo "$APPSTORE_API_KEY_BASE64" | base64 --decode > ~/private_keys/AuthKey_${APPSTORE_API_KEY_ID}.p8
+          echo "$APPSTORE_API_KEY_BASE64" | tr -d '\n\r\t ' | base64 --decode > ~/private_keys/AuthKey_${APPSTORE_API_KEY_ID}.p8
           xcrun altool --upload-app \
             -f "$RUNNER_TEMP/export/App.ipa" \
             -t ios \
