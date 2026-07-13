@@ -68,7 +68,7 @@ export default function TakvimView({
           <h2 className="text-sm font-bold text-slate-800">Kira Artış / Borçlandırma Hatırlatma</h2>
         </div>
         <p className="text-xs text-slate-500 mb-4">
-          12 aylık borçlandırma dolmadan 1 ay önce hatırlatma için işaretlenir.
+          12 aylık borçlandırma dönemi dolduğunda, yeni dönemin (zam) başladığı ay işaretlenir.
         </p>
         <CalendarGrid
           events={renewalEvents}

@@ -8,6 +8,7 @@ import MulkEkleButton from "@/components/MulkEkleButton";
 import KiraciEkleButton from "@/components/KiraciEkleButton";
 import TahsilatEkleButton from "@/components/TahsilatEkleButton";
 import TrialBanner from "@/components/TrialBanner";
+import OverdueDebtsBanner from "@/components/OverdueDebtsBanner";
 import EmailVerificationBanner from "@/components/EmailVerificationBanner";
 import { getEffectiveDebtStatus } from "@/lib/debtStatus";
 import { getAccessStateForUser } from "@/lib/access";
@@ -71,7 +72,16 @@ async function getStats(ownerId: string) {
         status: { not: "PAID" },
         dueDate: { lt: now },
       },
-      select: { amount: true, dueDate: true, payments: { select: { amount: true } } },
+      select: {
+        id: true,
+        year: true,
+        month: true,
+        amount: true,
+        dueDate: true,
+        payments: { select: { amount: true } },
+        tenant: { select: { id: true, fullName: true, property: { select: { title: true } } } },
+      },
+      orderBy: { dueDate: "asc" },
     }),
   ]);
 
@@ -125,6 +135,19 @@ async function getStats(ownerId: string) {
     return sum + Math.max(0, Number(d.amount) - paid);
   }, 0);
 
+  const overdueList = overdueDebts.map((d) => {
+    const paid = d.payments.reduce((s, p) => s + Number(p.amount), 0);
+    return {
+      id: d.id,
+      tenantId: d.tenant.id,
+      tenantName: d.tenant.fullName,
+      propertyTitle: d.tenant.property.title,
+      year: d.year,
+      month: d.month,
+      remaining: Math.max(0, Number(d.amount) - paid),
+    };
+  });
+
   return {
     propertyCount,
     occupiedCount,
@@ -137,6 +160,7 @@ async function getStats(ownerId: string) {
     collectionRate,
     overdueCount: overdueDebts.length,
     overdueAmount: overdueRemaining,
+    overdueList,
   };
 }
 
@@ -183,6 +207,7 @@ export default async function DashboardPage() {
     collectionRate,
     overdueCount,
     overdueAmount,
+    overdueList,
   } = await getStats(session.userId);
 
   const access = await getAccessStateForUser(session.userId);
@@ -238,13 +263,7 @@ export default async function DashboardPage() {
         <TrialBanner state={access.state} trialDaysLeft={access.trialDaysLeft} graceDaysLeft={access.graceDaysLeft} />
       )}
 
-      {overdueCount > 0 && (
-        <div className="flex items-center gap-3 bg-white rounded-xl border-l-4 border-orange-400 border-y border-r border-gray-100 shadow-sm px-5 py-3 mb-6">
-          <span className="text-orange-500 text-sm font-bold">Toplam Gecikmiş</span>
-          <span className="text-sm font-bold text-slate-800">{overdueAmount.toLocaleString("tr-TR")} ₺</span>
-          <span className="text-xs text-slate-400">({overdueCount} kayıt)</span>
-        </div>
-      )}
+      <OverdueDebtsBanner count={overdueCount} amount={overdueAmount} list={overdueList} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
         {CARDS.map((card) => (

@@ -15,7 +15,7 @@ export function getFiveYearDate(contractStart: Date) {
 export function getRenewalReminderDate(debtDueDates: Date[]) {
   if (debtDueDates.length === 0) return null;
   const latest = debtDueDates.reduce((max, d) => (d > max ? d : max));
-  return addMonthsClamped(latest, -1);
+  return addMonthsClamped(latest, 1);
 }
 
 export function getRenewalNotificationDate(debtDueDates: Date[]) {
