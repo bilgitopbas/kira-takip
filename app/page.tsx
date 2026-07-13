@@ -1,4 +1,5 @@
 import Navbar from "@/components/Navbar";
+import NativeLoginRedirect from "@/components/NativeLoginRedirect";
 import Footer from "@/components/Footer";
 import TrustedCompanies from "@/components/TrustedCompanies";
 import Testimonials from "@/components/Testimonials";
@@ -14,6 +15,7 @@ import BlogPreviewSection from "@/components/BlogPreviewSection";
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-white">
+      <NativeLoginRedirect />
       <Navbar />
 
       <HeroSection />
