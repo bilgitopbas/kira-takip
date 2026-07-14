@@ -10,8 +10,13 @@ export default function NativeLoginRedirect() {
   useEffect(() => {
     if (!isNativeApp()) return;
     fetch("/api/dashboard/profile")
-      .then((r) => {
-        router.replace(r.ok ? "/dashboard" : "/login");
+      .then(async (r) => {
+        if (!r.ok) {
+          router.replace("/login");
+          return;
+        }
+        const data = await r.json();
+        router.replace(data.role === "ADMIN" ? "/admin" : "/dashboard");
       })
       .catch(() => {
         router.replace("/login");

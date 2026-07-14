@@ -18,7 +18,7 @@ export async function GET() {
   }
 
   const { passwordHash, ...rest } = user;
-  return NextResponse.json({ user: { ...rest, hasPassword: !!passwordHash } });
+  return NextResponse.json({ user: { ...rest, hasPassword: !!passwordHash }, role: session.role });
 }
 
 export async function PATCH(req: NextRequest) {
