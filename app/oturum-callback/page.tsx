@@ -4,9 +4,11 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 
+const BUTTON_REVEAL_DELAY_MS = 1800;
+
 function OturumCallbackContent() {
   const searchParams = useSearchParams();
-  const [attempted, setAttempted] = useState(false);
+  const [showButton, setShowButton] = useState(false);
 
   const token = searchParams.get("token") || "";
   const destination = searchParams.get("destination") || "/dashboard";
@@ -14,12 +16,14 @@ function OturumCallbackContent() {
 
   useEffect(() => {
     if (!token) return;
-    // Sayfa ilk yüklendiğinde bir kez otomatik denenir (bazı Safari
-    // sürümlerinde gerçek bir sayfa yüklemesinden sonraki JS yönlendirmesi
-    // çalışabiliyor); çalışmazsa aşağıdaki buton kullanıcı dokunuşuyla
-    // güvenilir şekilde uygulamayı açar.
+    // Sayfa ilk yüklendiğinde otomatik denenir (bazı Safari sürümlerinde
+    // gerçek bir sayfa yüklemesinden sonraki JS yönlendirmesi çalışabiliyor).
+    // iOS, kullanıcı doğrudan dokunmadan özel URL şemasına otomatik geçişi
+    // güvenlik gereği engelleyebildiği için, kısa bir "yükleniyor" anından
+    // sonra dokunulabilir bir buton da gösteriyoruz (yedek yol).
     window.location.href = deepLink;
-    setAttempted(true);
+    const timer = setTimeout(() => setShowButton(true), BUTTON_REVEAL_DELAY_MS);
+    return () => clearTimeout(timer);
   }, [token, deepLink]);
 
   if (!token) {
@@ -41,19 +45,24 @@ function OturumCallbackContent() {
         style={{ width: "auto" }}
       />
       <h1 className="text-xl font-bold text-slate-800 mb-2">Giriş başarılı</h1>
-      <p className="text-sm text-slate-500 mb-6">
-        Devam etmek için aşağıdaki butona dokunup uygulamaya dönün.
-      </p>
-      <a
-        href={deepLink}
-        className="inline-flex items-center justify-center gap-2 bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-6 py-3 rounded-xl transition text-sm"
-      >
-        Uygulamaya Dön
-      </a>
-      {attempted && (
-        <p className="text-xs text-slate-400 mt-4">
-          Otomatik yönlendirilmediyseniz yukarıdaki butona dokunun.
-        </p>
+
+      {!showButton ? (
+        <div className="flex flex-col items-center gap-3 py-2">
+          <div className="w-6 h-6 border-2 border-[#17B6AE] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-slate-500">Uygulamaya yönlendiriliyor, lütfen bekleyin...</p>
+        </div>
+      ) : (
+        <div className="animate-[fadeIn_0.3s_ease-in-out]">
+          <p className="text-sm text-slate-500 mb-6">
+            Devam etmek için aşağıdaki butona dokunup uygulamaya dönün.
+          </p>
+          <a
+            href={deepLink}
+            className="inline-flex items-center justify-center gap-2 bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-6 py-3 rounded-xl transition text-sm"
+          >
+            Uygulamaya Dön
+          </a>
+        </div>
       )}
     </div>
   );
