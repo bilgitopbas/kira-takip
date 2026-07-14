@@ -3,16 +3,15 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { isNativeApp } from "@/lib/native";
-import { parseAuthCallbackUrl, exchangeSessionToken } from "@/lib/authCallback";
+import { handleAuthCallbackUrl } from "@/lib/authCallback";
 import { logEvent } from "@/lib/debugLog";
 
 // Native Google girişi Safari'de tamamlandıktan sonra özel URL şemasıyla
 // (mizanmulk://auth-callback?token=...) uygulamaya geri döner. Bu bileşen
-// "sıcak" senaryoyu (uygulama arka planda canlı kalmışsa) yakalar — "soğuk
-// başlangıç" (uygulama tamamen kapanmışsa) senaryosu NativeLoginRedirect'te
-// (uygulamanın her zaman "/" ile açıldığı senaryo) App.getLaunchUrl() ile
-// ayrıca ele alınıyor; ikisi aynı jetonu iki kez tüketmeye çalışıp
-// birbirini ezmesin diye burada tekrar getLaunchUrl kontrolü yapılmıyor.
+// bu geri dönüşü canlı olarak yakalar. Ayrıca soğuk başlangıçta Capacitor
+// aynı açılış URL'ini hem NativeLoginRedirect'in App.getLaunchUrl()
+// çağrısına hem de buradaki appUrlOpen olayına verebiliyor -
+// handleAuthCallbackUrl aynı jetonun iki kez tüketilmesini engelliyor.
 export default function AppUrlOpenBridge() {
   const router = useRouter();
 
@@ -23,11 +22,10 @@ export default function AppUrlOpenBridge() {
 
     async function handleCallback(rawUrl: string) {
       logEvent(`AppUrlOpenBridge: appUrlOpen event url=${rawUrl}`);
-      const parsed = parseAuthCallbackUrl(rawUrl);
-      if (!parsed) return;
-      const ok = await exchangeSessionToken(parsed.token);
-      logEvent(`AppUrlOpenBridge: exchange sonucu=${ok}, yonlendiriliyor=${ok ? parsed.destination : "/login"}`);
-      router.replace(ok ? parsed.destination : "/login?error=google_state");
+      const result = await handleAuthCallbackUrl(rawUrl, "AppUrlOpenBridge");
+      if (result) {
+        router.replace(result.ok ? result.destination : "/login?error=google_state");
+      }
     }
 
     (async () => {

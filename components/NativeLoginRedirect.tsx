@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { isNativeApp } from "@/lib/native";
-import { getPendingAuthCallback, exchangeSessionToken } from "@/lib/authCallback";
+import { getLaunchUrlRaw, parseAuthCallbackUrl, handleAuthCallbackUrl } from "@/lib/authCallback";
 import { logEvent } from "@/lib/debugLog";
 
 export default function NativeLoginRedirect() {
@@ -16,15 +16,17 @@ export default function NativeLoginRedirect() {
       logEvent("NativeLoginRedirect: baslatildi");
 
       // Uygulama Google OAuth geri donusuyle acildiysa (mizanmulk://auth-callback),
-      // bu akisi AppUrlOpenBridge yonetir. Burada ayrica "oturum yok, /login'e git"
-      // karari vermeyip bekleyelim; aksi halde iki bilesen birbirinin
-      // yonlendirmesini eziyordu (Google girisi sonrasi /login'e dusme hatasi).
-      const pending = await getPendingAuthCallback();
-      if (pending) {
-        logEvent("NativeLoginRedirect: bekleyen auth-callback var, kendi yonlendirmesini atliyor");
-        const ok = await exchangeSessionToken(pending.token);
-        logEvent(`NativeLoginRedirect: exchange sonucu=${ok}, yonlendiriliyor=${ok ? pending.destination : "/login"}`);
-        router.replace(ok ? pending.destination : "/login?error=google_state");
+      // bu URL'i AppUrlOpenBridge de ayrica bir olay olarak alabiliyor - ayni
+      // jetonu iki kez tuketmeyi handleAuthCallbackUrl engelliyor (bkz. orada).
+      const rawUrl = await getLaunchUrlRaw();
+      const parsed = rawUrl ? parseAuthCallbackUrl(rawUrl) : null;
+
+      if (parsed) {
+        const result = await handleAuthCallbackUrl(rawUrl!, "NativeLoginRedirect");
+        if (result) {
+          router.replace(result.ok ? result.destination : "/login?error=google_state");
+        }
+        // result null ise jeton baska bir yerde zaten islendi, navigasyona dokunma
         return;
       }
 
