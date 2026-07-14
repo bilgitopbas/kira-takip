@@ -24,5 +24,9 @@ export default async function AdminLayout({
     select: { fullName: true },
   });
 
-  return <AdminShell fullName={admin?.fullName || "Yönetici"}>{children}</AdminShell>;
+  return (
+    <AdminShell fullName={admin?.fullName || "Yönetici"} userId={session.userId}>
+      {children}
+    </AdminShell>
+  );
 }

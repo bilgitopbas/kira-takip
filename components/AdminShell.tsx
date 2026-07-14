@@ -4,13 +4,16 @@ import { useEffect, useState } from "react";
 import AdminSidebar from "@/components/AdminSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import AdminBottomTabBar from "@/components/AdminBottomTabBar";
+import OneSignalBridge from "@/components/OneSignalBridge";
 import { isNativeApp } from "@/lib/native";
 
 export default function AdminShell({
   fullName,
+  userId,
   children,
 }: {
   fullName: string;
+  userId: string;
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -22,6 +25,7 @@ export default function AdminShell({
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-950 flex transition-colors">
+      <OneSignalBridge userId={userId} />
       <AdminSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0">
         <DashboardHeader fullName={fullName} onMenuClick={() => setMobileOpen(true)} />
