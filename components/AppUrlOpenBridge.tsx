@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { isNativeApp } from "@/lib/native";
 import { handleAuthCallbackUrl } from "@/lib/authCallback";
 import { logEvent } from "@/lib/debugLog";
@@ -13,8 +12,6 @@ import { logEvent } from "@/lib/debugLog";
 // çağrısına hem de buradaki appUrlOpen olayına verebiliyor -
 // handleAuthCallbackUrl aynı jetonun iki kez tüketilmesini engelliyor.
 export default function AppUrlOpenBridge() {
-  const router = useRouter();
-
   useEffect(() => {
     if (!isNativeApp()) return;
 
@@ -24,7 +21,11 @@ export default function AppUrlOpenBridge() {
       logEvent(`AppUrlOpenBridge: appUrlOpen event url=${rawUrl}`);
       const result = await handleAuthCallbackUrl(rawUrl, "AppUrlOpenBridge");
       if (result) {
-        router.replace(result.destination);
+        // router.replace (yumusak gecis) bazen WKWebView arka plandan one
+        // gelince ekrani gorsel olarak tazelemiyordu. Tam sayfa yenileme
+        // bu belirsizligi ortadan kaldiriyor.
+        logEvent(`AppUrlOpenBridge: sert yonlendirme -> ${result.destination}`);
+        window.location.href = result.destination;
       }
     }
 
@@ -41,7 +42,7 @@ export default function AppUrlOpenBridge() {
     })();
 
     return () => removeListener?.();
-  }, [router]);
+  }, []);
 
   return null;
 }

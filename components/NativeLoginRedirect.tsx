@@ -24,7 +24,12 @@ export default function NativeLoginRedirect() {
       if (parsed) {
         const result = await handleAuthCallbackUrl(rawUrl!, "NativeLoginRedirect");
         if (result) {
-          router.replace(result.destination);
+          // router.replace (yumusak gecis) bazen WKWebView arka plandan one
+          // gelince ekrani gorsel olarak tazelemiyordu (DOM guncelleniyor
+          // ama boyama gecikmis kaliyor, dokununca duzeliyordu). Tam sayfa
+          // yenileme bu belirsizligi ortadan kaldiriyor.
+          logEvent(`NativeLoginRedirect: sert yonlendirme -> ${result.destination}`);
+          window.location.href = result.destination;
         }
         // result null ise jeton baska bir yerde zaten islendi, navigasyona dokunma
         return;
