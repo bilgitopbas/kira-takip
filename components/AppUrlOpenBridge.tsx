@@ -24,7 +24,7 @@ export default function AppUrlOpenBridge() {
       logEvent(`AppUrlOpenBridge: appUrlOpen event url=${rawUrl}`);
       const result = await handleAuthCallbackUrl(rawUrl, "AppUrlOpenBridge");
       if (result) {
-        router.replace(result.ok ? result.destination : "/login?error=google_state");
+        router.replace(result.destination);
       }
     }
 

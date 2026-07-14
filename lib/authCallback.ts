@@ -36,6 +36,25 @@ async function exchangeSessionToken(token: string): Promise<boolean> {
   }
 }
 
+// App.getLaunchUrl() "yapiskan" davraniyor: uygulama arka plandan tekrar
+// one gelince bile onceki acilis URL'ini aynen dondurmeye devam edebiliyor.
+// Bu, zaten basariyla kullanilmis (tek kullanimlik) bir jetonun tekrar
+// denenmesine ve exchange-session'in "400 zaten kullanildi" donmesine yol
+// aciyor. Bu durumda kullaniciyi login'e atmak yanlis - zaten oturumu acik
+// olabilir. Bu yuzden jeton basarisiz olunca gercekten oturum var mi diye
+// ayrica kontrol ediliyor.
+async function resolveFallbackDestination(): Promise<string> {
+  try {
+    const res = await fetch("/api/dashboard/profile");
+    if (!res.ok) return "/login";
+    const data = await res.json();
+    logEvent(`resolveFallbackDestination: oturum zaten acik, role=${data.role}`);
+    return data.role === "ADMIN" ? "/admin" : "/dashboard";
+  } catch {
+    return "/login";
+  }
+}
+
 // Capacitor, soguk baslangicta acilis URL'ini HEM App.getLaunchUrl() ile
 // HEM DE bir "appUrlOpen" olayi olarak ayrica gonderebiliyor. Ikisi de ayni
 // jetonu tuketmeye calisirsa, jeton tek kullanimlik oldugu icin ikinci
@@ -48,7 +67,7 @@ const processedTokens = new Set<string>();
 export async function handleAuthCallbackUrl(
   rawUrl: string,
   source: string
-): Promise<{ ok: boolean; destination: string } | null> {
+): Promise<{ destination: string } | null> {
   const parsed = parseAuthCallbackUrl(rawUrl);
   if (!parsed) return null;
 
@@ -59,6 +78,12 @@ export async function handleAuthCallbackUrl(
   processedTokens.add(parsed.token);
 
   const ok = await exchangeSessionToken(parsed.token);
-  logEvent(`${source}: exchange sonucu=${ok}, yonlendiriliyor=${ok ? parsed.destination : "/login"}`);
-  return { ok, destination: parsed.destination };
+  if (ok) {
+    logEvent(`${source}: exchange basarili, yonlendiriliyor=${parsed.destination}`);
+    return { destination: parsed.destination };
+  }
+
+  const fallback = await resolveFallbackDestination();
+  logEvent(`${source}: exchange basarisiz, fallback destination=${fallback}`);
+  return { destination: fallback };
 }

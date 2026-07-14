@@ -24,7 +24,7 @@ export default function NativeLoginRedirect() {
       if (parsed) {
         const result = await handleAuthCallbackUrl(rawUrl!, "NativeLoginRedirect");
         if (result) {
-          router.replace(result.ok ? result.destination : "/login?error=google_state");
+          router.replace(result.destination);
         }
         // result null ise jeton baska bir yerde zaten islendi, navigasyona dokunma
         return;
