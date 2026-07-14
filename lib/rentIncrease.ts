@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import type { PriceIndexType } from "@/app/generated/prisma";
 
-// TBK 344: yenileme ayından bir önceki ayın açıklanan oranı kullanılır;
-// o oranın kendisi bir önceki ayın (yenileme ayı - 2) endeksine kadarki 12 aylık ortalamadır.
+// TBK 344: yenileme ayından bir önceki ayın TÜİK tarafından açıklanan
+// 12 aylık ortalama TÜFE/Yİ-ÜFE değişim oranı esas alınır.
+// Örn. Ocak'ta yenilenen kira için Aralık verisi, Eylül'de yenilenen kira için Ağustos verisi kullanılır.
 function getReferenceMonth(renewalYear: number, renewalMonth: number) {
   let year = renewalYear;
-  let month = renewalMonth - 2;
+  let month = renewalMonth - 1;
   if (month <= 0) {
     month += 12;
     year -= 1;

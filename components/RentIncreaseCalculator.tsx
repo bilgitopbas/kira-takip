@@ -21,7 +21,13 @@ export default function RentIncreaseCalculator() {
   const [customRate, setCustomRate] = useState("");
   const [rates, setRates] = useState<Rates | null>(null);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ rate: number; newRent: number; increaseAmount: number } | null>(null);
+  const [result, setResult] = useState<{
+    rate: number;
+    newRent: number;
+    increaseAmount: number;
+    referenceYear: number | null;
+    referenceMonth: number | null;
+  } | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -45,7 +51,14 @@ export default function RentIncreaseCalculator() {
 
     const increaseAmount = Math.round(rent * (rate / 100) * 100) / 100;
     const newRent = Math.round((rent + increaseAmount) * 100) / 100;
-    setResult({ rate, newRent, increaseAmount });
+    const ref = method === "TUFE" ? rates?.tufe : method === "YIUFE" ? rates?.yiufe : method === "AVERAGE" ? rates?.average : null;
+    setResult({
+      rate,
+      newRent,
+      increaseAmount,
+      referenceYear: ref?.referenceYear ?? null,
+      referenceMonth: ref?.referenceMonth ?? null,
+    });
   }
 
   function handleReset() {
@@ -84,7 +97,7 @@ export default function RentIncreaseCalculator() {
               onChange={(e) => setYear(Number(e.target.value))}
               className="px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
             >
-              {[today.getFullYear() - 1, today.getFullYear(), today.getFullYear() + 1].map((y) => (
+              {Array.from({ length: today.getFullYear() + 1 - 2020 + 1 }, (_, i) => 2020 + i).map((y) => (
                 <option key={y} value={y}>{y}</option>
               ))}
             </select>
@@ -180,6 +193,15 @@ export default function RentIncreaseCalculator() {
             <p className="text-xs text-slate-400 mt-4">
               {MONTH_NAMES[month - 1]} {year} itibariyle geçerli
             </p>
+            {result.referenceMonth && result.referenceYear && (
+              <p className="text-xs text-slate-400 mt-1">
+                {MONTH_NAMES[month - 1]} {year} döneminde yapılacak kira artışı için TÜİK&apos;in{" "}
+                <span className="font-semibold text-slate-600">
+                  {MONTH_NAMES[result.referenceMonth - 1]} {result.referenceYear}
+                </span>{" "}
+                verisi kullanılmaktadır.
+              </p>
+            )}
           </div>
         ) : (
           <div className="text-center text-slate-400">
