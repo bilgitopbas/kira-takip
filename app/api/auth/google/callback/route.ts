@@ -4,14 +4,14 @@ import { createSession } from "@/lib/auth";
 import { resolveAppUrl } from "@/lib/url";
 import { sendWelcomeEmail } from "@/lib/mail";
 import { notifyAdminsNewCustomer } from "@/lib/adminNotifications";
+import { consumeOAuthState } from "@/lib/googleOAuthState";
 
 export async function GET(req: NextRequest) {
   const appUrl = resolveAppUrl(req);
   const code = req.nextUrl.searchParams.get("code");
   const state = req.nextUrl.searchParams.get("state");
-  const savedState = req.cookies.get("google_oauth_state")?.value;
 
-  if (!code || !state || !savedState || state !== savedState) {
+  if (!code || !consumeOAuthState(state)) {
     return NextResponse.redirect(`${appUrl}/login?error=google_state`);
   }
 
@@ -98,9 +98,7 @@ export async function GET(req: NextRequest) {
 
     const destination =
       user.role === "ADMIN" ? "/admin" : !user.city ? "/dashboard/profili-tamamla" : "/dashboard";
-    const res = NextResponse.redirect(`${appUrl}${destination}`);
-    res.cookies.delete("google_oauth_state");
-    return res;
+    return NextResponse.redirect(`${appUrl}${destination}`);
   } catch (err) {
     console.error("Google OAuth hatası:", err);
     return NextResponse.redirect(`${appUrl}/login?error=google_unknown`);

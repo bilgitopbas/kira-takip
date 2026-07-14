@@ -1,6 +1,6 @@
-import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveAppUrl } from "@/lib/url";
+import { createOAuthState } from "@/lib/googleOAuthState";
 
 export async function GET(req: NextRequest) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Google girişi henüz yapılandırılmadı." }, { status: 500 });
   }
 
-  const state = randomBytes(16).toString("hex");
+  const state = createOAuthState();
   const redirectUri = `${resolveAppUrl(req)}/api/auth/google/callback`;
 
   const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
@@ -19,13 +19,5 @@ export async function GET(req: NextRequest) {
   authUrl.searchParams.set("state", state);
   authUrl.searchParams.set("prompt", "select_account");
 
-  const res = NextResponse.redirect(authUrl.toString());
-  res.cookies.set("google_oauth_state", state, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 10 * 60,
-  });
-  return res;
+  return NextResponse.redirect(authUrl.toString());
 }
