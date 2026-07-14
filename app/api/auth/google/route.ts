@@ -8,7 +8,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Google girişi henüz yapılandırılmadı." }, { status: 500 });
   }
 
-  const state = createOAuthState();
+  const native = req.nextUrl.searchParams.get("native") === "1";
+  const state = createOAuthState(native);
   const redirectUri = `${resolveAppUrl(req)}/api/auth/google/callback`;
 
   const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");

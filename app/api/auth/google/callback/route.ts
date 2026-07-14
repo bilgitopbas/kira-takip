@@ -4,14 +4,17 @@ import { createSession } from "@/lib/auth";
 import { resolveAppUrl } from "@/lib/url";
 import { sendWelcomeEmail } from "@/lib/mail";
 import { notifyAdminsNewCustomer } from "@/lib/adminNotifications";
-import { consumeOAuthState } from "@/lib/googleOAuthState";
+import { consumeOAuthState, createSessionExchangeToken } from "@/lib/googleOAuthState";
+
+const NATIVE_APP_SCHEME = "mizanmulk";
 
 export async function GET(req: NextRequest) {
   const appUrl = resolveAppUrl(req);
   const code = req.nextUrl.searchParams.get("code");
   const state = req.nextUrl.searchParams.get("state");
+  const { valid, native } = consumeOAuthState(state);
 
-  if (!code || !consumeOAuthState(state)) {
+  if (!code || !valid) {
     return NextResponse.redirect(`${appUrl}/login?error=google_state`);
   }
 
@@ -81,8 +84,6 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    await createSession({ userId: user.id, role: user.role });
-
     if (isNewUser) {
       try {
         await sendWelcomeEmail(user.email, user.fullName);
@@ -98,6 +99,19 @@ export async function GET(req: NextRequest) {
 
     const destination =
       user.role === "ADMIN" ? "/admin" : !user.city ? "/dashboard/profili-tamamla" : "/dashboard";
+
+    if (native) {
+      // Bu istek Safari'de tamamlanıyor; oturum çerezini burada oluşturmak
+      // uygulamanın kendi WebView'ına taşınmaz (ayrı cookie depoları). Bunun
+      // yerine tek kullanımlık bir jetonla uygulamaya geri dönülür, oturum
+      // orada (AppUrlOpenBridge -> /api/auth/exchange-session) kurulur.
+      const token = createSessionExchangeToken(user.id, user.role);
+      return NextResponse.redirect(
+        `${NATIVE_APP_SCHEME}://auth-callback?token=${token}&destination=${encodeURIComponent(destination)}`
+      );
+    }
+
+    await createSession({ userId: user.id, role: user.role });
     return NextResponse.redirect(`${appUrl}${destination}`);
   } catch (err) {
     console.error("Google OAuth hatası:", err);

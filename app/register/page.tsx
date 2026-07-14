@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
 import TiltCard from "@/components/motion/TiltCard";
+import { isNativeApp } from "@/lib/native";
 
 const RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
 
@@ -96,6 +97,11 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleHref, setGoogleHref] = useState("/api/auth/google?intent=register");
+
+  useEffect(() => {
+    if (isNativeApp()) setGoogleHref("/api/auth/google?intent=register&native=1");
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -172,7 +178,7 @@ export default function RegisterPage() {
             )}
 
             <a
-              href="/api/auth/google?intent=register"
+              href={googleHref}
               className="w-full flex items-center justify-center gap-2.5 border border-gray-200 rounded-xl py-2.5 text-sm font-semibold text-slate-700 hover:bg-gray-50 transition mb-4"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">

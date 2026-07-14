@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import TiltCard from "@/components/motion/TiltCard";
+import { isNativeApp } from "@/lib/native";
 
 const inputClass =
   "w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/40 focus:border-[#17B6AE]";
@@ -23,6 +24,11 @@ function LoginForm() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleHref, setGoogleHref] = useState("/api/auth/google?intent=login");
+
+  useEffect(() => {
+    if (isNativeApp()) setGoogleHref("/api/auth/google?intent=login&native=1");
+  }, []);
 
   useEffect(() => {
     const err = searchParams.get("error");
@@ -82,7 +88,7 @@ function LoginForm() {
             )}
 
             <a
-              href="/api/auth/google?intent=login"
+              href={googleHref}
               className="w-full flex items-center justify-center gap-2.5 border border-gray-200 rounded-xl py-2.5 text-sm font-semibold text-slate-700 hover:bg-gray-50 transition mb-4"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">

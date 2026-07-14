@@ -55,5 +55,16 @@
 	<string>Kira dekontu fotoğrafı çekmek için kameraya erişim gereklidir.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Kira dekontu fotoğrafı seçmek için galeriye erişim gereklidir.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>mizanmulk</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>com.mizanmulkyonetimi.app</string>
+		</dict>
+	</array>
 </dict>
 </plist>
