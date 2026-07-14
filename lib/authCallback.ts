@@ -1,10 +1,17 @@
+// Sadece uygulama icindeki gorece bir yola (orn. "/dashboard") izin verir;
+// "https://evil.com" veya "//evil.com" gibi disariya yonlendirmeleri reddeder.
+function isSafeRelativePath(path: string): boolean {
+  return path.startsWith("/") && !path.startsWith("//");
+}
+
 export function parseAuthCallbackUrl(rawUrl: string): { token: string; destination: string } | null {
   try {
     const url = new URL(rawUrl);
     if (url.hostname !== "auth-callback") return null;
     const token = url.searchParams.get("token");
     if (!token) return null;
-    return { token, destination: url.searchParams.get("destination") || "/dashboard" };
+    const destination = url.searchParams.get("destination") || "/dashboard";
+    return { token, destination: isSafeRelativePath(destination) ? destination : "/dashboard" };
   } catch {
     return null;
   }
