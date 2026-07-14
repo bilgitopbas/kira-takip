@@ -1,5 +1,3 @@
-import { logEvent } from "@/lib/debugLog";
-
 export function parseAuthCallbackUrl(rawUrl: string): { token: string; destination: string } | null {
   try {
     const url = new URL(rawUrl);
@@ -17,10 +15,8 @@ export async function getLaunchUrlRaw(): Promise<string | null> {
   try {
     const { App } = await import("@capacitor/app");
     const launch = await App.getLaunchUrl();
-    logEvent(`getLaunchUrlRaw: launchUrl=${launch?.url ?? "yok"}`);
     return launch?.url ?? null;
-  } catch (err) {
-    logEvent(`getLaunchUrlRaw hata: ${err}`);
+  } catch {
     return null;
   }
 }
@@ -28,10 +24,8 @@ export async function getLaunchUrlRaw(): Promise<string | null> {
 async function exchangeSessionToken(token: string): Promise<boolean> {
   try {
     const res = await fetch(`/api/auth/exchange-session?token=${encodeURIComponent(token)}`);
-    logEvent(`exchange-session status=${res.status}`);
     return res.ok;
-  } catch (err) {
-    logEvent(`exchange-session hata: ${err}`);
+  } catch {
     return false;
   }
 }
@@ -48,7 +42,6 @@ async function resolveFallbackDestination(): Promise<string> {
     const res = await fetch("/api/dashboard/profile");
     if (!res.ok) return "/login";
     const data = await res.json();
-    logEvent(`resolveFallbackDestination: oturum zaten acik, role=${data.role}`);
     return data.role === "ADMIN" ? "/admin" : "/dashboard";
   } catch {
     return "/login";
@@ -64,26 +57,20 @@ async function resolveFallbackDestination(): Promise<string> {
 // cagiran taraf navigasyona dokunmaz).
 const processedTokens = new Set<string>();
 
-export async function handleAuthCallbackUrl(
-  rawUrl: string,
-  source: string
-): Promise<{ destination: string } | null> {
+export async function handleAuthCallbackUrl(rawUrl: string): Promise<{ destination: string } | null> {
   const parsed = parseAuthCallbackUrl(rawUrl);
   if (!parsed) return null;
 
   if (processedTokens.has(parsed.token)) {
-    logEvent(`${source}: token zaten islendi, tekrar denenmiyor`);
     return null;
   }
   processedTokens.add(parsed.token);
 
   const ok = await exchangeSessionToken(parsed.token);
   if (ok) {
-    logEvent(`${source}: exchange basarili, yonlendiriliyor=${parsed.destination}`);
     return { destination: parsed.destination };
   }
 
   const fallback = await resolveFallbackDestination();
-  logEvent(`${source}: exchange basarisiz, fallback destination=${fallback}`);
   return { destination: fallback };
 }

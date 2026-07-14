@@ -7,7 +7,6 @@ import ImpersonationBanner from "@/components/ImpersonationBanner";
 import BottomTabBar from "@/components/BottomTabBar";
 import OneSignalBridge from "@/components/OneSignalBridge";
 import { isNativeApp } from "@/lib/native";
-import { logEvent } from "@/lib/debugLog";
 
 export default function DashboardShell({
   fullName,
@@ -23,12 +22,8 @@ export default function DashboardShell({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [nativeApp, setNativeApp] = useState(false);
 
-  logEvent(`DashboardShell: render, nativeApp=${nativeApp}`);
-
   useLayoutEffect(() => {
-    const detected = isNativeApp();
-    logEvent(`DashboardShell: useLayoutEffect, detected=${detected}`);
-    setNativeApp(detected);
+    setNativeApp(isNativeApp());
   }, []);
 
   return (

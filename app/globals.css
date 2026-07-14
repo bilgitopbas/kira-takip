@@ -21,6 +21,19 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* iOS, font-size'i 16px'ten kucuk olan bir input'a odaklaninca sayfayi
+   otomatik yakinlastirip sonraki bir tam sayfa gecisine kadar oyle
+   birakiyor - bu da butonlarin "bozuk" gorunmesine yol aciyordu. Tum form
+   elemanlarinda en az 16px zorunlu kilinarak bu otomatik yakinlastirma
+   hic tetiklenmiyor. */
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
 @keyframes marquee {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }

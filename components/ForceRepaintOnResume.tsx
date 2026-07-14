@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { isNativeApp } from "@/lib/native";
-import { logEvent } from "@/lib/debugLog";
 
 // iOS, ozel URL semasiyla (mizanmulk://) baska bir uygulamadan (Safari/Chrome)
 // donulup uygulama one gelince, JS/DOM zaten guncellenmis olsa bile ekranda
@@ -30,7 +29,6 @@ export default function ForceRepaintOnResume() {
       try {
         const { App } = await import("@capacitor/app");
         const handle = await App.addListener("appStateChange", (state: { isActive: boolean }) => {
-          logEvent(`ForceRepaintOnResume: appStateChange isActive=${state.isActive}`);
           if (state.isActive) {
             forceRepaint();
             // Navigasyon/oturum degisimi biraz gecikebiliyor, bir kez daha dene

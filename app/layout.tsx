@@ -4,7 +4,6 @@ import CookieConsent from "@/components/CookieConsent";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import AppUrlOpenBridge from "@/components/AppUrlOpenBridge";
 import ForceRepaintOnResume from "@/components/ForceRepaintOnResume";
-import NativeDebugOverlay from "@/components/NativeDebugOverlay";
 import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from "@/lib/site";
 import "./globals.css";
 
@@ -73,7 +72,6 @@ export default function RootLayout({
         <GoogleAnalytics />
         <AppUrlOpenBridge />
         <ForceRepaintOnResume />
-        <NativeDebugOverlay />
       </body>
     </html>
   );

@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { isNativeApp } from "@/lib/native";
 import { handleAuthCallbackUrl } from "@/lib/authCallback";
-import { logEvent } from "@/lib/debugLog";
 
 // Native Google girişi Safari'de tamamlandıktan sonra özel URL şemasıyla
 // (mizanmulk://auth-callback?token=...) uygulamaya geri döner. Bu bileşen
@@ -18,13 +17,11 @@ export default function AppUrlOpenBridge() {
     let removeListener: (() => void) | undefined;
 
     async function handleCallback(rawUrl: string) {
-      logEvent(`AppUrlOpenBridge: appUrlOpen event url=${rawUrl}`);
-      const result = await handleAuthCallbackUrl(rawUrl, "AppUrlOpenBridge");
+      const result = await handleAuthCallbackUrl(rawUrl);
       if (result) {
         // router.replace (yumusak gecis) bazen WKWebView arka plandan one
         // gelince ekrani gorsel olarak tazelemiyordu. Tam sayfa yenileme
         // bu belirsizligi ortadan kaldiriyor.
-        logEvent(`AppUrlOpenBridge: sert yonlendirme -> ${result.destination}`);
         window.location.href = result.destination;
       }
     }
