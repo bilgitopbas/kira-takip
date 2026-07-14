@@ -142,6 +142,12 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
 
   const currentPeriod = periods[periodIndex] || [];
 
+  const periodTotals = useMemo(() => {
+    const totalAmount = currentPeriod.reduce((sum, d) => sum + Number(d.amount), 0);
+    const totalPaid = currentPeriod.reduce((sum, d) => sum + getTotalPaid(d.payments), 0);
+    return { totalAmount, totalPaid, difference: totalAmount - totalPaid };
+  }, [currentPeriod]);
+
   async function load() {
     setLoading(true);
     const res = await fetch(`/api/dashboard/tenants/${id}`);
@@ -437,7 +443,8 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
               <thead>
                 <tr className="bg-gray-50 text-left">
                   <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider border-r border-gray-100">Ay / Yıl</th>
-                  <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider border-r border-gray-100">Tutar</th>
+                  <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider border-r border-gray-100">Kira Tutarı</th>
+                  <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider border-r border-gray-100">Kira Ödemesi</th>
                   <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider border-r border-gray-100">Durum</th>
                   <th className="no-print px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">İşlem</th>
                 </tr>
@@ -453,10 +460,19 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
                       </td>
                       <td className="px-5 py-3.5 text-slate-700 border-r border-gray-100">
                         {Number(d.amount).toLocaleString("tr-TR")} ₺
-                        {effective === "PARTIAL" && (
-                          <div className="text-xs text-blue-600 font-medium mt-0.5">
-                            Ödenen: {totalPaid.toLocaleString("tr-TR")} / {Number(d.amount).toLocaleString("tr-TR")} ₺
-                          </div>
+                      </td>
+                      <td className="px-5 py-3.5 border-r border-gray-100">
+                        {totalPaid > 0 ? (
+                          <>
+                            <span className={effective === "PARTIAL" ? "text-blue-600 font-semibold" : "text-slate-700"}>
+                              {totalPaid.toLocaleString("tr-TR")} ₺
+                            </span>
+                            {effective === "PARTIAL" && (
+                              <div className="text-xs text-blue-500 font-medium mt-0.5">Kısmi ödeme yapıldı</div>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-slate-400">—</span>
                         )}
                       </td>
                       <td className="px-5 py-3.5 border-r border-gray-100">
@@ -478,6 +494,33 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
                   );
                 })}
               </tbody>
+              <tfoot>
+                <tr className="bg-gray-50 border-t-2 border-gray-200 font-bold">
+                  <td className="px-5 py-3.5 text-slate-800 border-r border-gray-100">Toplam</td>
+                  <td className="px-5 py-3.5 text-slate-800 border-r border-gray-100">
+                    {periodTotals.totalAmount.toLocaleString("tr-TR")} ₺
+                  </td>
+                  <td className="px-5 py-3.5 border-r border-gray-100" colSpan={2}>
+                    <span className="text-slate-800">{periodTotals.totalPaid.toLocaleString("tr-TR")} ₺</span>
+                    <span
+                      className={`ml-3 text-xs px-2.5 py-1 rounded-full font-semibold ${
+                        periodTotals.difference > 0
+                          ? "bg-red-50 text-red-600"
+                          : periodTotals.difference < 0
+                          ? "bg-emerald-50 text-emerald-600"
+                          : "bg-gray-100 text-slate-500"
+                      }`}
+                    >
+                      {periodTotals.difference > 0
+                        ? `Fark: -${periodTotals.difference.toLocaleString("tr-TR")} ₺`
+                        : periodTotals.difference < 0
+                        ? `Fazla Ödeme: +${Math.abs(periodTotals.difference).toLocaleString("tr-TR")} ₺`
+                        : "Fark yok"}
+                    </span>
+                  </td>
+                  <td className="no-print" />
+                </tr>
+              </tfoot>
             </table>
             </div>
           </>
