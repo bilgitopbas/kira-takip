@@ -17,7 +17,7 @@ type Debt = {
   amount: string;
   dueDate: string;
   status: string;
-  payments: { amount: string }[];
+  payments: { amount: string; notes: string | null }[];
 };
 
 type Tenant = {
@@ -143,10 +143,19 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
   const currentPeriod = periods[periodIndex] || [];
 
   const periodTotals = useMemo(() => {
-    const totalAmount = currentPeriod.reduce((sum, d) => sum + Number(d.amount), 0);
-    const totalPaid = currentPeriod.reduce((sum, d) => sum + getTotalPaid(d.payments), 0);
+    const dueDebts = currentPeriod.filter((d) => getEffectiveDebtStatus(d) !== "PENDING");
+    const totalAmount = dueDebts.reduce((sum, d) => sum + Number(d.amount), 0);
+    const totalPaid = dueDebts.reduce((sum, d) => sum + getTotalPaid(d.payments), 0);
     return { totalAmount, totalPaid, difference: totalAmount - totalPaid };
   }, [currentPeriod]);
+
+  const grandTotalDifference = useMemo(() => {
+    const debts = tenant?.debts ?? [];
+    const dueDebts = debts.filter((d) => getEffectiveDebtStatus(d) !== "PENDING");
+    const totalAmount = dueDebts.reduce((sum, d) => sum + Number(d.amount), 0);
+    const totalPaid = dueDebts.reduce((sum, d) => sum + getTotalPaid(d.payments), 0);
+    return totalAmount - totalPaid;
+  }, [tenant]);
 
   async function load() {
     setLoading(true);
@@ -453,6 +462,10 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
                 {currentPeriod.map((d) => {
                   const effective = getEffectiveDebtStatus(d);
                   const totalPaid = getTotalPaid(d.payments);
+                  const paymentNotes = d.payments
+                    .map((p) => p.notes?.trim())
+                    .filter((n): n is string => !!n)
+                    .join(" · ");
                   return (
                     <tr key={d.id} className="hover:bg-gray-50/60 transition-colors">
                       <td className="px-5 py-3.5 text-slate-800 font-semibold border-r border-gray-100">
@@ -473,6 +486,9 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
                           </>
                         ) : (
                           <span className="text-slate-400">—</span>
+                        )}
+                        {paymentNotes && (
+                          <div className="text-xs text-slate-400 italic mt-0.5">Not: {paymentNotes}</div>
                         )}
                       </td>
                       <td className="px-5 py-3.5 border-r border-gray-100">
@@ -522,6 +538,24 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
                 </tr>
               </tfoot>
             </table>
+            </div>
+            <div className="flex justify-end px-6 py-3 border-t border-gray-100 bg-gray-50/50">
+              <span className="text-sm font-semibold text-slate-600 mr-2">Toplam Fark Borç (Tüm Yıllar):</span>
+              <span
+                className={`text-sm font-bold px-2.5 py-1 rounded-full ${
+                  grandTotalDifference > 0
+                    ? "bg-red-50 text-red-600"
+                    : grandTotalDifference < 0
+                    ? "bg-emerald-50 text-emerald-600"
+                    : "bg-gray-100 text-slate-500"
+                }`}
+              >
+                {grandTotalDifference > 0
+                  ? `-${grandTotalDifference.toLocaleString("tr-TR")} ₺`
+                  : grandTotalDifference < 0
+                  ? `+${Math.abs(grandTotalDifference).toLocaleString("tr-TR")} ₺`
+                  : "Fark yok"}
+              </span>
             </div>
           </>
         )}

@@ -47,7 +47,6 @@ export default function KiraciForm({ onSuccess, onCancel }: { onSuccess: () => v
   // Adim 2
   const [contractStart, setContractStart] = useState("");
   const [rentRevisionDate, setRentRevisionDate] = useState("");
-  const [rentPaymentDate, setRentPaymentDate] = useState("");
   const [durationOption, setDurationOption] = useState("12");
   const [customMonths, setCustomMonths] = useState("");
   const [paymentFrequency, setPaymentFrequency] = useState<"MONTHLY" | "YEARLY">("MONTHLY");
@@ -114,7 +113,6 @@ export default function KiraciForm({ onSuccess, onCancel }: { onSuccess: () => v
 
     fd.set("contractStart", contractStart);
     fd.set("rentRevisionDate", rentRevisionDate);
-    fd.set("rentPaymentDate", rentPaymentDate);
     fd.set("contractDurationMonths", String(durationMonths || ""));
     fd.set("paymentFrequency", paymentFrequency);
     fd.set("increaseType", increaseType);
@@ -345,21 +343,6 @@ export default function KiraciForm({ onSuccess, onCancel }: { onSuccess: () => v
                 className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
               />
             </div>
-          </div>
-
-          <div className="bg-[#17B6AE]/5 border border-[#17B6AE]/20 rounded-xl p-4">
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Kira Ödeme Tarihi
-            </label>
-            <input
-              type="date"
-              value={rentPaymentDate}
-              onChange={(e) => setRentPaymentDate(e.target.value)}
-              className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30 bg-white"
-            />
-            <p className="mt-2 text-xs text-slate-500">
-              Bu tarihten itibaren kiracı 12 ay boyunca borçlandırılacaktır.
-            </p>
           </div>
 
           <div>
