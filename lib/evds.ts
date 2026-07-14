@@ -46,8 +46,7 @@ async function fetchSeries(seriesCode: string, startDate: Date, endDate: Date) {
 
 export async function syncPriceIndices() {
   const endDate = new Date();
-  const startDate = new Date();
-  startDate.setMonth(startDate.getMonth() - 36);
+  const startDate = new Date(2018, 0, 1);
 
   const [tufe, yiufe] = await Promise.all([
     fetchSeries(TUFE_SERIES, startDate, endDate),

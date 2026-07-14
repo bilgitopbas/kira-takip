@@ -39,8 +39,7 @@ async function fetchSeries(seriesCode, startDate, endDate) {
 
 async function main() {
   const endDate = new Date();
-  const startDate = new Date();
-  startDate.setMonth(startDate.getMonth() - 36);
+  const startDate = new Date(2018, 0, 1);
 
   const [tufe, yiufe] = await Promise.all([
     fetchSeries(TUFE_SERIES, startDate, endDate),
