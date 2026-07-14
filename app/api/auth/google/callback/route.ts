@@ -6,8 +6,6 @@ import { sendWelcomeEmail } from "@/lib/mail";
 import { notifyAdminsNewCustomer } from "@/lib/adminNotifications";
 import { consumeOAuthState, createSessionExchangeToken } from "@/lib/googleOAuthState";
 
-const NATIVE_APP_SCHEME = "mizanmulk";
-
 export async function GET(req: NextRequest) {
   const appUrl = resolveAppUrl(req);
   const code = req.nextUrl.searchParams.get("code");
@@ -105,9 +103,13 @@ export async function GET(req: NextRequest) {
       // uygulamanın kendi WebView'ına taşınmaz (ayrı cookie depoları). Bunun
       // yerine tek kullanımlık bir jetonla uygulamaya geri dönülür, oturum
       // orada (AppUrlOpenBridge -> /api/auth/exchange-session) kurulur.
+      // NOT: Safari, kullanıcı hareketi olmadan (sunucudan otomatik yönlendirme
+      // ile) özel URL şemasına geçişi sessizce engelliyor — bu yüzden doğrudan
+      // mizanmulk:// şemasına değil, kullanıcının tıklaması gereken bir ara
+      // sayfaya (/oturum-callback) yönlendiriyoruz.
       const token = createSessionExchangeToken(user.id, user.role);
       return NextResponse.redirect(
-        `${NATIVE_APP_SCHEME}://auth-callback?token=${token}&destination=${encodeURIComponent(destination)}`
+        `${appUrl}/oturum-callback?token=${token}&destination=${encodeURIComponent(destination)}`
       );
     }
 
