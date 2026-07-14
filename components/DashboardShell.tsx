@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
@@ -22,7 +22,7 @@ export default function DashboardShell({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [nativeApp, setNativeApp] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setNativeApp(isNativeApp());
   }, []);
 

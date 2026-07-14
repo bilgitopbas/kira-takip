@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import AdminSidebar from "@/components/AdminSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import AdminBottomTabBar from "@/components/AdminBottomTabBar";
@@ -19,7 +19,7 @@ export default function AdminShell({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [nativeApp, setNativeApp] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setNativeApp(isNativeApp());
   }, []);
 
