@@ -145,6 +145,9 @@ function LoginForm() {
               Hesabınız yok mu?{" "}
               <a href="/register" className="text-[#17B6AE] font-medium">Kayıt Ol</a>
             </p>
+            <p className="text-xs text-slate-300 mt-3 text-center">
+              <a href="/debug-log">Hata Günlüğü</a>
+            </p>
         </div>
       </div>
     </div>

@@ -3,11 +3,16 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { isNativeApp } from "@/lib/native";
+import { parseAuthCallbackUrl, exchangeSessionToken } from "@/lib/authCallback";
+import { logEvent } from "@/lib/debugLog";
 
 // Native Google girişi Safari'de tamamlandıktan sonra özel URL şemasıyla
-// (mizanmulk://auth-callback?token=...) uygulamaya geri döner. Bu bileşen o
-// açılışı yakalayıp jetonu uygulamanın kendi WebView'ından sunucuya sunarak
-// gerçek oturumu burada kurar (bkz. lib/googleOAuthState.ts).
+// (mizanmulk://auth-callback?token=...) uygulamaya geri döner. Bu bileşen
+// "sıcak" senaryoyu (uygulama arka planda canlı kalmışsa) yakalar — "soğuk
+// başlangıç" (uygulama tamamen kapanmışsa) senaryosu NativeLoginRedirect'te
+// (uygulamanın her zaman "/" ile açıldığı senaryo) App.getLaunchUrl() ile
+// ayrıca ele alınıyor; ikisi aynı jetonu iki kez tüketmeye çalışıp
+// birbirini ezmesin diye burada tekrar getLaunchUrl kontrolü yapılmıyor.
 export default function AppUrlOpenBridge() {
   const router = useRouter();
 
@@ -16,43 +21,22 @@ export default function AppUrlOpenBridge() {
 
     let removeListener: (() => void) | undefined;
 
-    function parseAuthCallback(rawUrl: string) {
-      try {
-        const url = new URL(rawUrl);
-        if (url.hostname !== "auth-callback") return null;
-        const token = url.searchParams.get("token");
-        if (!token) return null;
-        return { token, destination: url.searchParams.get("destination") || "/dashboard" };
-      } catch {
-        return null;
-      }
-    }
-
     async function handleCallback(rawUrl: string) {
-      const parsed = parseAuthCallback(rawUrl);
+      logEvent(`AppUrlOpenBridge: appUrlOpen event url=${rawUrl}`);
+      const parsed = parseAuthCallbackUrl(rawUrl);
       if (!parsed) return;
-      const res = await fetch(`/api/auth/exchange-session?token=${encodeURIComponent(parsed.token)}`);
-      router.replace(res.ok ? parsed.destination : "/login?error=google_state");
+      const ok = await exchangeSessionToken(parsed.token);
+      logEvent(`AppUrlOpenBridge: exchange sonucu=${ok}, yonlendiriliyor=${ok ? parsed.destination : "/login"}`);
+      router.replace(ok ? parsed.destination : "/login?error=google_state");
     }
 
     (async () => {
       try {
         const { App } = await import("@capacitor/app");
-
-        // "Sıcak" senaryo: uygulama arka planda canlı kalmışsa bu olay çalışır.
         const handle = await App.addListener("appUrlOpen", (event: { url: string }) => {
           handleCallback(event.url);
         });
         removeListener = () => handle.remove();
-
-        // "Soğuk başlangıç" senaryosu: OAuth akışı uzun sürdüğü için iOS
-        // uygulamayı arka planda kapatmış olabilir. Bu durumda yukarıdaki
-        // dinleyici henüz kayıtlı değilken açılış URL'i "kaçırılır" — bu
-        // yüzden başlangıçta ayrıca hangi URL ile açıldığımızı soruyoruz.
-        const launch = await App.getLaunchUrl();
-        if (launch?.url) {
-          handleCallback(launch.url);
-        }
       } catch (err) {
         console.error("AppUrlOpenBridge başlatılamadı:", err);
       }
