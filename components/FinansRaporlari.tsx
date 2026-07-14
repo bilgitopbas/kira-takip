@@ -199,28 +199,28 @@ export default function FinansRaporlari({ payments, debts }: Props) {
           <p className="text-sm text-slate-500 text-center py-10">Seçili tarih aralığında tahsilat kaydı yok.</p>
         ) : (
           <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-xs sm:text-sm">
             <thead>
               <tr className="bg-gray-50 text-left">
-                <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Tarih</th>
-                <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Kiracı</th>
-                <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Mülk</th>
-                <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Tutar</th>
-                <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Dekont</th>
+                <th className="px-1 py-1.5 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Tarih</th>
+                <th className="px-1 py-1.5 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Kiracı</th>
+                <th className="px-1 py-1.5 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Mülk</th>
+                <th className="px-1 py-1.5 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Tutar</th>
+                <th className="hidden sm:table-cell px-1 py-1.5 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Dekont</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {filteredPayments.map((p) => (
                 <tr key={p.id} className="hover:bg-gray-50/60 transition-colors">
-                  <td className="px-5 py-3 text-slate-700">
+                  <td className="px-1 py-1.5 sm:px-5 sm:py-3 text-slate-700 whitespace-nowrap">
                     {new Date(p.paidAt).toLocaleDateString("tr-TR")}
                   </td>
-                  <td className="px-5 py-3 text-slate-800 font-medium">{p.tenantName}</td>
-                  <td className="px-5 py-3 text-slate-700">{p.propertyTitle}</td>
-                  <td className="px-5 py-3 text-slate-800 font-medium">
+                  <td className="px-1 py-1.5 sm:px-5 sm:py-3 text-slate-800 font-medium max-w-[70px] sm:max-w-none truncate">{p.tenantName}</td>
+                  <td className="px-1 py-1.5 sm:px-5 sm:py-3 text-slate-700 max-w-[60px] sm:max-w-none truncate">{p.propertyTitle}</td>
+                  <td className="px-1 py-1.5 sm:px-5 sm:py-3 text-slate-800 font-medium whitespace-nowrap">
                     {p.amount.toLocaleString("tr-TR")} ₺
                   </td>
-                  <td className="px-5 py-3 text-slate-500">{p.hasReceipt ? "Var" : "—"}</td>
+                  <td className="hidden sm:table-cell px-1 py-1.5 sm:px-5 sm:py-3 text-slate-500">{p.hasReceipt ? "Var" : "—"}</td>
                 </tr>
               ))}
             </tbody>

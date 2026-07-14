@@ -52,14 +52,14 @@ export default function AdminDestekPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-xs sm:text-sm">
               <thead>
                 <tr className="bg-gray-50 text-left">
-                  <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Kullanıcı</th>
-                  <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Konu</th>
-                  <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Açıklama</th>
-                  <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Tarih</th>
-                  <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Durum</th>
+                  <th className="px-2 py-2 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Kullanıcı</th>
+                  <th className="px-2 py-2 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Konu</th>
+                  <th className="px-2 py-2 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Açıklama</th>
+                  <th className="px-2 py-2 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Tarih</th>
+                  <th className="px-2 py-2 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Durum</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -70,7 +70,7 @@ export default function AdminDestekPage() {
                 )}
                 {tickets.map((t) => (
                   <tr key={t.id} className="hover:bg-gray-50/60 transition-colors align-top">
-                    <td className="px-5 py-4">
+                    <td className="px-2 py-2.5 sm:px-5 sm:py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
                           <span className="text-slate-500 text-xs font-bold">{t.user.fullName.charAt(0).toUpperCase()}</span>
@@ -81,12 +81,12 @@ export default function AdminDestekPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-slate-700 font-medium max-w-[160px]">{t.subject}</td>
-                    <td className="px-5 py-4 text-slate-500 max-w-[320px]">{t.description}</td>
-                    <td className="px-5 py-4 text-slate-400 text-xs whitespace-nowrap">
+                    <td className="px-2 py-2.5 sm:px-5 sm:py-4 text-slate-700 font-medium max-w-[80px] sm:max-w-[160px] truncate">{t.subject}</td>
+                    <td className="px-2 py-2.5 sm:px-5 sm:py-4 text-slate-500 max-w-[110px] sm:max-w-[320px] truncate">{t.description}</td>
+                    <td className="px-2 py-2.5 sm:px-5 sm:py-4 text-slate-400 text-xs whitespace-nowrap">
                       {new Date(t.createdAt).toLocaleString("tr-TR")}
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-2 py-2.5 sm:px-5 sm:py-4">
                       <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${t.status === "OPEN" ? "bg-blue-50 text-blue-600 border border-blue-100" : "bg-gray-50 text-slate-400 border border-gray-100"}`}>
                         {t.status === "OPEN" ? "Açık" : "Kapalı"}
                       </span>
@@ -109,14 +109,14 @@ export default function AdminDestekPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-xs sm:text-sm">
               <thead>
                 <tr className="bg-gray-50 text-left">
-                  <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Ad Soyad</th>
-                  <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Telefon</th>
-                  <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Pazarlama</th>
-                  <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Tarih</th>
-                  <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Durum</th>
+                  <th className="px-2 py-2 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Ad Soyad</th>
+                  <th className="px-2 py-2 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Telefon</th>
+                  <th className="px-2 py-2 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Pazarlama</th>
+                  <th className="px-2 py-2 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Tarih</th>
+                  <th className="px-2 py-2 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Durum</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -127,7 +127,7 @@ export default function AdminDestekPage() {
                 )}
                 {requests.map((r) => (
                   <tr key={r.id} className="hover:bg-gray-50/60 transition-colors">
-                    <td className="px-5 py-4">
+                    <td className="px-2 py-2.5 sm:px-5 sm:py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
                           <span className="text-slate-500 text-xs font-bold">{r.name.charAt(0).toUpperCase()}</span>
@@ -135,18 +135,18 @@ export default function AdminDestekPage() {
                         <span className="font-medium text-slate-700">{r.name}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-slate-500">{r.phone}</td>
-                    <td className="px-5 py-4">
+                    <td className="px-2 py-2.5 sm:px-5 sm:py-4 text-slate-500">{r.phone}</td>
+                    <td className="px-2 py-2.5 sm:px-5 sm:py-4">
                       {r.marketingConsent ? (
                         <span className="text-xs bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-1 rounded-full">Onaylı</span>
                       ) : (
                         <span className="text-xs text-slate-300">—</span>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-slate-400 text-xs">
+                    <td className="px-2 py-2.5 sm:px-5 sm:py-4 text-slate-400 text-xs">
                       {new Date(r.createdAt).toLocaleString("tr-TR")}
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-2 py-2.5 sm:px-5 sm:py-4">
                       <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${r.isRead ? "bg-gray-50 text-slate-400 border border-gray-100" : "bg-blue-50 text-blue-600 border border-blue-100"}`}>
                         {r.isRead ? "Okundu" : "Yeni"}
                       </span>

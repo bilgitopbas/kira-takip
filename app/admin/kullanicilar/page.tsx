@@ -109,15 +109,15 @@ export default function AdminKullanicilarPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-xs sm:text-sm">
             <thead>
               <tr className="bg-gray-50 text-left">
-                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Kullanıcı</th>
-                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Şehir</th>
-                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Müşteri Tipi</th>
-                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Deneme Bitiş</th>
-                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Mizan Pro Limiti</th>
-                <th className="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">İşlemler</th>
+                <th className="px-2 py-2 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Kullanıcı</th>
+                <th className="px-2 py-2 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Şehir</th>
+                <th className="px-2 py-2 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Müşteri Tipi</th>
+                <th className="px-2 py-2 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Deneme Bitiş</th>
+                <th className="px-2 py-2 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Mizan Pro Limiti</th>
+                <th className="px-2 py-2 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap text-right">İşlemler</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -130,7 +130,7 @@ export default function AdminKullanicilarPage() {
               )}
               {filtered.map((c) => (
                 <tr key={c.id} className="hover:bg-gray-50/60 transition-colors">
-                  <td className="px-5 py-4">
+                  <td className="px-2 py-2.5 sm:px-5 sm:py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-[#17B6AE]/10 flex items-center justify-center flex-shrink-0">
                         <span className="text-[#17B6AE] text-xs font-bold">
@@ -143,8 +143,8 @@ export default function AdminKullanicilarPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-slate-500">{c.city || "—"}</td>
-                  <td className="px-5 py-4">
+                  <td className="px-2 py-2.5 sm:px-5 sm:py-4 text-slate-500">{c.city || "—"}</td>
+                  <td className="px-2 py-2.5 sm:px-5 sm:py-4">
                     <select
                       value={c.subscriptionStatus}
                       onChange={(e) => changeTier(c.id, e.target.value)}
@@ -155,10 +155,10 @@ export default function AdminKullanicilarPage() {
                       ))}
                     </select>
                   </td>
-                  <td className="px-5 py-4 text-slate-500 text-xs">
+                  <td className="px-2 py-2.5 sm:px-5 sm:py-4 text-slate-500 text-xs">
                     {new Date(c.trialEndsAt).toLocaleDateString("tr-TR")}
                   </td>
-                  <td className="px-5 py-4">
+                  <td className="px-2 py-2.5 sm:px-5 sm:py-4">
                     <div className="flex items-center gap-1.5">
                       <input
                         type="number"
@@ -176,7 +176,7 @@ export default function AdminKullanicilarPage() {
                       </button>
                     </div>
                   </td>
-                  <td className="px-5 py-4">
+                  <td className="px-2 py-2.5 sm:px-5 sm:py-4">
                     <div className="flex items-center gap-2 justify-end">
                       <button
                         onClick={() => toggleManagement(c.id, c.wantsManagement)}

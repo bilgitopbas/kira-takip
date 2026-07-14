@@ -53,11 +53,21 @@ const MONTH_NAMES = [
   "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
 ];
 
+const MONTH_NAMES_SHORT = [
+  "Oca", "Şub", "Mar", "Nis", "May", "Haz",
+  "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara",
+];
+
 const CURRENCY_SYMBOLS: Record<string, string> = { TRY: "₺", USD: "$", EUR: "€" };
 
 function formatDebtDate(dueDate: string) {
   const date = new Date(dueDate);
   return `${date.getDate()} ${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+function formatDebtDateShort(dueDate: string) {
+  const date = new Date(dueDate);
+  return `${date.getDate()} ${MONTH_NAMES_SHORT[date.getMonth()]} ${String(date.getFullYear()).slice(2)}`;
 }
 
 function Stars({ rating }: { rating: number | null }) {
@@ -448,14 +458,14 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
             </div>
 
             <div className="overflow-x-auto">
-            <table className="w-full text-base">
+            <table className="w-full text-xs sm:text-base">
               <thead>
                 <tr className="bg-gray-50 text-left">
-                  <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider border-r border-gray-100">Ay / Yıl</th>
-                  <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider border-r border-gray-100">Kira Tutarı</th>
-                  <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider border-r border-gray-100">Kira Ödemesi</th>
-                  <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider border-r border-gray-100">Durum</th>
-                  <th className="no-print px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">İşlem</th>
+                  <th className="px-1.5 py-2 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider border-r border-gray-100">Ay / Yıl</th>
+                  <th className="px-1.5 py-2 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider border-r border-gray-100">Tutar</th>
+                  <th className="px-1.5 py-2 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider border-r border-gray-100">Ödeme</th>
+                  <th className="px-1.5 py-2 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider border-r border-gray-100">Durum</th>
+                  <th className="no-print px-1.5 py-2 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">İşlem</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -468,41 +478,43 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
                     .join(" · ");
                   return (
                     <tr key={d.id} className="hover:bg-gray-50/60 transition-colors">
-                      <td className="px-5 py-3.5 text-slate-800 font-semibold border-r border-gray-100">
-                        {formatDebtDate(d.dueDate)}
+                      <td className="px-1.5 py-2 sm:px-5 sm:py-3.5 text-slate-800 font-semibold border-r border-gray-100 whitespace-nowrap">
+                        <span className="sm:hidden">{formatDebtDateShort(d.dueDate)}</span>
+                        <span className="hidden sm:inline">{formatDebtDate(d.dueDate)}</span>
                       </td>
-                      <td className="px-5 py-3.5 text-slate-700 border-r border-gray-100">
+                      <td className="px-1.5 py-2 sm:px-5 sm:py-3.5 text-slate-700 border-r border-gray-100 whitespace-nowrap">
                         {Number(d.amount).toLocaleString("tr-TR")} ₺
                       </td>
-                      <td className="px-5 py-3.5 border-r border-gray-100">
+                      <td className="px-1.5 py-2 sm:px-5 sm:py-3.5 border-r border-gray-100">
                         {totalPaid > 0 ? (
                           <>
-                            <span className={effective === "PARTIAL" ? "text-blue-600 font-semibold" : "text-slate-700"}>
+                            <span className={`whitespace-nowrap ${effective === "PARTIAL" ? "text-blue-600 font-semibold" : "text-slate-700"}`}>
                               {totalPaid.toLocaleString("tr-TR")} ₺
                             </span>
                             {effective === "PARTIAL" && (
-                              <div className="text-xs text-blue-500 font-medium mt-0.5">Kısmi ödeme yapıldı</div>
+                              <div className="text-[9px] sm:text-xs text-blue-500 font-medium mt-0.5">Kısmi ödeme</div>
                             )}
                           </>
                         ) : (
                           <span className="text-slate-400">—</span>
                         )}
                         {paymentNotes && (
-                          <div className="text-xs text-slate-400 italic mt-0.5">Not: {paymentNotes}</div>
+                          <div className="hidden sm:block text-xs text-slate-400 italic mt-0.5">Not: {paymentNotes}</div>
                         )}
                       </td>
-                      <td className="px-5 py-3.5 border-r border-gray-100">
-                        <span className={`text-xs px-3 py-1.5 rounded-full font-semibold ${DEBT_STATUS_STYLES[effective]}`}>
+                      <td className="px-1.5 py-2 sm:px-5 sm:py-3.5 border-r border-gray-100">
+                        <span className={`text-[9px] sm:text-xs px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-full font-semibold whitespace-nowrap ${DEBT_STATUS_STYLES[effective]}`}>
                           {DEBT_STATUS_LABELS[effective]}
                         </span>
                       </td>
-                      <td className="no-print px-5 py-3.5 text-right">
+                      <td className="no-print px-1.5 py-2 sm:px-5 sm:py-3.5 text-right">
                         {effective !== "PAID" && (
                           <button
                             onClick={() => openPayModal(d)}
-                            className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-[#17B6AE]/10 text-[#17B6AE] hover:bg-[#17B6AE]/20 transition"
+                            className="text-[9px] sm:text-xs px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg font-semibold bg-[#17B6AE]/10 text-[#17B6AE] hover:bg-[#17B6AE]/20 transition whitespace-nowrap"
                           >
-                            Ödendi Olarak İşaretle
+                            <span className="sm:hidden">İşaretle</span>
+                            <span className="hidden sm:inline">Ödendi Olarak İşaretle</span>
                           </button>
                         )}
                       </td>
@@ -512,14 +524,14 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
               </tbody>
               <tfoot>
                 <tr className="bg-gray-50 border-t-2 border-gray-200 font-bold">
-                  <td className="px-5 py-3.5 text-slate-800 border-r border-gray-100">Toplam</td>
-                  <td className="px-5 py-3.5 text-slate-800 border-r border-gray-100">
+                  <td className="px-1.5 py-2 sm:px-5 sm:py-3.5 text-slate-800 border-r border-gray-100">Toplam</td>
+                  <td className="px-1.5 py-2 sm:px-5 sm:py-3.5 text-slate-800 border-r border-gray-100 whitespace-nowrap">
                     {periodTotals.totalAmount.toLocaleString("tr-TR")} ₺
                   </td>
-                  <td className="px-5 py-3.5 border-r border-gray-100" colSpan={2}>
+                  <td className="px-1.5 py-2 sm:px-5 sm:py-3.5 border-r border-gray-100 whitespace-nowrap" colSpan={2}>
                     <span className="text-slate-800">{periodTotals.totalPaid.toLocaleString("tr-TR")} ₺</span>
                     <span
-                      className={`ml-3 text-xs px-2.5 py-1 rounded-full font-semibold ${
+                      className={`block sm:inline sm:ml-3 mt-0.5 sm:mt-0 text-[9px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-semibold w-fit ${
                         periodTotals.difference > 0
                           ? "bg-red-50 text-red-600"
                           : periodTotals.difference < 0
@@ -539,10 +551,10 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
               </tfoot>
             </table>
             </div>
-            <div className="flex justify-end px-6 py-3 border-t border-gray-100 bg-gray-50/50">
-              <span className="text-sm font-semibold text-slate-600 mr-2">Toplam Fark Borç (Tüm Yıllar):</span>
+            <div className="flex flex-wrap items-center justify-end gap-2 px-4 sm:px-6 py-3 border-t border-gray-100 bg-gray-50/50">
+              <span className="text-xs sm:text-sm font-semibold text-slate-600">Toplam Fark Borç (Tüm Yıllar):</span>
               <span
-                className={`text-sm font-bold px-2.5 py-1 rounded-full ${
+                className={`text-xs sm:text-sm font-bold px-2.5 py-1 rounded-full ${
                   grandTotalDifference > 0
                     ? "bg-red-50 text-red-600"
                     : grandTotalDifference < 0
