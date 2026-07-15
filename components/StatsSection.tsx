@@ -12,7 +12,7 @@ const STATS = [
     dark: false,
   },
   {
-    value: 250,
+    value: 5000,
     suffix: "+",
     label: "Taşınmaz",
     desc: "Farklı nitelik ve ölçekteki taşınmazlar, tek bir sistem üzerinden düzenli ve kontrollü biçimde yönetilmektedir.",

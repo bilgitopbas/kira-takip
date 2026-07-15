@@ -117,10 +117,8 @@ export default function FeatureGrid() {
           {/* Küçük kart: Finansal Raporlama */}
           <FadeInView delay={0.15} className="lg:row-start-2">
             <TiltCard className="rounded-3xl bg-white border border-gray-100 p-6 shadow-sm">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center mb-4">
-                <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
-                </svg>
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
+                <span className="text-lg font-bold leading-none">₺</span>
               </div>
               <h3 className="text-base font-semibold text-slate-800 mb-1.5">Finansal raporlama</h3>
               <p className="text-sm text-slate-500 leading-relaxed">

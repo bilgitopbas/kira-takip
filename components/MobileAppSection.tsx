@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { WordsReveal, FadeInView } from "@/components/motion/Reveal";
 
 function AppleLogo() {
@@ -27,73 +28,74 @@ function GooglePlayLogo() {
   );
 }
 
-const MOCK_TENANTS = [
-  { name: "Deniz Aydın", property: "Ataşehir Daire", status: "Ödendi", style: "bg-emerald-100 text-emerald-600" },
-  { name: "Burak Şahin", property: "Maslak Ofis", status: "Bekliyor", style: "bg-amber-100 text-amber-600" },
-  { name: "Cemre Yıldız", property: "Nişantaşı Daire", status: "Ödendi", style: "bg-emerald-100 text-emerald-600" },
-];
-
-function PhoneAppMockup() {
-  const occupancy = 78;
-  const circumference = 2 * Math.PI * 34;
-  const offset = circumference * (1 - occupancy / 100);
-
+function DeviceShowcase() {
   return (
-    <div className="relative w-[260px] h-[540px]">
-      <div className="absolute inset-0 bg-black rounded-[3rem] p-3 shadow-2xl">
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-full z-10" />
-        <div className="relative w-full h-full bg-gray-50 rounded-[2.3rem] overflow-hidden pt-9 px-4 pb-5 flex flex-col">
-          <div className="flex items-center gap-2 mb-5">
-            <div className="w-7 h-7 rounded-lg bg-[#17B6AE]/10 text-[#17B6AE] flex items-center justify-center text-xs font-bold">
-              M
-            </div>
-            <span className="text-xs font-semibold text-slate-700">Mizan Mülk Yönetimi</span>
-            <span className="ml-auto w-6 h-6 rounded-full bg-white shadow-sm flex items-center justify-center text-[#17B6AE] text-xs">
-              🔔
-            </span>
-          </div>
+    <div className="relative w-full max-w-[560px] h-[360px] sm:h-[440px] mx-auto flex items-center justify-center">
+      {/* Arka planda yumuşak turkuaz parıltı */}
+      <div className="absolute w-72 h-72 bg-[#17B6AE]/25 rounded-full blur-3xl" />
 
-          <div className="bg-white rounded-2xl p-4 shadow-sm mb-4">
-            <p className="text-[11px] text-slate-400 mb-1">Bu Ay Tahsilat</p>
-            <p className="text-xl font-bold text-slate-800 mb-2">102.000 ₺</p>
-            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-              <div className="h-full bg-[#17B6AE] rounded-full" style={{ width: "85%" }} />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl p-4 shadow-sm mb-4 flex items-center gap-4">
-            <div className="relative w-16 h-16 shrink-0">
-              <svg viewBox="0 0 80 80" className="w-full h-full -rotate-90">
-                <circle cx="40" cy="40" r="34" fill="none" stroke="#F1F5F9" strokeWidth="8" />
-                <circle
-                  cx="40" cy="40" r="34" fill="none" stroke="#17B6AE" strokeWidth="8"
-                  strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-xs font-bold text-slate-800">%{occupancy}</span>
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-700">Doluluk Oranı</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">7 / 9 mülk dolu</p>
-            </div>
-          </div>
-
-          <p className="text-[11px] font-semibold text-slate-400 mb-2 uppercase tracking-wide">Kiracılar</p>
-          <div className="space-y-2 flex-1">
-            {MOCK_TENANTS.map((t) => (
-              <div key={t.name} className="flex items-center justify-between bg-white rounded-xl px-3 py-2.5 shadow-sm">
-                <div>
-                  <p className="text-xs font-semibold text-slate-700">{t.name}</p>
-                  <p className="text-[10px] text-slate-400">{t.property}</p>
-                </div>
-                <span className={`text-[10px] font-semibold px-2 py-1 rounded-full ${t.style}`}>{t.status}</span>
-              </div>
-            ))}
+      {/* iPad — merkezde */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        whileInView={{ opacity: 1, scale: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+        className="relative z-10 w-[230px] sm:w-[340px] lg:w-[380px]"
+      >
+        <div className="relative bg-black rounded-[1.4rem] sm:rounded-[1.75rem] p-[7px] sm:p-[10px] shadow-2xl shadow-black/50">
+          <span className="absolute top-1 sm:top-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-slate-700 z-10" />
+          <div className="relative w-full aspect-[2360/1640] rounded-[0.9rem] sm:rounded-[1.15rem] overflow-hidden bg-white">
+            <img
+              src="/ipad-preview.png"
+              alt="Mizan Mülk Yönetimi iPad görünümü"
+              className="w-full h-full object-cover object-top"
+            />
           </div>
         </div>
-      </div>
+      </motion.div>
+
+      {/* Sol iPhone */}
+      <motion.div
+        initial={{ opacity: 0, x: -50, rotate: 0 }}
+        whileInView={{ opacity: 1, x: 0, rotate: -12 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
+        className="absolute left-[-6px] sm:left-[-18px] bottom-0 z-20 w-[86px] sm:w-[128px] origin-bottom-right"
+      >
+        <div className="animate-float bg-black rounded-[1.3rem] sm:rounded-[1.8rem] p-[5px] sm:p-[7px] shadow-2xl shadow-black/60">
+          <span className="absolute top-1.5 sm:top-2 left-1/2 -translate-x-1/2 w-6 sm:w-9 h-2.5 sm:h-3.5 bg-black rounded-full z-10" />
+          <div className="relative w-full aspect-[1179/2556] rounded-[1rem] sm:rounded-[1.4rem] overflow-hidden bg-white">
+            <img
+              src="/iphone-preview-1.png"
+              alt="Mizan Mülk Yönetimi mobil kontrol paneli"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Sağ iPhone */}
+      <motion.div
+        initial={{ opacity: 0, x: 50, rotate: 0 }}
+        whileInView={{ opacity: 1, x: 0, rotate: 12 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8, delay: 0.65, ease: "easeOut" }}
+        className="absolute right-[-6px] sm:right-[-18px] bottom-0 z-20 w-[86px] sm:w-[128px] origin-bottom-left"
+      >
+        <div
+          className="animate-float bg-black rounded-[1.3rem] sm:rounded-[1.8rem] p-[5px] sm:p-[7px] shadow-2xl shadow-black/60"
+          style={{ animationDelay: "-2s" }}
+        >
+          <span className="absolute top-1.5 sm:top-2 left-1/2 -translate-x-1/2 w-6 sm:w-9 h-2.5 sm:h-3.5 bg-black rounded-full z-10" />
+          <div className="relative w-full aspect-[1179/2556] rounded-[1rem] sm:rounded-[1.4rem] overflow-hidden bg-white">
+            <img
+              src="/iphone-preview-2.png"
+              alt="Mizan Mülk Yönetimi mobil blog görünümü"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 }
@@ -118,7 +120,9 @@ export default function MobileAppSection() {
 
           <div className="flex flex-wrap gap-4">
             <a
-              href="/register"
+              href="https://apps.apple.com/tr/app/mizan-m%C3%BClk-y%C3%B6netimi/id6759964652"
+              target="_blank"
+              rel="noopener noreferrer"
               className="flex items-center gap-3 bg-white hover:bg-gray-100 text-slate-900 px-5 py-3 rounded-2xl transition border border-transparent"
             >
               <AppleLogo />
@@ -141,7 +145,7 @@ export default function MobileAppSection() {
         </div>
 
         <FadeInView className="flex justify-center">
-          <PhoneAppMockup />
+          <DeviceShowcase />
         </FadeInView>
       </div>
     </section>
