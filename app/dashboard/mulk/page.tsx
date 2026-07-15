@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import MulkEkleButton from "@/components/MulkEkleButton";
 import MulkDuzenleButton from "@/components/MulkDuzenleButton";
+import MulkMasraflarButton from "@/components/MulkMasraflarButton";
 import ExcelIceAktarButton from "@/components/ExcelIceAktarButton";
 import Pagination from "@/components/Pagination";
 
@@ -248,6 +249,10 @@ export default function MulkListPage() {
                     {p._count.tenants} kiracı
                   </div>
                   <div className="flex items-center gap-1">
+                    <MulkMasraflarButton
+                      propertyId={p.id}
+                      className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-amber-50 text-amber-600 hover:bg-amber-100 transition"
+                    />
                     <MulkDuzenleButton
                       propertyId={p.id}
                       onUpdated={() => loadProperties(page)}

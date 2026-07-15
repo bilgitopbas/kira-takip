@@ -29,6 +29,7 @@ export async function GET(
     include: {
       property: true,
       debts: { orderBy: { dueDate: "asc" }, include: { payments: true } },
+      expenses: { orderBy: { date: "desc" } },
     },
   });
 

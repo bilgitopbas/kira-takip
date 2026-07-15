@@ -17,7 +17,15 @@ type Debt = {
   amount: string;
   dueDate: string;
   status: string;
-  payments: { amount: string; notes: string | null }[];
+  payments: { id: string; amount: string; paidAt: string; notes: string | null }[];
+};
+
+type Expense = {
+  id: string;
+  description: string;
+  amount: string;
+  date: string;
+  notes: string | null;
 };
 
 type Tenant = {
@@ -46,6 +54,7 @@ type Tenant = {
   contractNotes: string | null;
   property: { id: string; title: string };
   debts: Debt[];
+  expenses: Expense[];
 };
 
 const MONTH_NAMES = [
@@ -132,6 +141,26 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
   const [paySubmitting, setPaySubmitting] = useState(false);
   const [payError, setPayError] = useState("");
 
+  const [editDebt, setEditDebt] = useState<Debt | null>(null);
+  const [editRows, setEditRows] = useState<{ id: string; amount: string; paidAt: string; notes: string }[]>([]);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editDeletingId, setEditDeletingId] = useState<string | null>(null);
+  const [editError, setEditError] = useState("");
+
+  const [showEditDebtBatchModal, setShowEditDebtBatchModal] = useState(false);
+  const [editDebtBatchAmount, setEditDebtBatchAmount] = useState("");
+  const [editDebtBatchSubmitting, setEditDebtBatchSubmitting] = useState(false);
+  const [editDebtBatchError, setEditDebtBatchError] = useState("");
+
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [expenseDescription, setExpenseDescription] = useState("");
+  const [expenseAmount, setExpenseAmount] = useState("");
+  const [expenseDate, setExpenseDate] = useState("");
+  const [expenseNotes, setExpenseNotes] = useState("");
+  const [expenseSubmitting, setExpenseSubmitting] = useState(false);
+  const [expenseDeletingId, setExpenseDeletingId] = useState<string | null>(null);
+  const [expenseError, setExpenseError] = useState("");
+
   const [periodIndex, setPeriodIndex] = useState(0);
 
   const periods = useMemo(() => {
@@ -211,6 +240,81 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
     load();
   }
 
+  function openEditDebtBatchModal() {
+    setEditDebtBatchAmount(currentPeriod[0]?.amount || "");
+    setEditDebtBatchError("");
+    setShowEditDebtBatchModal(true);
+  }
+
+  async function submitEditDebtBatch(e: React.FormEvent) {
+    e.preventDefault();
+    setEditDebtBatchError("");
+    const amount = Number(editDebtBatchAmount);
+    if (!editDebtBatchAmount || Number.isNaN(amount) || amount <= 0) {
+      setEditDebtBatchError("Geçerli bir tutar girin.");
+      return;
+    }
+    setEditDebtBatchSubmitting(true);
+    const res = await fetch(`/api/dashboard/tenants/${id}/debts/bulk-update`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ debtIds: currentPeriod.map((d) => d.id), amount }),
+    });
+    setEditDebtBatchSubmitting(false);
+    if (!res.ok) {
+      const data = await res.json();
+      setEditDebtBatchError(data.error || "Borçlandırma güncellenemedi.");
+      return;
+    }
+    setShowEditDebtBatchModal(false);
+    load();
+  }
+
+  function openExpenseModal() {
+    setExpenseDescription("");
+    setExpenseAmount("");
+    setExpenseDate(new Date().toISOString().slice(0, 10));
+    setExpenseNotes("");
+    setExpenseError("");
+    setShowExpenseModal(true);
+  }
+
+  async function submitExpense(e: React.FormEvent) {
+    e.preventDefault();
+    setExpenseError("");
+    if (!expenseDescription.trim() || !expenseAmount || !expenseDate) {
+      setExpenseError("Açıklama, tutar ve tarih zorunludur.");
+      return;
+    }
+    setExpenseSubmitting(true);
+    const res = await fetch(`/api/dashboard/tenants/${id}/expenses`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        description: expenseDescription.trim(),
+        amount: Number(expenseAmount),
+        date: expenseDate,
+        notes: expenseNotes.trim(),
+      }),
+    });
+    setExpenseSubmitting(false);
+    if (!res.ok) {
+      const data = await res.json();
+      setExpenseError(data.error || "Masraf kaydedilemedi.");
+      return;
+    }
+    setShowExpenseModal(false);
+    load();
+  }
+
+  async function deleteExpense(expenseId: string) {
+    if (!window.confirm("Bu masraf kaydını silmek istediğinize emin misiniz?")) return;
+    setExpenseDeletingId(expenseId);
+    const res = await fetch(`/api/dashboard/expenses/${expenseId}`, { method: "DELETE" });
+    setExpenseDeletingId(null);
+    if (res.ok) load();
+  }
+
   function openPayModal(debt: Debt) {
     setPayDebt(debt);
     const remaining = Number(debt.amount) - getTotalPaid(debt.payments);
@@ -247,6 +351,68 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
       return;
     }
     setPayDebt(null);
+    load();
+  }
+
+  function openEditModal(debt: Debt) {
+    setEditDebt(debt);
+    setEditRows(
+      debt.payments.map((p) => ({
+        id: p.id,
+        amount: p.amount,
+        paidAt: p.paidAt.slice(0, 10),
+        notes: p.notes || "",
+      }))
+    );
+    setEditError("");
+  }
+
+  function updateEditRow(id: string, field: "amount" | "paidAt" | "notes", value: string) {
+    setEditRows((rows) => rows.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
+  }
+
+  async function deleteEditPayment(paymentId: string) {
+    if (!window.confirm("Bu tahsilat kaydını silmek istediğinize emin misiniz?")) return;
+    setEditDeletingId(paymentId);
+    setEditError("");
+    const res = await fetch(`/api/dashboard/payments/${paymentId}`, { method: "DELETE" });
+    setEditDeletingId(null);
+    if (!res.ok) {
+      const data = await res.json();
+      setEditError(data.error || "Tahsilat silinemedi.");
+      return;
+    }
+    const remaining = editRows.filter((r) => r.id !== paymentId);
+    setEditRows(remaining);
+    await load();
+    if (remaining.length === 0) setEditDebt(null);
+  }
+
+  async function submitEditPayments(e: React.FormEvent) {
+    e.preventDefault();
+    setEditError("");
+    for (const row of editRows) {
+      if (!row.amount || Number(row.amount) <= 0 || !row.paidAt) {
+        setEditError("Tüm kayıtlarda tutar ve tarih zorunludur.");
+        return;
+      }
+    }
+    setEditSubmitting(true);
+    for (const row of editRows) {
+      const res = await fetch(`/api/dashboard/payments/${row.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: Number(row.amount), paidAt: row.paidAt, notes: row.notes }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setEditError(data.error || "Tahsilat güncellenemedi.");
+        setEditSubmitting(false);
+        return;
+      }
+    }
+    setEditSubmitting(false);
+    setEditDebt(null);
     load();
   }
 
@@ -411,14 +577,30 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-base font-bold text-slate-800">Ödeme Planı</h2>
-          <button
-            onClick={openDebtModal}
-            className="no-print bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-4 py-2 rounded-xl transition text-sm"
-          >
-            Kiracıyı Borçlandır
-          </button>
+          <div className="no-print flex items-center gap-2">
+            {periods.length > 0 && (
+              <button
+                onClick={openEditDebtBatchModal}
+                className="bg-white border border-gray-200 hover:border-[#17B6AE] text-slate-600 hover:text-[#17B6AE] font-semibold px-4 py-2 rounded-xl transition text-sm"
+              >
+                Düzenle
+              </button>
+            )}
+            <button
+              onClick={openExpenseModal}
+              className="bg-white border border-gray-200 hover:border-[#17B6AE] text-slate-600 hover:text-[#17B6AE] font-semibold px-4 py-2 rounded-xl transition text-sm"
+            >
+              Masraf Ekle
+            </button>
+            <button
+              onClick={openDebtModal}
+              className="bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-4 py-2 rounded-xl transition text-sm"
+            >
+              Kiracıyı Borçlandır
+            </button>
+          </div>
         </div>
 
         {periods.length === 0 ? (
@@ -487,19 +669,34 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
                       </td>
                       <td className="px-1.5 py-2 sm:px-5 sm:py-3.5 border-r border-gray-100">
                         {totalPaid > 0 ? (
-                          <>
-                            <span className={`whitespace-nowrap ${effective === "PARTIAL" ? "text-blue-600 font-semibold" : "text-slate-700"}`}>
-                              {totalPaid.toLocaleString("tr-TR")} ₺
-                            </span>
-                            {effective === "PARTIAL" && (
-                              <div className="text-[9px] sm:text-xs text-blue-500 font-medium mt-0.5">Kısmi ödeme</div>
+                          <div className="space-y-0.5">
+                            {d.payments.length > 1 ? (
+                              d.payments.map((p) => (
+                                <div key={p.id} className="flex items-baseline gap-1 whitespace-nowrap">
+                                  <span className="text-slate-700 text-[10px] sm:text-sm">
+                                    {Number(p.amount).toLocaleString("tr-TR")} ₺
+                                  </span>
+                                  <span className="text-slate-400 text-[8px] sm:text-[10px]">
+                                    · {formatDebtDateShort(p.paidAt)}
+                                  </span>
+                                </div>
+                              ))
+                            ) : (
+                              <span className={`whitespace-nowrap ${effective === "PARTIAL" ? "text-blue-600 font-semibold" : "text-slate-700"}`}>
+                                {totalPaid.toLocaleString("tr-TR")} ₺
+                              </span>
                             )}
-                          </>
+                            {effective === "PARTIAL" && (
+                              <div className="text-[9px] sm:text-xs text-blue-500 font-medium">
+                                Kısmi ödeme{d.payments.length > 1 ? ` · ${d.payments.length} kayıt` : ""}
+                              </div>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-slate-400">—</span>
                         )}
                         {paymentNotes && (
-                          <div className="hidden sm:block text-xs text-slate-400 italic mt-0.5">Not: {paymentNotes}</div>
+                          <div className="hidden sm:block text-xs text-slate-400 italic mt-0.5 truncate max-w-[180px]">Not: {paymentNotes}</div>
                         )}
                       </td>
                       <td className="px-1.5 py-2 sm:px-5 sm:py-3.5 border-r border-gray-100">
@@ -508,15 +705,25 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
                         </span>
                       </td>
                       <td className="no-print px-1.5 py-2 sm:px-5 sm:py-3.5 text-right">
-                        {effective !== "PAID" && (
-                          <button
-                            onClick={() => openPayModal(d)}
-                            className="text-[9px] sm:text-xs px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg font-semibold bg-[#17B6AE]/10 text-[#17B6AE] hover:bg-[#17B6AE]/20 transition whitespace-nowrap"
-                          >
-                            <span className="sm:hidden">İşaretle</span>
-                            <span className="hidden sm:inline">Ödendi Olarak İşaretle</span>
-                          </button>
-                        )}
+                        <div className="flex flex-col sm:flex-row gap-1 sm:gap-1.5 items-end sm:items-center justify-end">
+                          {effective !== "PAID" && (
+                            <button
+                              onClick={() => openPayModal(d)}
+                              className="text-[9px] sm:text-xs px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg font-semibold bg-[#17B6AE]/10 text-[#17B6AE] hover:bg-[#17B6AE]/20 transition whitespace-nowrap"
+                            >
+                              <span className="sm:hidden">İşaretle</span>
+                              <span className="hidden sm:inline">Ödendi Olarak İşaretle</span>
+                            </button>
+                          )}
+                          {totalPaid > 0 && (
+                            <button
+                              onClick={() => openEditModal(d)}
+                              className="text-[9px] sm:text-xs px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg font-semibold bg-white border border-gray-200 text-slate-600 hover:border-[#17B6AE] hover:text-[#17B6AE] transition whitespace-nowrap"
+                            >
+                              Düzelt
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -571,7 +778,127 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
             </div>
           </>
         )}
+
+        {tenant.expenses.length > 0 && (
+          <div className="no-print px-4 sm:px-6 py-3 border-t border-gray-100 bg-amber-50/40">
+            <p className="text-[10px] sm:text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1.5">
+              Mülke Yapılan Masraflar
+            </p>
+            <ul className="space-y-1">
+              {tenant.expenses.map((exp) => (
+                <li key={exp.id} className="flex items-start justify-between gap-2 text-[11px] sm:text-xs text-slate-500 italic">
+                  <span>
+                    {new Date(exp.date).toLocaleDateString("tr-TR")} — {exp.description}:{" "}
+                    <span className="font-semibold text-slate-600">{Number(exp.amount).toLocaleString("tr-TR")} ₺</span>
+                    {exp.notes && <span className="not-italic text-slate-400"> ({exp.notes})</span>}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => deleteExpense(exp.id)}
+                    disabled={expenseDeletingId === exp.id}
+                    className="not-italic text-red-400 hover:text-red-500 disabled:opacity-50 shrink-0 whitespace-nowrap"
+                  >
+                    {expenseDeletingId === exp.id ? "..." : "Sil"}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
+
+      {showEditDebtBatchModal && (
+        <Modal title="Borçlandırmayı Düzenle" onClose={() => setShowEditDebtBatchModal(false)}>
+          <form onSubmit={submitEditDebtBatch} className="space-y-4">
+            {editDebtBatchError && (
+              <div className="bg-red-50 border border-red-100 text-red-500 text-sm px-4 py-3 rounded-xl">
+                {editDebtBatchError}
+              </div>
+            )}
+            <p className="text-xs text-slate-500">
+              Bu işlem, görüntülenen dönemdeki ({periodIndex + 1}. Yıl) tüm ayların tutarını tek seferde düzeltir.
+            </p>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Doğru Aylık Tutar (₺)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={editDebtBatchAmount}
+                onChange={(e) => setEditDebtBatchAmount(e.target.value)}
+                className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={editDebtBatchSubmitting}
+              className="w-full bg-[#17B6AE] hover:bg-[#149891] disabled:opacity-60 text-white font-semibold py-2.5 rounded-xl transition text-sm"
+            >
+              {editDebtBatchSubmitting ? "Kaydediliyor..." : "Düzelt"}
+            </button>
+          </form>
+        </Modal>
+      )}
+
+      {showExpenseModal && (
+        <Modal title="Mülke Yapılan Masraf Ekle" onClose={() => setShowExpenseModal(false)}>
+          <form onSubmit={submitExpense} className="space-y-4">
+            {expenseError && (
+              <div className="bg-red-50 border border-red-100 text-red-500 text-sm px-4 py-3 rounded-xl">
+                {expenseError}
+              </div>
+            )}
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Ne Masrafı Yapıldı</label>
+              <input
+                type="text"
+                value={expenseDescription}
+                onChange={(e) => setExpenseDescription(e.target.value)}
+                placeholder="Örn. Kombi bakımı, boya badana..."
+                className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Tutar (₺)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={expenseAmount}
+                  onChange={(e) => setExpenseAmount(e.target.value)}
+                  className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Tarih</label>
+                <input
+                  type="date"
+                  value={expenseDate}
+                  onChange={(e) => setExpenseDate(e.target.value)}
+                  className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Not (opsiyonel)</label>
+              <input
+                type="text"
+                value={expenseNotes}
+                onChange={(e) => setExpenseNotes(e.target.value)}
+                className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={expenseSubmitting}
+              className="w-full bg-[#17B6AE] hover:bg-[#149891] disabled:opacity-60 text-white font-semibold py-2.5 rounded-xl transition text-sm"
+            >
+              {expenseSubmitting ? "Kaydediliyor..." : "Masrafı Kaydet"}
+            </button>
+          </form>
+        </Modal>
+      )}
 
       {showDebtModal && (
         <Modal title="Kiracıyı Borçlandır" onClose={() => setShowDebtModal(false)}>
@@ -675,6 +1002,78 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
             >
               {paySubmitting ? "Kaydediliyor..." : "Ödendi Olarak İşaretle"}
             </button>
+          </form>
+        </Modal>
+      )}
+
+      {editDebt && (
+        <Modal title="Tahsilatı Düzelt" onClose={() => setEditDebt(null)}>
+          <form onSubmit={submitEditPayments} className="space-y-4">
+            {editError && (
+              <div className="bg-red-50 border border-red-100 text-red-500 text-sm px-4 py-3 rounded-xl">
+                {editError}
+              </div>
+            )}
+            {editRows.length === 0 ? (
+              <p className="text-sm text-slate-500 text-center py-4">Bu döneme ait tahsilat kaydı kalmadı.</p>
+            ) : (
+              editRows.map((row, i) => (
+                <div key={row.id} className="border border-gray-200 rounded-xl p-3.5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-500">Kayıt {i + 1}</span>
+                    <button
+                      type="button"
+                      onClick={() => deleteEditPayment(row.id)}
+                      disabled={editDeletingId === row.id}
+                      className="text-xs font-semibold text-red-500 hover:text-red-600 disabled:opacity-50 transition"
+                    >
+                      {editDeletingId === row.id ? "Siliniyor..." : "Sil"}
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1.5">Tutar (₺)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={row.amount}
+                        onChange={(e) => updateEditRow(row.id, "amount", e.target.value)}
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1.5">Tarih</label>
+                      <input
+                        type="date"
+                        value={row.paidAt}
+                        onChange={(e) => updateEditRow(row.id, "paidAt", e.target.value)}
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Not Ekle</label>
+                    <input
+                      type="text"
+                      value={row.notes}
+                      onChange={(e) => updateEditRow(row.id, "notes", e.target.value)}
+                      placeholder="Örn. Elden ödendi, banka dekontu vb."
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
+                    />
+                  </div>
+                </div>
+              ))
+            )}
+            {editRows.length > 0 && (
+              <button
+                type="submit"
+                disabled={editSubmitting}
+                className="w-full bg-[#17B6AE] hover:bg-[#149891] disabled:opacity-60 text-white font-semibold py-2.5 rounded-xl transition text-sm"
+              >
+                {editSubmitting ? "Kaydediliyor..." : "Değişiklikleri Kaydet"}
+              </button>
+            )}
           </form>
         </Modal>
       )}

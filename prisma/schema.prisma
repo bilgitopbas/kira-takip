@@ -151,6 +151,7 @@ model Property {
   isOccupied  Boolean  @default(false)
 
   tenants     Tenant[]
+  expenses    Expense[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -191,12 +192,31 @@ model Tenant {
 
   debts        Debt[]
   payments     Payment[]
+  expenses     Expense[]
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@index([propertyId])
   @@map("tenants")
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  property    Property @relation(fields: [propertyId], references: [id])
+  propertyId  String
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id])
+  tenantId    String?
+
+  description String
+  amount      Decimal  @db.Decimal(10, 2)
+  date        DateTime
+  notes       String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([propertyId, date])
+  @@map("expenses")
 }
 
 model Debt {
