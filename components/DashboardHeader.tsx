@@ -45,10 +45,11 @@ export default function DashboardHeader({
 
   return (
     <header
-      className="no-print h-16 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0 transition-colors gap-2"
+      className="no-print min-h-16 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0 transition-colors gap-2"
       style={{
         paddingLeft: "max(0.75rem, env(safe-area-inset-left))",
         paddingRight: "max(0.75rem, env(safe-area-inset-right))",
+        paddingTop: "env(safe-area-inset-top)",
       }}
     >
       <div className="flex items-center gap-3 min-w-0">
