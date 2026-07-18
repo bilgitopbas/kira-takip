@@ -63,7 +63,7 @@ export default function DashboardShell({
         {impersonating && <ImpersonationBanner customerName={fullName} />}
         <DashboardHeader fullName={fullName} onMenuClick={() => setMobileOpen(true)} />
         <main
-          className={`flex-1 min-h-0 py-4 sm:p-6 lg:p-8 overflow-y-auto overscroll-contain ${nativeApp ? "pb-24" : ""}`}
+          className={`flex-1 min-h-0 py-4 sm:p-6 lg:p-8 overflow-y-auto overscroll-contain ${nativeApp ? "pb-24 overflow-x-hidden" : ""}`}
           style={{
             paddingLeft: "max(1rem, env(safe-area-inset-left))",
             paddingRight: "max(1rem, env(safe-area-inset-right))",

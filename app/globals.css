@@ -14,6 +14,14 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Native uygulamada dis govde (html) sayfanin kayabilecegi taban katman -
+   arkasinda WKWebView'in varsayilan (siyaha yakin) arka plani var. Body zaten
+   beyaz ama html'in kendisi beyaz degildi; ufak bir bosluk/kaymada bu siyah
+   zemin gorunuyordu. html'i de aciktan beyaz yaparak bunu tamamen kapatiyoruz. */
+html {
+  background: #ffffff;
+}
+
 body {
   overflow-x: hidden;
   max-width: 100vw;

@@ -17,9 +17,11 @@ async function getCurrentRateSummary() {
     const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
     const year = d.getFullYear();
     const month = d.getMonth() + 1;
-    // "renewalMonth" burada d + 1 ay olarak veriliyor ki referans ay d'nin kendisi olsun
-    const next = new Date(year, month, 1);
-    const result = await getTwelveMonthAverageRate("TUFE", next.getFullYear(), next.getMonth() + 1);
+    // getTwelveMonthAverageRate zaten "yenileme ayindan 1 onceki ay" referansini
+    // kendi icinde hesapliyor (TBK 344) - burada ekstra bir ay kaydirmaya gerek yok.
+    // Eskiden burada "next ay" ile cagriliyordu, bu da her etikette bir ay kaymaya
+    // (orn. Temmuz'un dogru orani Haziran basligi altinda gorunmesine) yol aciyordu.
+    const result = await getTwelveMonthAverageRate("TUFE", year, month);
     results.push({ year, month, rate: result?.rate ?? null });
   }
 

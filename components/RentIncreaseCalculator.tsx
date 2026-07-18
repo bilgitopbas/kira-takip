@@ -155,7 +155,7 @@ export default function RentIncreaseCalculator() {
           )}
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-3 mt-4">
           <button
             type="button"
             onClick={handleCalculate}
