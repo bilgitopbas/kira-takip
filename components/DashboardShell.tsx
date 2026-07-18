@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
@@ -26,36 +26,13 @@ export default function DashboardShell({
     setNativeApp(isNativeApp());
   }, []);
 
-  // iOS'ta sayfa sinira gelince "lastik gibi" esneyip geri donuyor (rubber-band
-  // overscroll) ve bu esnada sabit (fixed) ust bar/alt sekme cubugu da sayfayla
-  // birlikte 2-3 cm kayiyordu. Dis govdeyi (html/body) ekran yuksekligine
-  // kilitleyip tasmayi kaynagindan engelliyoruz; artik kayan tek yer <main>
-  // icerik alani. Sadece native uygulamada acik, web davranisina dokunmuyor.
-  useEffect(() => {
-    if (!nativeApp) return;
-    const html = document.documentElement;
-    const body = document.body;
-    const prev = {
-      htmlOverflow: html.style.overflow,
-      bodyOverflow: body.style.overflow,
-      htmlHeight: html.style.height,
-      bodyHeight: body.style.height,
-    };
-    html.style.overflow = "hidden";
-    body.style.overflow = "hidden";
-    html.style.height = "100%";
-    body.style.height = "100%";
-    return () => {
-      html.style.overflow = prev.htmlOverflow;
-      body.style.overflow = prev.bodyOverflow;
-      html.style.height = prev.htmlHeight;
-      body.style.height = prev.bodyHeight;
-    };
-  }, [nativeApp]);
-
+  // Native'de dis kabuk SABIT (ekran yuksekligi kadar, kendisi kaymaz);
+  // kaydirma yalnizca <main> icindedir. Ust bar ve alt sekmeler boylece oynamaz.
+  // (Topbas Hukuk'ta dogrulanan duzen; html/body'ye dokunulmaz.)
   return (
     <div
       className={`${nativeApp ? "h-[100dvh] overflow-hidden" : "min-h-screen"} bg-[#F8F9FB] dark:bg-slate-950 flex transition-colors`}
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <OneSignalBridge userId={userId} />
       <DashboardSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
