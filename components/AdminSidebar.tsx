@@ -53,11 +53,6 @@ const ICONS = {
   ),
 };
 
-const soon = "flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl text-[15px] font-medium text-slate-300 dark:text-slate-600 mb-1 cursor-not-allowed select-none";
-const SoonBadge = () => (
-  <span className="text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded">Yakında</span>
-);
-
 export default function AdminSidebar({
   mobileOpen = false,
   onClose,
@@ -198,13 +193,10 @@ export default function AdminSidebar({
           <span className="flex-shrink-0">{ICONS.blog}</span>
           Blog Yönetimi
         </a>
-        <div className={soon}>
-          <span className="flex items-center gap-3">
-            <span className="flex-shrink-0">{ICONS.announcement}</span>
-            Duyurular
-          </span>
-          <SoonBadge />
-        </div>
+        <a href="/admin/duyurular" className={lc("/admin/duyurular")}>
+          <span className="flex-shrink-0">{ICONS.announcement}</span>
+          Duyurular
+        </a>
       </nav>
 
       <div className="relative px-3 pb-4 pt-3 border-t border-gray-100 dark:border-slate-800 flex-shrink-0" ref={menuRef}>

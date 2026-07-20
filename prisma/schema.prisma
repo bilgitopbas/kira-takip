@@ -111,6 +111,7 @@ model User {
   supportTickets    SupportTicket[]
   notifications     Notification[]
   accountMembers    AccountMember[]
+  announcements     Announcement[]  @relation("AnnouncementSender")
 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -340,6 +341,22 @@ enum NotificationType {
   ANNOUNCEMENT
   NEW_CUSTOMER
   IYZICO_PAYMENT
+}
+
+// Admin duyuruları: herkese veya seçilen tek kullanıcıya (push + uygulama içi)
+model Announcement {
+  id         String   @id @default(cuid())
+  title      String
+  subtitle   String?
+  message    String
+  targetId   String?  // boş = herkese; doluysa sadece o kullanıcıya
+  targetName String?  // geçmiş listesinde göstermek için ad-soyad
+  createdAt  DateTime @default(now())
+
+  sender   User   @relation("AnnouncementSender", fields: [senderId], references: [id])
+  senderId String
+
+  @@map("announcements")
 }
 
 model Notification {
