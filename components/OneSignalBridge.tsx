@@ -30,7 +30,20 @@ export default function OneSignalBridge({ userId }: { userId: string }) {
       }
     })();
 
+    // İlk izin isteği iOS tarafından yutulabiliyor ("Never Prompted" cihazlar).
+    // Uygulama öne geldikçe, karar verilene kadar yeniden iste — karar
+    // verilmişse iOS soruyu tekrar göstermez (çağrı zararsızdır).
+    const gorunurluk = () => {
+      if (document.visibilityState === "visible") {
+        try {
+          OneSignalRef?.Notifications.requestPermission(false).catch(() => {});
+        } catch {}
+      }
+    };
+    document.addEventListener("visibilitychange", gorunurluk);
+
     return () => {
+      document.removeEventListener("visibilitychange", gorunurluk);
       // Panelden çıkış / hesap değişimi: cihaz-hesap bağını çöz
       try {
         OneSignalRef?.logout();
