@@ -28,37 +28,56 @@ export async function POST(
     return NextResponse.json({ error: "Kiracı bulunamadı." }, { status: 404 });
   }
 
-  const { monthlyRent, startDate, paymentType } = await req.json();
+  const { monthlyRent, startDate, paymentType, months } = await req.json();
   const rent = Number(monthlyRent);
   if (!startDate || Number.isNaN(rent) || rent <= 0) {
     return NextResponse.json({ error: "Geçerli bir tarih ve kira bedeli girin." }, { status: 400 });
   }
 
-  // "YEARLY" seçilirse girilen tutar yıllık toplamdır ve 12 ayı kapsayan tek
-  // bir borç kaydı oluşturulur. Varsayılan (ve önceki tüm davranış) aylıktır.
+  // Dönem uzunluğu kullanıcı tarafından seçilir (varsayılan 12). Erken zam
+  // gibi durumlarda 10 aylık bir dönem oluşturulabilsin diye serbest bırakıldı.
+  const aySayisi = Math.min(36, Math.max(1, Math.trunc(Number(months)) || 12));
+
+  // "YEARLY" seçilirse girilen tutar dönemin toplamıdır ve tüm dönemi kapsayan
+  // tek bir borç kaydı oluşturulur. Varsayılan (önceki davranış) aylıktır.
   const yillik = paymentType === "YEARLY";
+
+  const uretilen = yillik
+    ? generateYearlyDebt(new Date(startDate), rent, aySayisi)
+    : generateMonthlyDebts(new Date(startDate), rent, aySayisi);
 
   const existingDebts = await prisma.debt.findMany({
     where: { tenantId: id },
-    select: { year: true, month: true },
+    select: { id: true, year: true, month: true },
   });
-  const existingKeys = new Set(existingDebts.map((d) => `${d.year}-${d.month}`));
+  const mevcutlar = new Map(existingDebts.map((d) => [`${d.year}-${d.month}`, d.id]));
 
-  const uretilen = yillik
-    ? generateYearlyDebt(new Date(startDate), rent)
-    : generateMonthlyDebts(new Date(startDate), rent);
-  const newDebts = uretilen.filter((d) => !existingKeys.has(`${d.year}-${d.month}`));
+  // Aynı aya denk gelen eski borçlar hata vermek yerine YENİ döneme devralınır:
+  // tutarı güncellenir ve dönem kimliği yeni gruba taşınır. Erken zam yapılınca
+  // ("1 Mart'ta başlayan kiracıya Ocak'ta zam") o aylar eski dönemden çıkıp
+  // yeni dönemin parçası olur - kullanıcının beklediği davranış budur.
+  const billingGroupId = crypto.randomUUID();
+  const yeniler = uretilen.filter((d) => !mevcutlar.has(`${d.year}-${d.month}`));
+  const devralinanlar = uretilen
+    .map((d) => ({ debt: d, id: mevcutlar.get(`${d.year}-${d.month}`) }))
+    .filter((x): x is { debt: (typeof uretilen)[number]; id: string } => !!x.id);
 
-  if (newDebts.length === 0) {
-    return NextResponse.json(
-      { error: "Bu tarih aralığı için borç kayıtları zaten mevcut." },
-      { status: 400 }
-    );
-  }
-
-  await prisma.debt.createMany({
-    data: newDebts.map((d) => ({ ...d, tenantId: id })),
-  });
+  await prisma.$transaction([
+    ...(yeniler.length > 0
+      ? [prisma.debt.createMany({ data: yeniler.map((d) => ({ ...d, tenantId: id, billingGroupId })) })]
+      : []),
+    ...devralinanlar.map((x) =>
+      prisma.debt.update({
+        where: { id: x.id },
+        data: {
+          amount: x.debt.amount,
+          dueDate: x.debt.dueDate,
+          periodMonths: x.debt.periodMonths,
+          billingGroupId,
+        },
+      })
+    ),
+  ]);
 
   // Aylık kira bilgisi, tarihi en güncel olan borç dönemine göre belirlenir
   // (borçlandırmaların hangi sırayla girildiğine değil, tarihe bakılır).
@@ -80,5 +99,9 @@ export async function POST(
     });
   }
 
-  return NextResponse.json({ success: true, created: newDebts.length });
+  return NextResponse.json({
+    success: true,
+    created: yeniler.length,
+    updated: devralinanlar.length,
+  });
 }

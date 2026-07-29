@@ -6,9 +6,9 @@ export function addMonthsClamped(date: Date, months: number) {
   return result;
 }
 
-export function generateMonthlyDebts(startDate: Date, monthlyRent: number) {
+export function generateMonthlyDebts(startDate: Date, monthlyRent: number, months = 12) {
   const debts = [];
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < months; i++) {
     const dueDate = addMonthsClamped(startDate, i);
     debts.push({
       year: dueDate.getFullYear(),
@@ -23,14 +23,14 @@ export function generateMonthlyDebts(startDate: Date, monthlyRent: number) {
 
 // Yıllık peşin ödemede 12 ayrı satır yerine 12 ayı kapsayan tek bir borç kaydı
 // oluşturulur. Ödeme/tahsilat mantığı aylıkla birebir aynı işler.
-export function generateYearlyDebt(startDate: Date, yearlyRent: number) {
+export function generateYearlyDebt(startDate: Date, yearlyRent: number, months = 12) {
   return [
     {
       year: startDate.getFullYear(),
       month: startDate.getMonth() + 1,
       amount: yearlyRent,
       dueDate: startDate,
-      periodMonths: 12,
+      periodMonths: months,
     },
   ];
 }

@@ -263,6 +263,11 @@ model Debt {
   // Borcun kapsadığı ay sayısı: 1 = aylık (varsayılan, mevcut tüm kayıtlar),
   // 12 = yıllık peşin. Ödeme planında ve yenileme hatırlatmasında kullanılır.
   periodMonths Int          @default(1)
+  // Aynı "Kiracıyı Borçlandır" işleminde oluşan borçlar aynı kimliği paylaşır.
+  // Ödeme planı dönemleri böylece gerçek borçlandırmalara göre ayrılır; sabit
+  // 12'şerli gruplama erken zam gibi durumlarda yanlış sınırlar üretiyordu.
+  // Eski kayıtlarda boş; onlar için 12'şerli gruplamaya geri düşülür.
+  billingGroupId String?
 
   payments    Payment[]
 
@@ -272,6 +277,7 @@ model Debt {
   @@unique([tenantId, year, month])
   @@index([tenantId])
   @@index([dueDate])
+  @@index([billingGroupId])
   @@map("debts")
 }
 

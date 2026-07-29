@@ -22,6 +22,8 @@ type Debt = {
   status: string;
   // 1 = aylık, 12 = yıllık peşin
   periodMonths: number;
+  // Aynı borçlandırma işleminde oluşan borçlar aynı kimliği paylaşır
+  billingGroupId: string | null;
   payments: { id: string; amount: string; paidAt: string; notes: string | null }[];
 };
 
@@ -204,6 +206,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
   const [showDebtModal, setShowDebtModal] = useState(false);
   const [debtAmount, setDebtAmount] = useState("");
   const [debtPaymentType, setDebtPaymentType] = useState<"MONTHLY" | "YEARLY">("MONTHLY");
+  const [debtMonths, setDebtMonths] = useState("12");
   const [debtStartDate, setDebtStartDate] = useState("");
   const [debtSubmitting, setDebtSubmitting] = useState(false);
   const [debtError, setDebtError] = useState("");
@@ -251,21 +254,39 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
     const sorted = [...debts].sort(
       (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
     );
-    // Her dönem 12 aylık kapsama denk gelir: aylık borçlarda 12 satır,
-    // yıllık peşin borçta tek satır (periodMonths = 12).
+    // Dönemler, aynı "Kiracıyı Borçlandır" işleminde oluşan borçlara göre
+    // ayrılır (billingGroupId). Böylece 10 aylık bir dönem de kendi başına
+    // durur; sabit 12'şerli gruplama erken zamda yanlış sınır üretiyordu.
     const chunks: Debt[][] = [];
-    let aktif: Debt[] = [];
-    let kapsananAy = 0;
+    const gruplar = new Map<string, Debt[]>();
+    const gruplanmamis: Debt[] = [];
+
     for (const d of sorted) {
-      aktif.push(d);
-      kapsananAy += d.periodMonths || 1;
-      if (kapsananAy >= 12) {
-        chunks.push(aktif);
-        aktif = [];
-        kapsananAy = 0;
+      if (d.billingGroupId) {
+        const mevcut = gruplar.get(d.billingGroupId);
+        if (mevcut) mevcut.push(d);
+        else gruplar.set(d.billingGroupId, [d]);
+      } else {
+        gruplanmamis.push(d);
       }
     }
-    if (aktif.length > 0) chunks.push(aktif);
+
+    // Bu alan eklenmeden önce oluşmuş kayıtlar için eski 12 aylık mantık
+    for (let i = 0, kapsanan = 0, aktif: Debt[] = []; i < gruplanmamis.length; i++) {
+      aktif.push(gruplanmamis[i]);
+      kapsanan += gruplanmamis[i].periodMonths || 1;
+      if (kapsanan >= 12 || i === gruplanmamis.length - 1) {
+        chunks.push(aktif);
+        aktif = [];
+        kapsanan = 0;
+      }
+    }
+    chunks.push(...gruplar.values());
+
+    // Dönemler başlangıç tarihine göre sıralanır
+    chunks.sort(
+      (a, b) => new Date(a[0].dueDate).getTime() - new Date(b[0].dueDate).getTime()
+    );
     return chunks;
   }, [tenant]);
 
@@ -318,6 +339,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
   function openDebtModal() {
     setDebtAmount(tenant?.monthlyRent || "");
     setDebtPaymentType("MONTHLY");
+    setDebtMonths("12");
     setDebtStartDate("");
     setDebtError("");
     setShowDebtModal(true);
@@ -346,6 +368,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
         monthlyRent: Number(debtAmount),
         startDate: debtStartDate,
         paymentType: debtPaymentType,
+        months: Number(debtMonths) || 12,
       }),
     });
     setDebtSubmitting(false);
@@ -367,7 +390,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
       0
     );
     const onay = window.confirm(
-      `${periodIndex + 1}. Yıl dönemindeki ${odenmemisDonemBorclari.length} ay ` +
+      `${periodIndex + 1}. Dönemdeki ${odenmemisDonemBorclari.length} ay ` +
         `(toplam ${kalanToplam.toLocaleString("tr-TR")} ₺) ödendi olarak işaretlenecek.\n\n` +
         `Her ayın tahsilat tarihi kendi vade tarihi olarak kaydedilecek. Onaylıyor musunuz?`
     );
@@ -399,7 +422,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
     const tahsilatSayisi = currentPeriod.reduce((sum, d) => sum + d.payments.length, 0);
 
     const uyari =
-      `${periodIndex + 1}. Yıl dönemi (${araligi}) silinecek.\n\n` +
+      `${periodIndex + 1}. Dönem (${araligi}) silinecek.\n\n` +
       `• ${currentPeriod.length} borç kaydı silinecek` +
       (tahsilatSayisi > 0 ? `\n• Bu döneme girilmiş ${tahsilatSayisi} tahsilat kaydı da silinecek` : "") +
       `\n\nBu işlem geri alınamaz. Devam edilsin mi?`;
@@ -961,7 +984,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
                 <button
                   onClick={donemiSil}
                   disabled={bulkDeleteSubmitting}
-                  title={`${periodIndex + 1}. Yıl dönemindeki tüm borçlandırmayı sil`}
+                  title={`${periodIndex + 1}. Dönemdeki tüm borçlandırmayı sil`}
                   className="bg-white border border-gray-200 hover:border-red-400 text-slate-600 hover:text-red-500 disabled:opacity-60 font-semibold px-4 py-2 rounded-xl transition text-sm"
                 >
                   {bulkDeleteSubmitting ? "Siliniyor..." : "Dönemi Sil"}
@@ -999,7 +1022,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
                 ‹
               </button>
               <p className="text-sm font-bold text-slate-800 min-w-[180px] text-center">
-                {periodIndex + 1}. Yıl
+                {periodIndex + 1}. Dönem
                 {currentPeriod.length > 0 && (
                   <span className="font-normal text-slate-500">
                     {" "}
@@ -1234,7 +1257,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
               </div>
             )}
             <p className="text-xs text-slate-500">
-              Bu işlem, görüntülenen dönemdeki ({periodIndex + 1}. Yıl) tüm ayların tutarını tek seferde düzeltir.
+              Bu işlem, görüntülenen dönemdeki ({periodIndex + 1}. Dönem) tüm ayların tutarını tek seferde düzeltir.
             </p>
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1.5">Doğru Aylık Tutar (₺)</label>
@@ -1364,20 +1387,41 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
                 </p>
               )}
             </div>
-            <div className="bg-[#17B6AE]/5 border border-[#17B6AE]/20 rounded-xl p-4">
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                {debtPaymentType === "YEARLY" ? "Vade Tarihi" : "Başlangıç Tarihi"}
-              </label>
-              <input
-                type="date"
-                value={debtStartDate}
-                onChange={(e) => setDebtStartDate(e.target.value)}
-                className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30 bg-white"
-              />
-              <p className="mt-2 text-xs text-slate-500">
+            <div className="bg-[#17B6AE]/5 border border-[#17B6AE]/20 rounded-xl p-4 space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  {debtPaymentType === "YEARLY" ? "Vade Tarihi" : "Başlangıç Tarihi"}
+                </label>
+                <input
+                  type="date"
+                  value={debtStartDate}
+                  onChange={(e) => setDebtStartDate(e.target.value)}
+                  className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30 bg-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Borçlandırılacak Ay Sayısı
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="36"
+                  value={debtMonths}
+                  onChange={(e) => setDebtMonths(e.target.value)}
+                  className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30 bg-white"
+                />
+                <p className="mt-1.5 text-xs text-slate-500">
+                  Varsayılan 12. Erken zam gibi durumlarda kısa bir dönem
+                  oluşturmak için değiştirebilirsiniz.
+                </p>
+              </div>
+              <p className="text-xs text-slate-500 border-t border-[#17B6AE]/20 pt-2.5">
                 {debtPaymentType === "YEARLY"
-                  ? "Bu tarihten itibaren 12 ayı kapsayan tek bir borç kaydı oluşturulacaktır."
-                  : "Bu tarihten itibaren kiracı 12 ay boyunca borçlandırılacaktır."}
+                  ? `Bu tarihten itibaren ${debtMonths || 12} ayı kapsayan tek bir borç kaydı oluşturulacaktır.`
+                  : `Bu tarihten itibaren ${debtMonths || 12} ay borçlandırılacaktır.`}
+                {" "}Bu aralıkta zaten borç varsa, o aylar yeni tutarla güncellenip
+                bu döneme taşınır.
               </p>
             </div>
             <button
