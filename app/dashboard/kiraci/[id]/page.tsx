@@ -173,6 +173,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
   const [editError, setEditError] = useState("");
 
   const [bulkPaySubmitting, setBulkPaySubmitting] = useState(false);
+  const [bulkDeleteSubmitting, setBulkDeleteSubmitting] = useState(false);
 
   const [showEditDebtBatchModal, setShowEditDebtBatchModal] = useState(false);
   const [editDebtBatchAmount, setEditDebtBatchAmount] = useState("");
@@ -330,6 +331,39 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
       setError(data.error || "Tahsilatlar kaydedilemedi.");
       return;
     }
+    load();
+  }
+
+  // Yanlış girilen bir borçlandırma dönemini tamamen kaldırır. Döneme ait
+  // tahsilat kayıtları da silineceği için onay iki aşamalı sorulur.
+  async function donemiSil() {
+    if (currentPeriod.length === 0) return;
+    const ilk = currentPeriod[0];
+    const son = currentPeriod[currentPeriod.length - 1];
+    const araligi = `${MONTH_NAMES[ilk.month - 1]} ${ilk.year} – ${MONTH_NAMES[son.month - 1]} ${son.year}`;
+    const tahsilatSayisi = currentPeriod.reduce((sum, d) => sum + d.payments.length, 0);
+
+    const uyari =
+      `${periodIndex + 1}. Yıl dönemi (${araligi}) silinecek.\n\n` +
+      `• ${currentPeriod.length} borç kaydı silinecek` +
+      (tahsilatSayisi > 0 ? `\n• Bu döneme girilmiş ${tahsilatSayisi} tahsilat kaydı da silinecek` : "") +
+      `\n\nBu işlem geri alınamaz. Devam edilsin mi?`;
+    if (!window.confirm(uyari)) return;
+
+    setBulkDeleteSubmitting(true);
+    setError("");
+    const res = await fetch(`/api/dashboard/tenants/${id}/debts/bulk-delete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ debtIds: currentPeriod.map((d) => d.id) }),
+    });
+    setBulkDeleteSubmitting(false);
+    if (!res.ok) {
+      const data = await res.json();
+      setError(data.error || "Dönem silinemedi.");
+      return;
+    }
+    setPeriodIndex(0);
     load();
   }
 
@@ -686,12 +720,22 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
           <h2 className="text-base font-bold text-slate-800">Ödeme Planı</h2>
           <div className="no-print flex items-center gap-2">
             {periods.length > 0 && (
-              <button
-                onClick={openEditDebtBatchModal}
-                className="bg-white border border-gray-200 hover:border-[#17B6AE] text-slate-600 hover:text-[#17B6AE] font-semibold px-4 py-2 rounded-xl transition text-sm"
-              >
-                Düzenle
-              </button>
+              <>
+                <button
+                  onClick={openEditDebtBatchModal}
+                  className="bg-white border border-gray-200 hover:border-[#17B6AE] text-slate-600 hover:text-[#17B6AE] font-semibold px-4 py-2 rounded-xl transition text-sm"
+                >
+                  Düzenle
+                </button>
+                <button
+                  onClick={donemiSil}
+                  disabled={bulkDeleteSubmitting}
+                  title={`${periodIndex + 1}. Yıl dönemindeki tüm borçlandırmayı sil`}
+                  className="bg-white border border-gray-200 hover:border-red-400 text-slate-600 hover:text-red-500 disabled:opacity-60 font-semibold px-4 py-2 rounded-xl transition text-sm"
+                >
+                  {bulkDeleteSubmitting ? "Siliniyor..." : "Dönemi Sil"}
+                </button>
+              </>
             )}
             <button
               onClick={openExpenseModal}
