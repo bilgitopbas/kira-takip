@@ -18,6 +18,12 @@ type SessionPayload = {
   userId: string;
   role: "ADMIN" | "CUSTOMER";
   impersonatedBy?: string;
+  // "Kullanıcı Ekle" ile davet edilen bir ekip üyesi giriş yaptığında oturum
+  // hesap sahibinin userId'siyle açılır (veriler ortaktır). Kimin işlem
+  // yaptığını ayırt edebilmek için üyenin kendi kimliği ayrıca taşınır.
+  memberId?: string;
+  memberEmail?: string;
+  memberName?: string;
 };
 
 export async function createSession(payload: SessionPayload) {

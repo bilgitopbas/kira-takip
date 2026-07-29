@@ -31,6 +31,7 @@ export async function GET(
       property: true,
       debts: { orderBy: { dueDate: "asc" }, include: { payments: true } },
       expenses: { orderBy: { date: "desc" } },
+      tenantNotes: { orderBy: { createdAt: "desc" } },
     },
   });
 

@@ -37,7 +37,13 @@ export async function POST(req: NextRequest) {
       if (!valid) {
         return NextResponse.json({ error: "E-posta veya şifre hatalı." }, { status: 401 });
       }
-      await createSession({ userId: member.ownerId, role: "CUSTOMER" });
+      await createSession({
+        userId: member.ownerId,
+        role: "CUSTOMER",
+        memberId: member.id,
+        memberEmail: member.email,
+        memberName: member.fullName,
+      });
       return NextResponse.json({ success: true, role: "CUSTOMER" });
     }
     if (member && !member.passwordHash) {

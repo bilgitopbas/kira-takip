@@ -49,7 +49,7 @@ export default function KiraciForm({ onSuccess, onCancel }: { onSuccess: () => v
   const [contractStart, setContractStart] = useState("");
   const [rentRevisionDate, setRentRevisionDate] = useState("");
   const [durationOption, setDurationOption] = useState("12");
-  const [customMonths, setCustomMonths] = useState("");
+  const [customYears, setCustomYears] = useState("");
   const [paymentFrequency, setPaymentFrequency] = useState<"MONTHLY" | "YEARLY">("MONTHLY");
   const [increaseType, setIncreaseType] = useState<"TUFE" | "CUSTOM">("TUFE");
   const [increaseRate, setIncreaseRate] = useState("");
@@ -74,8 +74,9 @@ export default function KiraciForm({ onSuccess, onCancel }: { onSuccess: () => v
     loadProperties();
   }, []);
 
+  // "Diğer" seçeneğinde kullanıcı YIL girer (7 yazarsa 7 yıl), aya çevrilir.
   const durationMonths =
-    durationOption === "OTHER" ? Number(customMonths) || 0 : Number(durationOption);
+    durationOption === "OTHER" ? (Number(customYears) || 0) * 12 : Number(durationOption);
 
   const computedEnd =
     contractStart && durationMonths
@@ -368,9 +369,9 @@ export default function KiraciForm({ onSuccess, onCancel }: { onSuccess: () => v
               <input
                 type="number"
                 min="1"
-                placeholder="Kaç ay?"
-                value={customMonths}
-                onChange={(e) => setCustomMonths(e.target.value)}
+                placeholder="Kaç yıl?"
+                value={customYears}
+                onChange={(e) => setCustomYears(e.target.value)}
                 className="mt-2 w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
               />
             )}

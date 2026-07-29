@@ -52,7 +52,10 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
   const [rentRevisionDate, setRentRevisionDate] = useState("");
   const [rentPaymentDate, setRentPaymentDate] = useState("");
   const [durationOption, setDurationOption] = useState("12");
-  const [customMonths, setCustomMonths] = useState("");
+  const [customYears, setCustomYears] = useState("");
+  // Kayıtlı süre 12'nin katı değilse (eski verilerde ay olarak girilmiş
+  // olabilir) yıla çevrilemez; kullanıcıya mevcut değer hatırlatılır.
+  const [eskiAySuresi, setEskiAySuresi] = useState<number | null>(null);
   const [paymentFrequency, setPaymentFrequency] = useState<"MONTHLY" | "YEARLY">("MONTHLY");
   const [increaseType, setIncreaseType] = useState<"TUFE" | "CUSTOM">("TUFE");
   const [increaseRate, setIncreaseRate] = useState("");
@@ -97,7 +100,14 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
             : "12"
         );
         if (tenant.contractDurationMonths && !DURATION_OPTIONS.some((d) => d.value === String(tenant.contractDurationMonths))) {
-          setCustomMonths(String(tenant.contractDurationMonths));
+          const ay = tenant.contractDurationMonths;
+          if (ay % 12 === 0) {
+            setCustomYears(String(ay / 12));
+          } else {
+            // Tam yıla denk gelmiyor: sessizce yuvarlayıp veriyi bozmak yerine
+            // alanı boş bırakıp mevcut süreyi uyarı olarak gösteriyoruz.
+            setEskiAySuresi(ay);
+          }
         }
         setPaymentFrequency(tenant.paymentFrequency || "MONTHLY");
         setIncreaseType(tenant.increaseType || "TUFE");
@@ -111,8 +121,11 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
     load();
   }, [id]);
 
+  // "Diğer" seçeneğinde kullanıcı YIL girer (7 yazarsa 7 yıl), aya çevrilir.
   const durationMonths =
-    durationOption === "OTHER" ? Number(customMonths) || 0 : Number(durationOption);
+    durationOption === "OTHER"
+      ? (Number(customYears) || 0) * 12 || eskiAySuresi || 0
+      : Number(durationOption);
 
   const computedEnd =
     contractStart && durationMonths
@@ -363,14 +376,22 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
             ))}
           </div>
           {durationOption === "OTHER" && (
-            <input
-              type="number"
-              min="1"
-              placeholder="Kaç ay?"
-              value={customMonths}
-              onChange={(e) => setCustomMonths(e.target.value)}
-              className="mt-2 w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
-            />
+            <>
+              <input
+                type="number"
+                min="1"
+                placeholder="Kaç yıl?"
+                value={customYears}
+                onChange={(e) => setCustomYears(e.target.value)}
+                className="mt-2 w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
+              />
+              {eskiAySuresi !== null && !customYears && (
+                <p className="mt-1.5 text-xs text-amber-600">
+                  Kayıtlı süre {eskiAySuresi} ay (tam yıla denk gelmiyor). Değiştirmek
+                  istemiyorsanız bu alanı boş bırakın.
+                </p>
+              )}
+            </>
           )}
           {computedEnd && (
             <p className="mt-2 text-xs text-slate-500">

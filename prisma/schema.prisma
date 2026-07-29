@@ -194,15 +194,42 @@ model Tenant {
   contractFileName String?
   contractNotes    String?
 
+  // Kiracı hâlâ oturuyor mu, tahliye etti mi
+  occupancyStatus TenantOccupancyStatus @default(LIVING)
+
   debts        Debt[]
   payments     Payment[]
   expenses     Expense[]
+  tenantNotes  TenantNote[]
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@index([propertyId])
   @@map("tenants")
+}
+
+enum TenantOccupancyStatus {
+  LIVING
+  VACATED
+}
+
+// Kiracıya elle düşülen serbest notlar. Aynı hesabı birden fazla kişi
+// kullanabildiği için (bkz. AccountMember) notu yazanın e-postası ve adı
+// kayıt anında saklanır - üye sonradan silinse bile not sahipsiz kalmaz.
+model TenantNote {
+  id          String   @id @default(cuid())
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  tenantId    String
+
+  content     String
+  authorEmail String
+  authorName  String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, createdAt])
+  @@map("tenant_notes")
 }
 
 model Expense {

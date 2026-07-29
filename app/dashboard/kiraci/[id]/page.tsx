@@ -25,6 +25,14 @@ type Debt = {
   payments: { id: string; amount: string; paidAt: string; notes: string | null }[];
 };
 
+type TenantNote = {
+  id: string;
+  content: string;
+  authorEmail: string;
+  authorName: string | null;
+  createdAt: string;
+};
+
 type Expense = {
   id: string;
   description: string;
@@ -59,8 +67,10 @@ type Tenant = {
   contractFileName: string | null;
   contractNotes: string | null;
   property: { id: string; title: string };
+  occupancyStatus: "LIVING" | "VACATED";
   debts: Debt[];
   expenses: Expense[];
+  tenantNotes: TenantNote[];
 };
 
 const MONTH_NAMES = [
@@ -211,6 +221,11 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [editDeletingId, setEditDeletingId] = useState<string | null>(null);
   const [editError, setEditError] = useState("");
+
+  const [noteContent, setNoteContent] = useState("");
+  const [noteSubmitting, setNoteSubmitting] = useState(false);
+  const [noteDeletingId, setNoteDeletingId] = useState<string | null>(null);
+  const [occupancySubmitting, setOccupancySubmitting] = useState(false);
 
   const [bulkPaySubmitting, setBulkPaySubmitting] = useState(false);
   const [bulkDeleteSubmitting, setBulkDeleteSubmitting] = useState(false);
@@ -404,6 +419,52 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
       return;
     }
     setPeriodIndex(0);
+    load();
+  }
+
+  async function notEkle(e: React.FormEvent) {
+    e.preventDefault();
+    if (!noteContent.trim()) return;
+    setNoteSubmitting(true);
+    setError("");
+    const res = await fetch(`/api/dashboard/tenants/${id}/notes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: noteContent }),
+    });
+    setNoteSubmitting(false);
+    if (!res.ok) {
+      const data = await res.json();
+      setError(data.error || "Not kaydedilemedi.");
+      return;
+    }
+    setNoteContent("");
+    load();
+  }
+
+  async function notSil(noteId: string) {
+    if (!window.confirm("Bu notu silmek istediğinize emin misiniz?")) return;
+    setNoteDeletingId(noteId);
+    const res = await fetch(`/api/dashboard/notes/${noteId}`, { method: "DELETE" });
+    setNoteDeletingId(null);
+    if (res.ok) load();
+  }
+
+  async function oturumDurumuDegistir(status: "LIVING" | "VACATED") {
+    if (!tenant || tenant.occupancyStatus === status) return;
+    setOccupancySubmitting(true);
+    setError("");
+    const res = await fetch(`/api/dashboard/tenants/${id}/occupancy`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    setOccupancySubmitting(false);
+    if (!res.ok) {
+      const data = await res.json();
+      setError(data.error || "Durum güncellenemedi.");
+      return;
+    }
     load();
   }
 
@@ -611,7 +672,46 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
           <p className="text-xs font-semibold text-[#17B6AE] uppercase tracking-wider mb-1">
             {tenant.property.title}
           </p>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">{tenant.fullName}</h1>
+          <div className="flex flex-wrap items-center gap-3 mb-2">
+            <h1 className="text-3xl font-bold text-slate-900">{tenant.fullName}</h1>
+            {/* Oturum durumu: tıklanınca diğerine geçer */}
+            <div className="no-print inline-flex rounded-full border border-gray-200 overflow-hidden text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => oturumDurumuDegistir("LIVING")}
+                disabled={occupancySubmitting}
+                className={`px-3 py-1.5 transition disabled:opacity-60 ${
+                  tenant.occupancyStatus === "LIVING"
+                    ? "bg-emerald-500 text-white"
+                    : "bg-white text-slate-500 hover:bg-emerald-50"
+                }`}
+              >
+                Oturmaya devam ediyor
+              </button>
+              <button
+                type="button"
+                onClick={() => oturumDurumuDegistir("VACATED")}
+                disabled={occupancySubmitting}
+                className={`px-3 py-1.5 transition disabled:opacity-60 border-l border-gray-200 ${
+                  tenant.occupancyStatus === "VACATED"
+                    ? "bg-red-500 text-white"
+                    : "bg-white text-slate-500 hover:bg-red-50"
+                }`}
+              >
+                Tahliye etti
+              </button>
+            </div>
+            {/* Yazdırma çıktısında sadece güncel durum görünsün */}
+            <span
+              className={`hidden print:inline text-xs font-semibold px-3 py-1.5 rounded-full ${
+                tenant.occupancyStatus === "VACATED"
+                  ? "bg-red-500 text-white"
+                  : "bg-emerald-500 text-white"
+              }`}
+            >
+              {tenant.occupancyStatus === "VACATED" ? "Tahliye etti" : "Oturmaya devam ediyor"}
+            </span>
+          </div>
           {tenant.contractStart && (
             <span className="inline-flex items-center gap-1.5 bg-[#17B6AE]/10 text-[#17B6AE] text-sm font-semibold px-3 py-1.5 rounded-full">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -900,23 +1000,36 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
                       </td>
                       <td className="px-1.5 py-2 sm:px-5 sm:py-3.5 border-r border-gray-100">
                         {totalPaid > 0 ? (
-                          <div className="space-y-0.5">
-                            {d.payments.length > 1 ? (
-                              d.payments.map((p) => (
-                                <div key={p.id} className="flex items-baseline gap-1 whitespace-nowrap">
-                                  <span className="text-slate-700 text-[10px] sm:text-sm">
+                          <div className="space-y-1.5">
+                            {/* Her tahsilat kendi satırında; notu varsa hemen
+                                altında, kesilmeden (kırpma yerine satır kaydırma)
+                                gösterilir - böylece iki ayrı not birbirine
+                                karışmaz ve tamamı okunabilir. */}
+                            {d.payments.map((p) => (
+                              <div key={p.id}>
+                                <div className="flex items-baseline gap-1 whitespace-nowrap">
+                                  <span
+                                    className={`text-[10px] sm:text-sm ${
+                                      d.payments.length === 1 && effective === "PARTIAL"
+                                        ? "text-blue-600 font-semibold"
+                                        : "text-slate-700"
+                                    }`}
+                                  >
                                     {Number(p.amount).toLocaleString("tr-TR")} ₺
                                   </span>
-                                  <span className="text-slate-400 text-[8px] sm:text-[10px]">
-                                    · {formatDebtDateShort(p.paidAt)}
-                                  </span>
+                                  {d.payments.length > 1 && (
+                                    <span className="text-slate-400 text-[8px] sm:text-[10px]">
+                                      · {formatDebtDateShort(p.paidAt)}
+                                    </span>
+                                  )}
                                 </div>
-                              ))
-                            ) : (
-                              <span className={`whitespace-nowrap ${effective === "PARTIAL" ? "text-blue-600 font-semibold" : "text-slate-700"}`}>
-                                {totalPaid.toLocaleString("tr-TR")} ₺
-                              </span>
-                            )}
+                                {p.notes?.trim() && (
+                                  <div className="text-[10px] sm:text-xs text-slate-400 italic leading-snug break-words max-w-[220px]">
+                                    {p.notes.trim()}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
                             {effective === "PARTIAL" && (
                               <div className="text-[9px] sm:text-xs text-blue-500 font-medium">
                                 Kısmi ödeme{d.payments.length > 1 ? ` · ${d.payments.length} kayıt` : ""}
@@ -925,9 +1038,6 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
                           </div>
                         ) : (
                           <span className="text-slate-400">—</span>
-                        )}
-                        {paymentNotes && (
-                          <div className="hidden sm:block text-xs text-slate-400 italic mt-0.5 truncate max-w-[180px]">Not: {paymentNotes}</div>
                         )}
                       </td>
                       <td className="px-1.5 py-2 sm:px-5 sm:py-3.5 border-r border-gray-100">
@@ -1035,6 +1145,81 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
               ))}
             </ul>
           </div>
+        )}
+      </div>
+
+      {/* Kiracıya düşülen serbest notlar. Uyarı hissi versin diye açık kırmızı
+          zeminde; her notta yazan kişinin e-postası ve tarihi görünür. */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm mt-6">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center flex-shrink-0">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+          </div>
+          <h2 className="text-base font-bold text-slate-800">Notlar</h2>
+          {tenant.tenantNotes.length > 0 && (
+            <span className="text-xs text-slate-400">({tenant.tenantNotes.length})</span>
+          )}
+        </div>
+
+        <form onSubmit={notEkle} className="no-print px-6 py-4 border-b border-gray-100">
+          <textarea
+            value={noteContent}
+            onChange={(e) => setNoteContent(e.target.value)}
+            rows={2}
+            placeholder="Bu kiracıyla ilgili bir not yazın..."
+            className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-200 resize-none"
+          />
+          <div className="flex justify-end mt-2">
+            <button
+              type="submit"
+              disabled={noteSubmitting || !noteContent.trim()}
+              className="bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white font-semibold px-4 py-2 rounded-xl transition text-sm"
+            >
+              {noteSubmitting ? "Kaydediliyor..." : "Not Ekle"}
+            </button>
+          </div>
+        </form>
+
+        {tenant.tenantNotes.length === 0 ? (
+          <p className="text-sm text-slate-400 text-center py-8">Henüz not eklenmemiş.</p>
+        ) : (
+          <ul className="divide-y divide-red-100">
+            {tenant.tenantNotes.map((note) => (
+              <li key={note.id} className="px-6 py-4 bg-red-50/40">
+                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap break-words">
+                  {note.content}
+                </p>
+                <div className="flex items-center justify-between gap-3 mt-2">
+                  <span className="text-xs text-slate-500">
+                    <span className="font-semibold text-red-600">
+                      {note.authorName || note.authorEmail}
+                    </span>
+                    {note.authorName && (
+                      <span className="text-slate-400"> ({note.authorEmail})</span>
+                    )}
+                    {" · "}
+                    {new Date(note.createdAt).toLocaleString("tr-TR", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => notSil(note.id)}
+                    disabled={noteDeletingId === note.id}
+                    className="no-print text-xs text-slate-400 hover:text-red-500 disabled:opacity-50 flex-shrink-0"
+                  >
+                    {noteDeletingId === note.id ? "..." : "Sil"}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
 
