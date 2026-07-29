@@ -749,7 +749,9 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        {/* Sıralama: solda Kira Sözleşmesi, sağda Kiracı Bilgileri.
+            Blokları taşımak yerine grid sırası kullanıldı. */}
+        <div className="order-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
           <CardHeader
             title="Kiracı Bilgileri"
             icon={
@@ -774,9 +776,84 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
             <span className="text-[13px] text-slate-500">Puan</span>
             <Stars rating={tenant.rating} />
           </div>
+
+          {/* Kiracıya düşülen serbest notlar. Uyarı hissi versin diye kırmızı
+              vurgulu; her notta yazan kişi ve tarih görünür. */}
+          <div className="mt-5 pt-4 border-t border-red-100">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-7 h-7 rounded-lg bg-red-50 text-red-500 flex items-center justify-center flex-shrink-0">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                </svg>
+              </div>
+              <h3 className="text-sm font-bold text-slate-800">Notlar</h3>
+              {tenant.tenantNotes.length > 0 && (
+                <span className="text-xs text-slate-400">({tenant.tenantNotes.length})</span>
+              )}
+            </div>
+
+            <form onSubmit={notEkle} className="no-print mb-3">
+              <textarea
+                value={noteContent}
+                onChange={(e) => setNoteContent(e.target.value)}
+                rows={2}
+                placeholder="Bu kiracıyla ilgili bir not yazın..."
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-200 resize-none"
+              />
+              <div className="flex justify-end mt-2">
+                <button
+                  type="submit"
+                  disabled={noteSubmitting || !noteContent.trim()}
+                  className="bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white font-semibold px-4 py-2 rounded-xl transition text-sm"
+                >
+                  {noteSubmitting ? "Kaydediliyor..." : "Not Ekle"}
+                </button>
+              </div>
+            </form>
+
+            {tenant.tenantNotes.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-3">Henüz not eklenmemiş.</p>
+            ) : (
+              <ul className="space-y-2">
+                {tenant.tenantNotes.map((note) => (
+                  <li key={note.id} className="bg-red-50/50 border border-red-100 rounded-xl px-3 py-2.5">
+                    <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap break-words">
+                      {note.content}
+                    </p>
+                    <div className="flex items-center justify-between gap-3 mt-1.5">
+                      <span className="text-[11px] text-slate-500 leading-snug">
+                        <span className="font-semibold text-red-600">
+                          {note.authorName || note.authorEmail}
+                        </span>
+                        {note.authorName && (
+                          <span className="text-slate-400"> ({note.authorEmail})</span>
+                        )}
+                        {" · "}
+                        {new Date(note.createdAt).toLocaleString("tr-TR", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => notSil(note.id)}
+                        disabled={noteDeletingId === note.id}
+                        className="no-print text-[11px] text-slate-400 hover:text-red-500 disabled:opacity-50 flex-shrink-0"
+                      >
+                        {noteDeletingId === note.id ? "..." : "Sil"}
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <div className="order-1 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
           <CardHeader
             title="Kira Sözleşmesi"
             icon={
@@ -1145,81 +1222,6 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
               ))}
             </ul>
           </div>
-        )}
-      </div>
-
-      {/* Kiracıya düşülen serbest notlar. Uyarı hissi versin diye açık kırmızı
-          zeminde; her notta yazan kişinin e-postası ve tarihi görünür. */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm mt-6">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center flex-shrink-0">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-            </svg>
-          </div>
-          <h2 className="text-base font-bold text-slate-800">Notlar</h2>
-          {tenant.tenantNotes.length > 0 && (
-            <span className="text-xs text-slate-400">({tenant.tenantNotes.length})</span>
-          )}
-        </div>
-
-        <form onSubmit={notEkle} className="no-print px-6 py-4 border-b border-gray-100">
-          <textarea
-            value={noteContent}
-            onChange={(e) => setNoteContent(e.target.value)}
-            rows={2}
-            placeholder="Bu kiracıyla ilgili bir not yazın..."
-            className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-200 resize-none"
-          />
-          <div className="flex justify-end mt-2">
-            <button
-              type="submit"
-              disabled={noteSubmitting || !noteContent.trim()}
-              className="bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white font-semibold px-4 py-2 rounded-xl transition text-sm"
-            >
-              {noteSubmitting ? "Kaydediliyor..." : "Not Ekle"}
-            </button>
-          </div>
-        </form>
-
-        {tenant.tenantNotes.length === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-8">Henüz not eklenmemiş.</p>
-        ) : (
-          <ul className="divide-y divide-red-100">
-            {tenant.tenantNotes.map((note) => (
-              <li key={note.id} className="px-6 py-4 bg-red-50/40">
-                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap break-words">
-                  {note.content}
-                </p>
-                <div className="flex items-center justify-between gap-3 mt-2">
-                  <span className="text-xs text-slate-500">
-                    <span className="font-semibold text-red-600">
-                      {note.authorName || note.authorEmail}
-                    </span>
-                    {note.authorName && (
-                      <span className="text-slate-400"> ({note.authorEmail})</span>
-                    )}
-                    {" · "}
-                    {new Date(note.createdAt).toLocaleString("tr-TR", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => notSil(note.id)}
-                    disabled={noteDeletingId === note.id}
-                    className="no-print text-xs text-slate-400 hover:text-red-500 disabled:opacity-50 flex-shrink-0"
-                  >
-                    {noteDeletingId === note.id ? "..." : "Sil"}
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
         )}
       </div>
 
