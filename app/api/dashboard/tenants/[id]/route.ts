@@ -32,6 +32,7 @@ export async function GET(
       debts: { orderBy: { dueDate: "asc" }, include: { payments: true } },
       expenses: { orderBy: { date: "desc" } },
       tenantNotes: { orderBy: { createdAt: "desc" } },
+      otherProperties: { include: { property: { select: { id: true, title: true } } } },
     },
   });
 
@@ -70,8 +71,14 @@ export async function PATCH(
   }
   const data = parsed.data;
 
-  const property = await prisma.property.findUnique({ where: { id: data.propertyId } });
-  if (!property || property.ownerId !== session.userId) {
+  const otherPropertyIds = parsed.otherPropertyIds ?? [];
+
+  // Birincil ve ek mülklerin TAMAMI bu kullanıcıya ait olmalı
+  const tumMulkler = [data.propertyId, ...otherPropertyIds];
+  const sahipOlunan = await prisma.property.count({
+    where: { id: { in: tumMulkler }, ownerId: session.userId },
+  });
+  if (sahipOlunan !== tumMulkler.length) {
     return NextResponse.json({ error: "Mülk bulunamadı." }, { status: 404 });
   }
 
@@ -114,6 +121,11 @@ export async function PATCH(
         contractFileUrl,
         contractFileName,
         contractNotes: data.contractNotes,
+        // Ek mülkler her kayıtta baştan yazılır (seçim neyse o kalır)
+        otherProperties: {
+          deleteMany: {},
+          create: otherPropertyIds.map((propertyId) => ({ propertyId })),
+        },
       },
     });
     return NextResponse.json({ success: true, tenant });

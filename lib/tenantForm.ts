@@ -8,7 +8,15 @@ const CURRENCIES = ["TRY", "USD", "EUR"];
 export function parseTenantFormData(formData: FormData) {
   const get = (key: string) => (formData.get(key) as string | null)?.trim() || "";
 
-  const propertyId = get("propertyId");
+  // Form birden fazla mülk gönderebilir. İlki birincil mülk (Tenant.propertyId),
+  // kalanlar TenantProperty kayıtlarına yazılır.
+  const propertyIds = formData
+    .getAll("propertyId")
+    .map((v) => String(v).trim())
+    .filter(Boolean);
+  const propertyId = propertyIds[0] || "";
+  const otherPropertyIds = [...new Set(propertyIds.slice(1))].filter((p) => p !== propertyId);
+
   const fullName = get("fullName");
 
   if (!propertyId || !fullName) {
@@ -64,6 +72,7 @@ export function parseTenantFormData(formData: FormData) {
   const depositAmount = depositAmountRaw ? Number(depositAmountRaw) : null;
 
   return {
+    otherPropertyIds,
     data: {
       propertyId,
       fullName,

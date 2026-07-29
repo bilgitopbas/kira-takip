@@ -69,6 +69,8 @@ type Tenant = {
   contractFileName: string | null;
   contractNotes: string | null;
   property: { id: string; title: string };
+  // Aynı sözleşme kapsamındaki ek mülkler
+  otherProperties: { id: string; property: { id: string; title: string } }[];
   occupancyStatus: "LIVING" | "VACATED";
   debts: Debt[];
   expenses: Expense[];
@@ -694,6 +696,8 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
         <div>
           <p className="text-xs font-semibold text-[#17B6AE] uppercase tracking-wider mb-1">
             {tenant.property.title}
+            {tenant.otherProperties.length > 0 &&
+              tenant.otherProperties.map((o) => ` · ${o.property.title}`).join("")}
           </p>
           <div className="flex flex-wrap items-center gap-3 mb-2">
             <h1 className="text-3xl font-bold text-slate-900">{tenant.fullName}</h1>

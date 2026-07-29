@@ -61,6 +61,7 @@ export async function GET(req: NextRequest) {
         rating: true,
         occupancyStatus: true,
         property: { select: { title: true } },
+        otherProperties: { select: { property: { select: { title: true } } } },
       },
       orderBy,
       skip: (page - 1) * PAGE_SIZE,
@@ -89,9 +90,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
   const data = parsed.data;
+  const otherPropertyIds = parsed.otherPropertyIds ?? [];
 
-  const property = await prisma.property.findUnique({ where: { id: data.propertyId } });
-  if (!property || property.ownerId !== session.userId) {
+  // Birincil ve ek mülklerin TAMAMI bu kullanıcıya ait olmalı; aksi halde
+  // başkasının mülküne kiracı bağlanabilirdi.
+  const tumMulkler = [data.propertyId, ...otherPropertyIds];
+  const sahipOlunan = await prisma.property.count({
+    where: { id: { in: tumMulkler }, ownerId: session.userId },
+  });
+  if (sahipOlunan !== tumMulkler.length) {
     return NextResponse.json({ error: "Mülk bulunamadı." }, { status: 404 });
   }
 
@@ -133,6 +140,9 @@ export async function POST(req: NextRequest) {
         contractFileUrl,
         contractFileName,
         contractNotes: data.contractNotes,
+        otherProperties: {
+          create: otherPropertyIds.map((propertyId) => ({ propertyId })),
+        },
       },
     });
 

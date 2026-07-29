@@ -25,6 +25,7 @@ type Tenant = {
   rating: number | null;
   occupancyStatus: "LIVING" | "VACATED";
   property: { title: string };
+  otherProperties: { property: { title: string } }[];
 };
 
 function MiniStars({ rating }: { rating: number | null }) {
@@ -256,7 +257,17 @@ export default function KiraciListPage() {
                     </div>
                     <div className="min-w-0">
                       <p className="font-semibold text-slate-800 truncate">{t.fullName}</p>
-                      <p className="text-xs text-slate-500 truncate">{t.property.title}</p>
+                      <p
+                        className="text-xs text-slate-500 truncate"
+                        title={[t.property.title, ...t.otherProperties.map((o) => o.property.title)].join(" · ")}
+                      >
+                        {t.property.title}
+                        {t.otherProperties.length > 0 && (
+                          <span className="text-[#17B6AE] font-medium">
+                            {" "}+{t.otherProperties.length} mülk
+                          </span>
+                        )}
+                      </p>
                       {/* Oturum durumu: kiracıya girmeden listede görünsün */}
                       <span
                         className={`inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${

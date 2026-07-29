@@ -38,7 +38,8 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
   const [loading, setLoading] = useState(true);
   const [properties, setProperties] = useState<Property[]>([]);
 
-  const [propertyId, setPropertyId] = useState("");
+  // Kiracı birden fazla mülk kiralayabilir; ilki birincil mülktür.
+  const [propertyIds, setPropertyIds] = useState<string[]>([]);
   const [tenantType, setTenantType] = useState<"INDIVIDUAL" | "CORPORATE">("INDIVIDUAL");
   const [nationalId, setNationalId] = useState("");
   const [taxNumber, setTaxNumber] = useState("");
@@ -79,7 +80,13 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
 
       if (tenantRes.ok) {
         const { tenant } = await tenantRes.json();
-        setPropertyId(tenant.property.id);
+        // Birincil mülk her zaman ilk sırada, ek mülkler onu izler
+        setPropertyIds([
+          tenant.property.id,
+          ...(tenant.otherProperties ?? []).map(
+            (o: { propertyId: string }) => o.propertyId
+          ),
+        ]);
         setTenantType(tenant.tenantType || "INDIVIDUAL");
         setNationalId(tenant.nationalId || "");
         setTaxNumber(tenant.taxNumber || "");
@@ -136,7 +143,7 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
     e.preventDefault();
     setError("");
 
-    if (!propertyId || !fullName.trim()) {
+    if (propertyIds.length === 0 || !fullName.trim()) {
       setError("Mülk ve ad soyad zorunludur.");
       return;
     }
@@ -144,7 +151,7 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
     setSubmitting(true);
 
     const fd = new FormData();
-    fd.set("propertyId", propertyId);
+    propertyIds.forEach((pid) => fd.append("propertyId", pid));
     fd.set("fullName", fullName);
     fd.set("tenantType", tenantType);
     if (tenantType === "INDIVIDUAL") fd.set("nationalId", nationalId);
@@ -208,19 +215,44 @@ export default function KiraciDuzenlePage({ params }: { params: Promise<{ id: st
         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Kiracı Bilgileri</p>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Mülk *</label>
-          <select
-            required
-            value={propertyId}
-            onChange={(e) => setPropertyId(e.target.value)}
-            className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30 bg-white"
-          >
-            {properties.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.title}
-              </option>
-            ))}
-          </select>
+          <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+            Mülk(ler) *
+          </label>
+          <div className="border border-gray-200 rounded-xl divide-y divide-gray-100 max-h-52 overflow-y-auto">
+            {properties.map((p) => {
+              const secili = propertyIds.includes(p.id);
+              return (
+                <label
+                  key={p.id}
+                  className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition ${
+                    secili ? "bg-[#17B6AE]/5" : "hover:bg-gray-50"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={secili}
+                    onChange={() =>
+                      setPropertyIds((m) =>
+                        m.includes(p.id) ? m.filter((x) => x !== p.id) : [...m, p.id]
+                      )
+                    }
+                    className="w-4 h-4 accent-[#17B6AE] flex-shrink-0"
+                  />
+                  <span className={`text-sm ${secili ? "text-[#17B6AE] font-medium" : "text-slate-700"}`}>
+                    {p.title}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+          {propertyIds.length > 0 ? (
+            <p className="mt-1.5 text-xs text-slate-500">
+              {propertyIds.length} mülk seçili
+              {propertyIds.length > 1 && " — ilki birincil mülk olarak kaydedilir"}
+            </p>
+          ) : (
+            <p className="mt-1.5 text-xs text-amber-600">En az bir mülk seçmelisiniz.</p>
+          )}
         </div>
 
         <div>

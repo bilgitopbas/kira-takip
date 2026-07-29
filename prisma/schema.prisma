@@ -152,6 +152,9 @@ model Property {
   isOccupied  Boolean  @default(false)
 
   tenants     Tenant[]
+  // Bu mülke birincil olarak bağlı olmayan ama aynı sözleşme kapsamında
+  // kiralanan kiracıların bağlantıları
+  tenantLinks TenantProperty[]
   expenses    Expense[]
 
   createdAt   DateTime @default(now())
@@ -201,12 +204,32 @@ model Tenant {
   payments     Payment[]
   expenses     Expense[]
   tenantNotes  TenantNote[]
+  // Kiracının birincil mülkü dışında kiraladığı diğer mülkler.
+  // propertyId (birincil) bilerek korundu: yetkilendirme kontrolleri ve
+  // mevcut tüm sorgular bu alan üzerinden çalışmaya devam ediyor.
+  otherProperties TenantProperty[]
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@index([propertyId])
   @@map("tenants")
+}
+
+// Bir kiracı aynı sözleşme kapsamında birden fazla mülk kiralayabilir.
+// Birincil mülk Tenant.propertyId'de kalır; buradaki kayıtlar EK mülklerdir.
+model TenantProperty {
+  id         String   @id @default(cuid())
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId   String
+  property   Property @relation(fields: [propertyId], references: [id])
+  propertyId String
+
+  createdAt  DateTime @default(now())
+
+  @@unique([tenantId, propertyId])
+  @@index([propertyId])
+  @@map("tenant_properties")
 }
 
 enum TenantOccupancyStatus {

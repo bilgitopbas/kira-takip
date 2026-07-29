@@ -34,8 +34,9 @@ export default function KiraciForm({ onSuccess, onCancel }: { onSuccess: () => v
   const [loadingProperties, setLoadingProperties] = useState(true);
   const [propertySearch, setPropertySearch] = useState("");
 
-  // Adim 1
-  const [propertyId, setPropertyId] = useState("");
+  // Adim 1 - bir kiraci ayni sozlesme kapsaminda birden fazla mulk kiralayabilir.
+  // Listedeki ILK mulk birincil mulk olarak kaydedilir.
+  const [propertyIds, setPropertyIds] = useState<string[]>([]);
   const [tenantType, setTenantType] = useState<"INDIVIDUAL" | "CORPORATE">("INDIVIDUAL");
   const [nationalId, setNationalId] = useState("");
   const [taxNumber, setTaxNumber] = useState("");
@@ -88,24 +89,32 @@ export default function KiraciForm({ onSuccess, onCancel }: { onSuccess: () => v
   // Seçili mülk, arama sonucuna uymasa bile listede tutulur. Aksi halde
   // <select> ekranda başka bir mülkü gösterirken kayıt seçili kalana
   // yazılıyordu; bu şekilde görünen ile kaydedilen hiçbir zaman ayrışamaz.
-  const filteredProperties = useMemo(() => {
-    const list = propertySearch
-      ? properties.filter((p) =>
-          p.title.toLocaleLowerCase("tr").includes(propertySearch.toLocaleLowerCase("tr"))
-        )
-      : properties;
-    const secili = properties.find((p) => p.id === propertyId);
-    if (secili && !list.some((p) => p.id === secili.id)) return [secili, ...list];
-    return list;
-  }, [properties, propertySearch, propertyId]);
+  const filteredProperties = useMemo(
+    () =>
+      propertySearch
+        ? properties.filter((p) =>
+            p.title.toLocaleLowerCase("tr").includes(propertySearch.toLocaleLowerCase("tr"))
+          )
+        : properties,
+    [properties, propertySearch]
+  );
 
-  const seciliMulk = properties.find((p) => p.id === propertyId);
+  // Seçilenler, arama sonucuna uymasa bile ayrı bir listede her zaman görünür
+  const seciliMulkler = propertyIds
+    .map((id) => properties.find((p) => p.id === id))
+    .filter((p): p is Property => !!p);
+
+  function mulkSecimiDegistir(id: string) {
+    setPropertyIds((mevcut) =>
+      mevcut.includes(id) ? mevcut.filter((x) => x !== id) : [...mevcut, id]
+    );
+  }
 
   function goToStep2(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!propertyId || !fullName.trim()) {
-      setError("Mülk ve ad soyad zorunludur.");
+    if (propertyIds.length === 0 || !fullName.trim()) {
+      setError("En az bir mülk ve ad soyad zorunludur.");
       return;
     }
     setStep(2);
@@ -117,7 +126,9 @@ export default function KiraciForm({ onSuccess, onCancel }: { onSuccess: () => v
     setSubmitting(true);
 
     const fd = new FormData();
-    fd.set("propertyId", propertyId);
+    // Birden fazla mülk aynı alan adıyla gönderilir; sunucu ilkini birincil
+    // mülk, kalanları ek mülk olarak kaydeder.
+    propertyIds.forEach((pid) => fd.append("propertyId", pid));
     fd.set("fullName", fullName);
     fd.set("tenantType", tenantType);
     if (tenantType === "INDIVIDUAL") fd.set("nationalId", nationalId);
@@ -203,29 +214,67 @@ export default function KiraciForm({ onSuccess, onCancel }: { onSuccess: () => v
                 className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
               />
             </div>
-            <select
-              required
-              value={propertyId}
-              onChange={(e) => setPropertyId(e.target.value)}
-              className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30 bg-white"
-            >
-              {/* Boş seçenek şart: seçili değer hiçbir seçeneğe uymazsa
-                  tarayıcı listedeki ilk mülkü gösterip yanıltıyordu. */}
-              <option value="">
-                {filteredProperties.length === 0 ? "Sonuç bulunamadı" : "Mülk seçin..."}
-              </option>
-              {filteredProperties.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.title}
-                </option>
-              ))}
-            </select>
-            {seciliMulk ? (
-              <p className="mt-1.5 text-xs text-[#17B6AE] font-medium">
-                Seçilen mülk: {seciliMulk.title}
-              </p>
+            {/* Çoklu seçim: kiracı aynı sözleşmeyle birden fazla mülk
+                kiralayabilir. Onay kutuları kullanıldı - açılır listede
+                seçili değer ile görünen ayrışabiliyordu. */}
+            <div className="border border-gray-200 rounded-xl divide-y divide-gray-100 max-h-52 overflow-y-auto">
+              {loadingProperties ? (
+                <p className="text-sm text-slate-400 px-4 py-3">Yükleniyor...</p>
+              ) : filteredProperties.length === 0 ? (
+                <p className="text-sm text-slate-400 px-4 py-3">Sonuç bulunamadı.</p>
+              ) : (
+                filteredProperties.map((p) => {
+                  const secili = propertyIds.includes(p.id);
+                  return (
+                    <label
+                      key={p.id}
+                      className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition ${
+                        secili ? "bg-[#17B6AE]/5" : "hover:bg-gray-50"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={secili}
+                        onChange={() => mulkSecimiDegistir(p.id)}
+                        className="w-4 h-4 accent-[#17B6AE] flex-shrink-0"
+                      />
+                      <span className={`text-sm ${secili ? "text-[#17B6AE] font-medium" : "text-slate-700"}`}>
+                        {p.title}
+                      </span>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+
+            {seciliMulkler.length > 0 ? (
+              <div className="mt-2">
+                <p className="text-xs text-slate-500 mb-1.5">
+                  Seçilen {seciliMulkler.length} mülk
+                  {seciliMulkler.length > 1 && " (ilki birincil mülk olarak kaydedilir)"}:
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {seciliMulkler.map((p, i) => (
+                    <span
+                      key={p.id}
+                      className="inline-flex items-center gap-1.5 bg-[#17B6AE]/10 text-[#17B6AE] text-xs font-medium px-2.5 py-1 rounded-lg"
+                    >
+                      {i === 0 && <span className="text-[10px] opacity-70">BİRİNCİL</span>}
+                      {p.title}
+                      <button
+                        type="button"
+                        onClick={() => mulkSecimiDegistir(p.id)}
+                        aria-label={`${p.title} seçimini kaldır`}
+                        className="hover:text-[#149891] leading-none"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
             ) : (
-              <p className="mt-1.5 text-xs text-amber-600">Henüz mülk seçmediniz.</p>
+              <p className="mt-2 text-xs text-amber-600">Henüz mülk seçmediniz.</p>
             )}
           </div>
 
