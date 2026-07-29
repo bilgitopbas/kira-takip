@@ -21,11 +21,17 @@ async function oneSignalRequest(body: Record<string, unknown>) {
 
 // Tek kullanıcıya push bildirimi (external_id ile eşleşen cihazlara).
 // Anahtarlar tanımlı değilse (örn. yerel geliştirme) sessizce hiçbir şey yapmaz.
+//
+// `path` uygulama içi göreli bir yoldur (örn. "/dashboard/kiraci/abc").
+// OneSignal'in `url` alanı KULLANILMAZ: orası mutlak URL bekler ve bildirimi
+// uygulamanin icinde degil Safari'de acar. Bunun yerine yol `data` icinde
+// tasinir; uygulama tarafinda OneSignalBridge'teki "click" dinleyicisi bunu
+// okuyup panel icinde yonlendirme yapar.
 export async function sendPushNotification(
   externalUserId: string,
   title: string,
   message: string,
-  url?: string
+  path?: string
 ) {
   if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) return;
 
@@ -35,7 +41,7 @@ export async function sendPushNotification(
       target_channel: "push",
       headings: { tr: title, en: title },
       contents: { tr: message, en: message },
-      ...(url ? { url } : {}),
+      ...(path ? { data: { path } } : {}),
     });
     if (result?.errors) {
       console.error("OneSignal push hatası:", JSON.stringify(result.errors));

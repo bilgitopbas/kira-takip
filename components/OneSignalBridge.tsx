@@ -13,10 +13,29 @@ const ONESIGNAL_APP_ID = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
 // Not: "Kullanıcı ekle" ile davet edilen ekip üyeleri asıl hesabın (owner)
 // oturumuyla çalıştığı için userId zaten hesap sahibinin id'sidir — üyenin
 // telefonu da otomatik olarak hesabın bildirimlerini alır.
+
+// Bildirim yükünde taşınan yol yalnızca uygulama içi göreli bir adres olabilir;
+// "https://..." veya "//" ile başlayan değerler dışarıya yönlendirme riski
+// taşıdığı için yok sayılır.
+function guvenliYolMu(path: unknown): path is string {
+  return typeof path === "string" && path.startsWith("/") && !path.startsWith("//");
+}
+
 export default function OneSignalBridge({ userId }: { userId: string }) {
   useEffect(() => {
     if (!isNativeApp() || !ONESIGNAL_APP_ID || !userId) return;
     let OneSignalRef: Awaited<typeof import("onesignal-cordova-plugin")>["default"] | null = null;
+
+    // Bildirime tıklanınca ilgili detay sayfasına git (örn. ilgili kiracı).
+    // Sunucu bu yolu push'un `data.path` alanında gönderiyor (bkz. lib/onesignal.ts).
+    // Yumuşak yönlendirme yerine tam sayfa geçişi kullanılıyor: uygulama arka
+    // plandan öne gelirken WKWebView bazen eski ekranı donmuş halde bırakıyor.
+    const tiklama = (event: { notification?: { additionalData?: unknown } }) => {
+      const veri = event?.notification?.additionalData as { path?: unknown } | undefined;
+      if (guvenliYolMu(veri?.path)) {
+        window.location.href = veri.path;
+      }
+    };
 
     (async () => {
       try {
@@ -24,6 +43,7 @@ export default function OneSignalBridge({ userId }: { userId: string }) {
         OneSignalRef = OneSignal;
         OneSignal.initialize(ONESIGNAL_APP_ID);
         OneSignal.login(userId);
+        OneSignal.Notifications.addEventListener("click", tiklama);
         await OneSignal.Notifications.requestPermission(true);
       } catch (err) {
         console.error("OneSignal başlatılamadı:", err);
@@ -44,6 +64,11 @@ export default function OneSignalBridge({ userId }: { userId: string }) {
 
     return () => {
       document.removeEventListener("visibilitychange", gorunurluk);
+      try {
+        OneSignalRef?.Notifications.removeEventListener("click", tiklama);
+      } catch {
+        // plugin hazır değilse sessizce geç
+      }
       // Panelden çıkış / hesap değişimi: cihaz-hesap bağını çöz
       try {
         OneSignalRef?.logout();
