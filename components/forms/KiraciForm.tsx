@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import StarRating from "@/components/StarRating";
+import CurrencyInput from "@/components/CurrencyInput";
 
 type Property = { id: string; title: string };
 
@@ -455,12 +456,11 @@ export default function KiraciForm({ onSuccess, onCancel }: { onSuccess: () => v
           <div>
             <label className="block text-xs font-semibold text-slate-600 mb-1.5">Depozito</label>
             <div className="flex gap-2">
-              <input
-                type="number"
-                min="0"
-                step="0.01"
+              <CurrencyInput
                 value={depositAmount}
-                onChange={(e) => setDepositAmount(e.target.value)}
+                onChange={setDepositAmount}
+                suffix=""
+                wrapperClassName="flex-1"
                 className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
               />
               <select

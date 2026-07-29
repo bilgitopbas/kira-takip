@@ -241,13 +241,26 @@ export default function MulkListPage() {
                 </p>
 
                 <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-50">
-                  <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-                      <circle cx="9" cy="7" r="4" />
-                    </svg>
-                    {p._count.tenants} kiracı
-                  </div>
+                  {p._count.tenants > 0 ? (
+                    <a
+                      href={`/dashboard/kiraci?propertyId=${p.id}`}
+                      className="flex items-center gap-1.5 text-xs font-medium text-[#17B6AE] hover:underline"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                      </svg>
+                      {p._count.tenants} kiracı
+                    </a>
+                  ) : (
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                      </svg>
+                      {p._count.tenants} kiracı
+                    </div>
+                  )}
                   <div className="flex items-center gap-1">
                     <MulkMasraflarButton
                       propertyId={p.id}

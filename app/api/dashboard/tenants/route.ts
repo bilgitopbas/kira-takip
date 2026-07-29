@@ -26,6 +26,8 @@ export async function GET(req: NextRequest) {
   const page = Math.max(1, Number(searchParams.get("page")) || 1);
   const q = searchParams.get("q")?.trim() || "";
   const city = searchParams.get("city")?.trim() || "";
+  // Mülk kartındaki "N kiracı" bağlantısı bu filtreyle geliyor
+  const propertyId = searchParams.get("propertyId")?.trim() || "";
   const sort = searchParams.get("sort")?.trim() || "newest";
   const orderBy = SORT_OPTIONS[sort] || SORT_OPTIONS.newest;
 
@@ -44,6 +46,7 @@ export async function GET(req: NextRequest) {
       ownerId: session.userId,
       ...(city ? { city } : {}),
     },
+    ...(propertyId ? { propertyId } : {}),
     ...(q ? { fullName: { contains: q, mode: "insensitive" as const } } : {}),
   };
 

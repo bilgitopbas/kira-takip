@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, use } from "react";
 import Modal from "@/components/Modal";
 import BackButton from "@/components/BackButton";
+import CurrencyInput from "@/components/CurrencyInput";
 import {
   getEffectiveDebtStatus,
   getTotalPaid,
@@ -566,9 +567,11 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
               <span className="text-slate-500">Sözleşme Dosyası</span>
               <a
                 href={`/api/dashboard/tenants/${tenant.id}/contract`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-[#17B6AE] font-medium hover:underline"
               >
-                İndir
+                Aç
               </a>
             </div>
           )}
@@ -820,12 +823,9 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
             </p>
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1.5">Doğru Aylık Tutar (₺)</label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
+              <CurrencyInput
                 value={editDebtBatchAmount}
-                onChange={(e) => setEditDebtBatchAmount(e.target.value)}
+                onChange={setEditDebtBatchAmount}
                 className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
               />
             </div>
@@ -861,12 +861,9 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1.5">Tutar (₺)</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
+                <CurrencyInput
                   value={expenseAmount}
-                  onChange={(e) => setExpenseAmount(e.target.value)}
+                  onChange={setExpenseAmount}
                   className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
                 />
               </div>
@@ -912,12 +909,9 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
               <label className="block text-xs font-semibold text-slate-600 mb-1.5">
                 Aylık Kira Bedeli (₺)
               </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
+              <CurrencyInput
                 value={debtAmount}
-                onChange={(e) => setDebtAmount(e.target.value)}
+                onChange={setDebtAmount}
                 className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
               />
               {debtYearlyPreview > 0 && (
@@ -959,12 +953,9 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
             )}
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1.5">Tahsilat Miktarı (₺)</label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
+              <CurrencyInput
                 value={payAmount}
-                onChange={(e) => setPayAmount(e.target.value)}
+                onChange={setPayAmount}
                 className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
               />
             </div>
@@ -1033,12 +1024,9 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-semibold text-slate-600 mb-1.5">Tutar (₺)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
+                      <CurrencyInput
                         value={row.amount}
-                        onChange={(e) => updateEditRow(row.id, "amount", e.target.value)}
+                        onChange={(raw) => updateEditRow(row.id, "amount", raw)}
                         className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
                       />
                     </div>

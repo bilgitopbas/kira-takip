@@ -32,6 +32,8 @@ export default function MulkMasraflarButton({
       .finally(() => setLoading(false));
   }, [open, propertyId]);
 
+  const toplamMasraf = expenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
+
   return (
     <>
       <button type="button" onClick={() => setOpen(true)} className={className}>
@@ -48,23 +50,40 @@ export default function MulkMasraflarButton({
               Bu mülk için henüz masraf kaydı girilmemiş.
             </p>
           ) : (
-            <ul className="space-y-2.5 max-h-[60vh] overflow-y-auto">
-              {expenses.map((exp) => (
-                <li key={exp.id} className="bg-gray-50 rounded-xl px-4 py-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-semibold text-slate-800">{exp.description}</span>
-                    <span className="text-sm font-bold text-[#17B6AE]">
-                      {Number(exp.amount).toLocaleString("tr-TR")} ₺
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    {new Date(exp.date).toLocaleDateString("tr-TR")}
-                    {exp.tenant?.fullName ? ` · ${exp.tenant.fullName}` : ""}
-                  </p>
-                  {exp.notes && <p className="text-xs text-slate-500 italic mt-1">{exp.notes}</p>}
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="space-y-2.5 max-h-[55vh] overflow-y-auto">
+                {expenses.map((exp) => (
+                  <li key={exp.id} className="bg-gray-50 rounded-xl px-4 py-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-semibold text-slate-800">{exp.description}</span>
+                      <span className="text-sm font-bold text-[#17B6AE]">
+                        {Number(exp.amount).toLocaleString("tr-TR", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })} ₺
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {new Date(exp.date).toLocaleDateString("tr-TR")}
+                      {exp.tenant?.fullName ? ` · ${exp.tenant.fullName}` : ""}
+                    </p>
+                    {exp.notes && <p className="text-xs text-slate-500 italic mt-1">{exp.notes}</p>}
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-4 pt-3 border-t-2 border-gray-200 flex items-center justify-between">
+                <span className="text-sm font-semibold text-slate-600">
+                  Toplam Masraf
+                  <span className="font-normal text-slate-400"> ({expenses.length} kayıt)</span>
+                </span>
+                <span className="text-base font-bold text-slate-800">
+                  {toplamMasraf.toLocaleString("tr-TR", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })} ₺
+                </span>
+              </div>
+            </>
           )}
         </Modal>
       )}

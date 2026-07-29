@@ -60,6 +60,9 @@ export default function KiraciListPage() {
   const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get("q") || "");
   const [city, setCity] = useState(searchParams.get("city") || "");
   const [sort, setSort] = useState(searchParams.get("sort") || "newest");
+  // Mülkler sayfasındaki "N kiracı" bağlantısından gelir; ekranda kaldırılabilir
+  // bir rozet olarak gösterilir (açılır menüsü yok).
+  const [propertyId, setPropertyId] = useState(searchParams.get("propertyId") || "");
   const [cities, setCities] = useState<string[]>([]);
   const isFirstRun = useRef(true);
 
@@ -80,6 +83,7 @@ export default function KiraciListPage() {
     const params = new URLSearchParams({ page: String(targetPage), sort });
     if (debouncedSearch) params.set("q", debouncedSearch);
     if (city) params.set("city", city);
+    if (propertyId) params.set("propertyId", propertyId);
 
     const res = await fetch(`/api/dashboard/tenants?${params.toString()}`);
     const data = await res.json();
@@ -99,7 +103,7 @@ export default function KiraciListPage() {
     }
     loadTenants(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, city, sort]);
+  }, [debouncedSearch, city, sort, propertyId]);
 
   async function handleDelete(e: React.MouseEvent, id: string) {
     e.stopPropagation();
@@ -114,7 +118,9 @@ export default function KiraciListPage() {
     loadTenants(1);
   }
 
-  const hasActiveFilters = !!(search || city || sort !== "newest");
+  const hasActiveFilters = !!(search || city || sort !== "newest" || propertyId);
+  // Mülk adını listedeki kayıtlardan türet (ayrı bir istek atmaya gerek yok)
+  const filtrelenenMulkAdi = propertyId ? tenants[0]?.property.title : undefined;
 
   return (
     <div>
@@ -167,12 +173,26 @@ export default function KiraciListPage() {
             <option key={s.value} value={s.value}>{s.label}</option>
           ))}
         </select>
+        {propertyId && (
+          <span className="inline-flex items-center gap-2 bg-[#17B6AE]/10 text-[#17B6AE] text-sm font-semibold px-3 py-1.5 rounded-xl">
+            {filtrelenenMulkAdi ? `Mülk: ${filtrelenenMulkAdi}` : "Mülke göre filtreli"}
+            <button
+              type="button"
+              onClick={() => setPropertyId("")}
+              aria-label="Mülk filtresini kaldır"
+              className="text-base leading-none hover:text-[#149891]"
+            >
+              ×
+            </button>
+          </span>
+        )}
         {hasActiveFilters && (
           <button
             onClick={() => {
               setSearch("");
               setCity("");
               setSort("newest");
+              setPropertyId("");
             }}
             className="text-sm font-medium text-slate-500 hover:text-red-500 transition"
           >

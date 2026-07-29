@@ -1,8 +1,24 @@
 import { NextResponse } from "next/server";
 import { readFile } from "fs/promises";
+import path from "path";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { getUploadedFilePath } from "@/lib/uploads";
+
+// Dosya yeni sekmede açılabilsin diye gerçek MIME türüyle sunulur.
+// Onceden hepsi "application/octet-stream" + "attachment" ile gonderildigi icin
+// tarayici PDF/gorseli sekmede acmak yerine her zaman indirmeye zorluyordu.
+// (Guvenlik basliklarindaki X-Content-Type-Options: nosniff nedeniyle dogru
+// tur gondermek ayrica sart.)
+const MIME_TYPES: Record<string, string> = {
+  ".pdf": "application/pdf",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
+  ".doc": "application/msword",
+  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+};
 
 export async function GET(
   _req: Request,
@@ -27,10 +43,12 @@ export async function GET(
   try {
     const filePath = getUploadedFilePath("contracts", tenant.contractFileUrl);
     const buffer = await readFile(filePath);
+    const ext = path.extname(tenant.contractFileUrl).toLowerCase();
+    // Word gibi tarayicinin gosteremedigi turlerde "inline" zaten indirmeye duser
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
-        "Content-Type": "application/octet-stream",
-        "Content-Disposition": `attachment; filename="${tenant.contractFileUrl}"`,
+        "Content-Type": MIME_TYPES[ext] || "application/octet-stream",
+        "Content-Disposition": `inline; filename="${tenant.contractFileUrl}"`,
       },
     });
   } catch {

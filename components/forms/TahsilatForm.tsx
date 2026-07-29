@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getEffectiveDebtStatus, getTotalPaid, DEBT_STATUS_LABELS, DEBT_STATUS_STYLES } from "@/lib/debtStatus";
 import { hapticSuccess } from "@/lib/haptics";
+import CurrencyInput from "@/components/CurrencyInput";
 
 type Tenant = { id: string; fullName: string; property: { title: string } };
 type Debt = {
@@ -185,13 +186,10 @@ export default function TahsilatForm({ onSuccess, onCancel }: { onSuccess: () =>
         <>
           <div>
             <label className="block text-xs font-semibold text-slate-600 mb-1.5">Tahsilat Miktarı (₺) *</label>
-            <input
-              type="number"
+            <CurrencyInput
               required
-              min="0"
-              step="0.01"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={setAmount}
               className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
             />
           </div>
