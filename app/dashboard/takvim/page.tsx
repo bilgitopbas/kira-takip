@@ -13,7 +13,7 @@ async function getEvents(ownerId: string) {
       contractStart: true,
       monthlyRent: true,
       property: { select: { title: true } },
-      debts: { select: { dueDate: true } },
+      debts: { select: { dueDate: true, periodMonths: true } },
     },
   });
 
@@ -42,7 +42,7 @@ async function getEvents(ownerId: string) {
       });
     }
 
-    const reminder = getRenewalReminderDate(t.debts.map((d) => d.dueDate));
+    const reminder = getRenewalReminderDate(t.debts);
     if (reminder) {
       renewalEvents.push({
         date: toDateKey(reminder),

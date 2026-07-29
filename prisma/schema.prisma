@@ -189,6 +189,9 @@ model Tenant {
   depositAmount    Decimal? @db.Decimal(10, 2)
   depositCurrency  Currency?
   contractFileUrl  String?
+  // Diskte dosya rastgele bir kimlikle saklanıyor; kullanıcıya gösterilecek
+  // orijinal ad (örn. "Kira Sözleşmesi.pdf") ayrıca tutulur.
+  contractFileName String?
   contractNotes    String?
 
   debts        Debt[]
@@ -230,6 +233,9 @@ model Debt {
   amount      Decimal       @db.Decimal(10, 2)
   dueDate     DateTime
   status      PaymentStatus @default(UNPAID)
+  // Borcun kapsadığı ay sayısı: 1 = aylık (varsayılan, mevcut tüm kayıtlar),
+  // 12 = yıllık peşin. Ödeme planında ve yenileme hatırlatmasında kullanılır.
+  periodMonths Int          @default(1)
 
   payments    Payment[]
 

@@ -95,10 +95,12 @@ export async function POST(req: NextRequest) {
   }
 
   let contractFileUrl: string | null = null;
+  let contractFileName: string | null = null;
   const contractFile = formData.get("contractFile");
   if (contractFile instanceof File && contractFile.size > 0) {
     try {
       contractFileUrl = await saveUploadedFile(contractFile, "contracts");
+      contractFileName = contractFile.name;
     } catch (err) {
       return NextResponse.json({ error: err instanceof Error ? err.message : "Dosya yüklenemedi." }, { status: 400 });
     }
@@ -128,6 +130,7 @@ export async function POST(req: NextRequest) {
         depositAmount: data.depositAmount,
         depositCurrency: data.depositCurrency || null,
         contractFileUrl,
+        contractFileName,
         contractNotes: data.contractNotes,
       },
     });

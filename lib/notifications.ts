@@ -62,6 +62,7 @@ export async function generateNotificationsForOwner(ownerId: string) {
           id: true,
           amount: true,
           dueDate: true,
+          periodMonths: true,
           payments: { select: { amount: true } },
         },
       },
@@ -93,7 +94,9 @@ export async function generateNotificationsForOwner(ownerId: string) {
     // 2. Zam / borçlandırma hatırlatma (son borç vadesine 15 gün kala)
     if (owner.notifyRenewalUpcoming && tenant.debts.length > 0) {
       const dueDates = tenant.debts.map((d) => new Date(d.dueDate));
-      const renewalDate = getRenewalNotificationDate(dueDates);
+      const renewalDate = getRenewalNotificationDate(
+        tenant.debts.map((d) => ({ dueDate: new Date(d.dueDate), periodMonths: d.periodMonths }))
+      );
       if (renewalDate) {
         renewalDate.setHours(0, 0, 0, 0);
         const latest = dueDates.reduce((max, d) => (d > max ? d : max));

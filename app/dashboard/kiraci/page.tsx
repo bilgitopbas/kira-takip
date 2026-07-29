@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import KiraciEkleButton from "@/components/KiraciEkleButton";
 import ExcelIceAktarButton from "@/components/ExcelIceAktarButton";
 import Pagination from "@/components/Pagination";
+import { isNativeApp } from "@/lib/native";
 
 const PAGE_SIZE = 10;
 
@@ -116,6 +117,17 @@ export default function KiraciListPage() {
       return;
     }
     loadTenants(1);
+  }
+
+  // Web'de kiracı yeni sekmede açılır; mobil uygulamada sekme kavramı yok,
+  // orada her zamanki gibi aynı ekranda gezinilir.
+  function acKiraci(tenantId: string) {
+    const yol = `/dashboard/kiraci/${tenantId}`;
+    if (isNativeApp()) {
+      router.push(yol);
+      return;
+    }
+    window.open(yol, "_blank", "noopener,noreferrer");
   }
 
   const hasActiveFilters = !!(search || city || sort !== "newest" || propertyId);
@@ -231,7 +243,7 @@ export default function KiraciListPage() {
             {tenants.map((t) => (
               <div
                 key={t.id}
-                onClick={() => router.push(`/dashboard/kiraci/${t.id}`)}
+                onClick={() => acKiraci(t.id)}
                 className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 cursor-pointer hover:border-[#17B6AE]/40 hover:shadow-md transition-all"
               >
                 <div className="flex items-start justify-between mb-3">

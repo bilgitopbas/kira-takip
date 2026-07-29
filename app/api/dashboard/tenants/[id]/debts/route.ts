@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { generateMonthlyDebts } from "@/lib/debts";
+import { generateMonthlyDebts, generateYearlyDebt } from "@/lib/debts";
 import { requireWriteAccess } from "@/lib/access";
 
 export async function POST(
@@ -28,11 +28,15 @@ export async function POST(
     return NextResponse.json({ error: "Kiracı bulunamadı." }, { status: 404 });
   }
 
-  const { monthlyRent, startDate } = await req.json();
+  const { monthlyRent, startDate, paymentType } = await req.json();
   const rent = Number(monthlyRent);
   if (!startDate || Number.isNaN(rent) || rent <= 0) {
     return NextResponse.json({ error: "Geçerli bir tarih ve kira bedeli girin." }, { status: 400 });
   }
+
+  // "YEARLY" seçilirse girilen tutar yıllık toplamdır ve 12 ayı kapsayan tek
+  // bir borç kaydı oluşturulur. Varsayılan (ve önceki tüm davranış) aylıktır.
+  const yillik = paymentType === "YEARLY";
 
   const existingDebts = await prisma.debt.findMany({
     where: { tenantId: id },
@@ -40,9 +44,10 @@ export async function POST(
   });
   const existingKeys = new Set(existingDebts.map((d) => `${d.year}-${d.month}`));
 
-  const newDebts = generateMonthlyDebts(new Date(startDate), rent).filter(
-    (d) => !existingKeys.has(`${d.year}-${d.month}`)
-  );
+  const uretilen = yillik
+    ? generateYearlyDebt(new Date(startDate), rent)
+    : generateMonthlyDebts(new Date(startDate), rent);
+  const newDebts = uretilen.filter((d) => !existingKeys.has(`${d.year}-${d.month}`));
 
   if (newDebts.length === 0) {
     return NextResponse.json(
@@ -57,15 +62,21 @@ export async function POST(
 
   // Aylık kira bilgisi, tarihi en güncel olan borç dönemine göre belirlenir
   // (borçlandırmaların hangi sırayla girildiğine değil, tarihe bakılır).
+  // Yıllık borçta tutar 12 ayın toplamıdır; "Aylık Kira" alanının doğru
+  // kalması için aylık karşılığa bölünerek yazılır.
   const latestDebt = await prisma.debt.findFirst({
     where: { tenantId: id },
     orderBy: { dueDate: "desc" },
-    select: { amount: true },
+    select: { amount: true, periodMonths: true },
   });
   if (latestDebt) {
+    const aylikKarsilik = Number(latestDebt.amount) / Math.max(1, latestDebt.periodMonths);
     await prisma.tenant.update({
       where: { id },
-      data: { monthlyRent: latestDebt.amount },
+      data: {
+        monthlyRent: aylikKarsilik,
+        paymentFrequency: yillik ? "YEARLY" : "MONTHLY",
+      },
     });
   }
 

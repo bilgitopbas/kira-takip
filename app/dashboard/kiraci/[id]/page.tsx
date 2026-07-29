@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, use } from "react";
 import Modal from "@/components/Modal";
 import BackButton from "@/components/BackButton";
 import CurrencyInput from "@/components/CurrencyInput";
+import { getLastCoveredMonth } from "@/lib/debts";
 import {
   getEffectiveDebtStatus,
   getTotalPaid,
@@ -18,6 +19,8 @@ type Debt = {
   amount: string;
   dueDate: string;
   status: string;
+  // 1 = aylık, 12 = yıllık peşin
+  periodMonths: number;
   payments: { id: string; amount: string; paidAt: string; notes: string | null }[];
 };
 
@@ -52,6 +55,7 @@ type Tenant = {
   depositAmount: string | null;
   depositCurrency: string | null;
   contractFileUrl: string | null;
+  contractFileName: string | null;
   contractNotes: string | null;
   property: { id: string; title: string };
   debts: Debt[];
@@ -78,6 +82,11 @@ function formatDebtDate(dueDate: string) {
 function formatDebtDateShort(dueDate: string) {
   const date = new Date(dueDate);
   return `${date.getDate()} ${MONTH_NAMES_SHORT[date.getMonth()]} ${String(date.getFullYear()).slice(2)}`;
+}
+
+// Yıllık borçta kapsanan son ay (12 Ara 2026 -> 12 Kas 2027)
+function donemSonu(debt: { dueDate: string; periodMonths: number }) {
+  return getLastCoveredMonth(new Date(debt.dueDate), debt.periodMonths).toISOString();
 }
 
 function Stars({ rating }: { rating: number | null }) {
@@ -130,6 +139,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
 
   const [showDebtModal, setShowDebtModal] = useState(false);
   const [debtAmount, setDebtAmount] = useState("");
+  const [debtPaymentType, setDebtPaymentType] = useState<"MONTHLY" | "YEARLY">("MONTHLY");
   const [debtStartDate, setDebtStartDate] = useState("");
   const [debtSubmitting, setDebtSubmitting] = useState(false);
   const [debtError, setDebtError] = useState("");
@@ -169,10 +179,21 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
     const sorted = [...debts].sort(
       (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
     );
+    // Her dönem 12 aylık kapsama denk gelir: aylık borçlarda 12 satır,
+    // yıllık peşin borçta tek satır (periodMonths = 12).
     const chunks: Debt[][] = [];
-    for (let i = 0; i < sorted.length; i += 12) {
-      chunks.push(sorted.slice(i, i + 12));
+    let aktif: Debt[] = [];
+    let kapsananAy = 0;
+    for (const d of sorted) {
+      aktif.push(d);
+      kapsananAy += d.periodMonths || 1;
+      if (kapsananAy >= 12) {
+        chunks.push(aktif);
+        aktif = [];
+        kapsananAy = 0;
+      }
     }
+    if (aktif.length > 0) chunks.push(aktif);
     return chunks;
   }, [tenant]);
 
@@ -213,9 +234,18 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
 
   function openDebtModal() {
     setDebtAmount(tenant?.monthlyRent || "");
+    setDebtPaymentType("MONTHLY");
     setDebtStartDate("");
     setDebtError("");
     setShowDebtModal(true);
+  }
+
+  // Aylık seçiliyken girilen tutar bir ayın kirası, yıllıkta 12 ayın toplamıdır.
+  function secilenTipeGoreTutar(tip: "MONTHLY" | "YEARLY") {
+    const mevcut = Number(debtAmount);
+    if (!debtAmount || Number.isNaN(mevcut) || mevcut <= 0) return;
+    if (tip === "YEARLY" && debtPaymentType === "MONTHLY") setDebtAmount(String(mevcut * 12));
+    if (tip === "MONTHLY" && debtPaymentType === "YEARLY") setDebtAmount(String(mevcut / 12));
   }
 
   async function submitDebtBatch(e: React.FormEvent) {
@@ -229,7 +259,11 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
     const res = await fetch(`/api/dashboard/tenants/${id}/debts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ monthlyRent: Number(debtAmount), startDate: debtStartDate }),
+      body: JSON.stringify({
+        monthlyRent: Number(debtAmount),
+        startDate: debtStartDate,
+        paymentType: debtPaymentType,
+      }),
     });
     setDebtSubmitting(false);
     if (!res.ok) {
@@ -429,7 +463,12 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
     return <p className="text-sm text-slate-500">Kiracı bulunamadı.</p>;
   }
 
-  const debtYearlyPreview = debtAmount ? Number(debtAmount) * 12 : 0;
+  // Aylık seçiliyken yıllık toplamı, yıllık seçiliyken aylık karşılığı gösterir
+  const debtYearlyPreview = debtAmount
+    ? debtPaymentType === "YEARLY"
+      ? Number(debtAmount) / 12
+      : Number(debtAmount) * 12
+    : 0;
 
   return (
     <div>
@@ -569,9 +608,10 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
                 href={`/api/dashboard/tenants/${tenant.id}/contract`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#17B6AE] font-medium hover:underline"
+                title={tenant.contractFileName || undefined}
+                className="text-[#17B6AE] font-medium hover:underline text-right max-w-[60%] truncate"
               >
-                Aç
+                {tenant.contractFileName || "Sözleşmeyi Aç"}
               </a>
             </div>
           )}
@@ -664,8 +704,24 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
                   return (
                     <tr key={d.id} className="hover:bg-gray-50/60 transition-colors">
                       <td className="px-1.5 py-2 sm:px-5 sm:py-3.5 text-slate-800 font-semibold border-r border-gray-100 whitespace-nowrap">
-                        <span className="sm:hidden">{formatDebtDateShort(d.dueDate)}</span>
-                        <span className="hidden sm:inline">{formatDebtDate(d.dueDate)}</span>
+                        {d.periodMonths > 1 ? (
+                          <>
+                            <span className="sm:hidden">
+                              {formatDebtDateShort(d.dueDate)} – {formatDebtDateShort(donemSonu(d))}
+                            </span>
+                            <span className="hidden sm:inline">
+                              {formatDebtDate(d.dueDate)} – {formatDebtDate(donemSonu(d))}
+                            </span>
+                            <div className="text-[9px] sm:text-xs font-normal text-[#17B6AE]">
+                              Yıllık kira bedeli
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <span className="sm:hidden">{formatDebtDateShort(d.dueDate)}</span>
+                            <span className="hidden sm:inline">{formatDebtDate(d.dueDate)}</span>
+                          </>
+                        )}
                       </td>
                       <td className="px-1.5 py-2 sm:px-5 sm:py-3.5 text-slate-700 border-r border-gray-100 whitespace-nowrap">
                         {Number(d.amount).toLocaleString("tr-TR")} ₺
@@ -906,8 +962,34 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
               </div>
             )}
             <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Ödeme Şekli</label>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { key: "MONTHLY" as const, label: "Aylık Ödeme", hint: "12 ayrı ay" },
+                  { key: "YEARLY" as const, label: "Yıllık Ödeme", hint: "Tek seferde peşin" },
+                ]).map((o) => (
+                  <button
+                    key={o.key}
+                    type="button"
+                    onClick={() => {
+                      secilenTipeGoreTutar(o.key);
+                      setDebtPaymentType(o.key);
+                    }}
+                    className={`px-3 py-2.5 rounded-xl border text-sm font-medium transition ${
+                      debtPaymentType === o.key
+                        ? "border-[#17B6AE] bg-[#17B6AE]/5 text-[#17B6AE]"
+                        : "border-gray-200 text-slate-600 hover:border-gray-300"
+                    }`}
+                  >
+                    {o.label}
+                    <span className="block text-[10px] font-normal text-slate-400">{o.hint}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                Aylık Kira Bedeli (₺)
+                {debtPaymentType === "YEARLY" ? "Yıllık Kira Bedeli (₺)" : "Aylık Kira Bedeli (₺)"}
               </label>
               <CurrencyInput
                 value={debtAmount}
@@ -916,12 +998,17 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
               />
               {debtYearlyPreview > 0 && (
                 <p className="mt-1.5 text-xs text-slate-500">
-                  Yıllık Kira Bedeli: <span className="font-medium text-slate-700">{debtYearlyPreview.toLocaleString("tr-TR")} ₺</span>
+                  {debtPaymentType === "YEARLY" ? "Aylık Karşılığı: " : "Yıllık Kira Bedeli: "}
+                  <span className="font-medium text-slate-700">
+                    {debtYearlyPreview.toLocaleString("tr-TR", { maximumFractionDigits: 2 })} ₺
+                  </span>
                 </p>
               )}
             </div>
             <div className="bg-[#17B6AE]/5 border border-[#17B6AE]/20 rounded-xl p-4">
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Başlangıç Tarihi</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                {debtPaymentType === "YEARLY" ? "Vade Tarihi" : "Başlangıç Tarihi"}
+              </label>
               <input
                 type="date"
                 value={debtStartDate}
@@ -929,7 +1016,9 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
                 className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30 bg-white"
               />
               <p className="mt-2 text-xs text-slate-500">
-                Bu tarihten itibaren kiracı 12 ay boyunca borçlandırılacaktır.
+                {debtPaymentType === "YEARLY"
+                  ? "Bu tarihten itibaren 12 ayı kapsayan tek bir borç kaydı oluşturulacaktır."
+                  : "Bu tarihten itibaren kiracı 12 ay boyunca borçlandırılacaktır."}
               </p>
             </div>
             <button
