@@ -172,6 +172,8 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
   const [editDeletingId, setEditDeletingId] = useState<string | null>(null);
   const [editError, setEditError] = useState("");
 
+  const [bulkPaySubmitting, setBulkPaySubmitting] = useState(false);
+
   const [showEditDebtBatchModal, setShowEditDebtBatchModal] = useState(false);
   const [editDebtBatchAmount, setEditDebtBatchAmount] = useState("");
   const [editDebtBatchSubmitting, setEditDebtBatchSubmitting] = useState(false);
@@ -223,6 +225,12 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
     const totalPaid = dueDebts.reduce((sum, d) => sum + getTotalPaid(d.payments), 0);
     return { totalAmount, totalPaid, difference: totalAmount - totalPaid };
   }, [currentPeriod]);
+
+  // Görüntülenen dönemde bakiyesi kalan (hiç veya kısmen ödenmiş) borçlar
+  const odenmemisDonemBorclari = useMemo(
+    () => currentPeriod.filter((d) => Number(d.amount) - getTotalPaid(d.payments) > 0),
+    [currentPeriod]
+  );
 
   const grandTotalDifference = useMemo(() => {
     const debts = tenant?.debts ?? [];
@@ -291,6 +299,37 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
       return;
     }
     setShowDebtModal(false);
+    load();
+  }
+
+  // Geçmiş yılların verisini hızlı girmek için: görüntülenen dönemin tüm
+  // bakiyeli borçlarını, her birinin kendi vade tarihiyle tahsil edilmiş
+  // olarak işaretler.
+  async function hepsiniOdendiIsaretle() {
+    const kalanToplam = odenmemisDonemBorclari.reduce(
+      (sum, d) => sum + (Number(d.amount) - getTotalPaid(d.payments)),
+      0
+    );
+    const onay = window.confirm(
+      `${periodIndex + 1}. Yıl dönemindeki ${odenmemisDonemBorclari.length} ay ` +
+        `(toplam ${kalanToplam.toLocaleString("tr-TR")} ₺) ödendi olarak işaretlenecek.\n\n` +
+        `Her ayın tahsilat tarihi kendi vade tarihi olarak kaydedilecek. Onaylıyor musunuz?`
+    );
+    if (!onay) return;
+
+    setBulkPaySubmitting(true);
+    setError("");
+    const res = await fetch(`/api/dashboard/tenants/${id}/debts/bulk-pay`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ debtIds: odenmemisDonemBorclari.map((d) => d.id) }),
+    });
+    setBulkPaySubmitting(false);
+    if (!res.ok) {
+      const data = await res.json();
+      setError(data.error || "Tahsilatlar kaydedilemedi.");
+      return;
+    }
     load();
   }
 
@@ -703,6 +742,18 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
               >
                 ›
               </button>
+              {odenmemisDonemBorclari.length > 0 && (
+                <button
+                  type="button"
+                  onClick={hepsiniOdendiIsaretle}
+                  disabled={bulkPaySubmitting}
+                  className="ml-auto text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white transition whitespace-nowrap"
+                >
+                  {bulkPaySubmitting
+                    ? "İşleniyor..."
+                    : `Hepsini Ödendi İşaretle (${odenmemisDonemBorclari.length})`}
+                </button>
+              )}
             </div>
 
             <div className="overflow-x-auto">
