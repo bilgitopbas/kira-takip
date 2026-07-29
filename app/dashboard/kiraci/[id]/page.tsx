@@ -5,6 +5,7 @@ import Modal from "@/components/Modal";
 import BackButton from "@/components/BackButton";
 import CurrencyInput from "@/components/CurrencyInput";
 import { getLastCoveredMonth } from "@/lib/debts";
+import { isNativeApp } from "@/lib/native";
 import {
   getEffectiveDebtStatus,
   getTotalPaid,
@@ -84,6 +85,15 @@ function formatDebtDateShort(dueDate: string) {
   return `${date.getDate()} ${MONTH_NAMES_SHORT[date.getMonth()]} ${String(date.getFullYear()).slice(2)}`;
 }
 
+// Orijinal dosya adı yalnızca bu alan eklendikten SONRA yüklenen sözleşmelerde
+// var; daha eski kayıtlarda diskteki adın uzantısından okunabilir bir ad üretilir.
+function sozlesmeDosyaAdi(tenant: { contractFileName: string | null; contractFileUrl: string | null }) {
+  if (tenant.contractFileName) return tenant.contractFileName;
+  const nokta = tenant.contractFileUrl?.lastIndexOf(".") ?? -1;
+  const uzanti = nokta > -1 ? tenant.contractFileUrl!.slice(nokta) : "";
+  return `Sözleşme${uzanti}`;
+}
+
 // Yıllık borçta kapsanan son ay (12 Ara 2026 -> 12 Kas 2027)
 function donemSonu(debt: { dueDate: string; periodMonths: number }) {
   return getLastCoveredMonth(new Date(debt.dueDate), debt.periodMonths).toISOString();
@@ -134,6 +144,10 @@ function CardHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
 export default function KiraciDetayPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [tenant, setTenant] = useState<Tenant | null>(null);
+  // Mobil uygulamada sözleşme Safari'de açıldığı için çerez taşınmıyor;
+  // bağlantıya kısa ömürlü imzalı erişim jetonu eklenir.
+  const [contractToken, setContractToken] = useState<string | null>(null);
+  const [nativeApp, setNativeApp] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -224,9 +238,14 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
     if (res.ok) {
       const data = await res.json();
       setTenant(data.tenant);
+      setContractToken(data.contractToken ?? null);
     }
     setLoading(false);
   }
+
+  useEffect(() => {
+    setNativeApp(isNativeApp());
+  }, []);
 
   useEffect(() => {
     load();
@@ -605,13 +624,17 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
             <div className="flex items-center justify-between py-2 text-sm">
               <span className="text-slate-500">Sözleşme Dosyası</span>
               <a
-                href={`/api/dashboard/tenants/${tenant.id}/contract`}
+                href={
+                  nativeApp && contractToken
+                    ? `/api/dashboard/tenants/${tenant.id}/contract?t=${encodeURIComponent(contractToken)}`
+                    : `/api/dashboard/tenants/${tenant.id}/contract`
+                }
                 target="_blank"
                 rel="noopener noreferrer"
-                title={tenant.contractFileName || undefined}
+                title={sozlesmeDosyaAdi(tenant)}
                 className="text-[#17B6AE] font-medium hover:underline text-right max-w-[60%] truncate"
               >
-                {tenant.contractFileName || "Sözleşmeyi Aç"}
+                {sozlesmeDosyaAdi(tenant)}
               </a>
             </div>
           )}

@@ -4,6 +4,7 @@ import path from "path";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { getUploadedFilePath } from "@/lib/uploads";
+import { verifyContractToken } from "@/lib/contractToken";
 
 // Dosya yeni sekmede açılabilsin diye gerçek MIME türüyle sunulur.
 // Onceden hepsi "application/octet-stream" + "attachment" ile gonderildigi icin
@@ -43,22 +44,37 @@ function dosyaAdiBasligi(ad: string) {
 }
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getSession();
-  if (!session) {
-    return hataSayfasi("Oturumunuz sona ermiş görünüyor. Lütfen tekrar giriş yapın.", 401);
-  }
-
   const { id } = await params;
+
+  // Normalde oturum çerezi ile yetkilendirilir. Mobil uygulamada bağlantı
+  // Safari'de açıldığı için çerez taşınmaz; bu durumda kiracı verisiyle
+  // birlikte verilen kısa ömürlü imzalı jeton (?t=) kabul edilir.
+  const session = await getSession();
+  const token = new URL(req.url).searchParams.get("t");
+  const jetonGecerli = token ? await verifyContractToken(token, id) : false;
+
+  if (!session && !jetonGecerli) {
+    return hataSayfasi(
+      "Bu bağlantının geçerlilik süresi dolmuş. Lütfen uygulamada kiracı sayfasını yenileyip tekrar deneyin.",
+      401
+    );
+  }
 
   const tenant = await prisma.tenant.findUnique({
     where: { id },
     include: { property: true },
   });
 
-  if (!tenant || tenant.property.ownerId !== session.userId || !tenant.contractFileUrl) {
+  if (!tenant || !tenant.contractFileUrl) {
+    return hataSayfasi("Bu kiracıya ait bir sözleşme dosyası kayıtlı değil.", 404);
+  }
+
+  // Çerezle gelindiyse mülk sahipliği ayrıca doğrulanır; jetonla gelindiğinde
+  // jeton zaten yalnızca bu kiracı için üretilmiş ve imzalıdır.
+  if (session && !jetonGecerli && tenant.property.ownerId !== session.userId) {
     return hataSayfasi("Bu kiracıya ait bir sözleşme dosyası kayıtlı değil.", 404);
   }
 

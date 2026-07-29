@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { saveUploadedFile } from "@/lib/uploads";
 import { parseTenantFormData } from "@/lib/tenantForm";
+import { createContractToken } from "@/lib/contractToken";
 
 async function getOwnedTenant(id: string, userId: string) {
   const tenant = await prisma.tenant.findUnique({
@@ -37,7 +38,13 @@ export async function GET(
     return NextResponse.json({ error: "Kiracı bulunamadı." }, { status: 404 });
   }
 
-  return NextResponse.json({ tenant });
+  // Mobil uygulamada sözleşme bağlantısı Safari'de açıldığı için çerez
+  // taşınmıyor; kısa ömürlü imzalı bir erişim jetonu birlikte gönderilir.
+  const contractToken = tenant.contractFileUrl
+    ? await createContractToken(tenant.id)
+    : null;
+
+  return NextResponse.json({ tenant, contractToken });
 }
 
 export async function PATCH(
