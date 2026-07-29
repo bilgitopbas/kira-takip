@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import StarRating from "@/components/StarRating";
 import CurrencyInput from "@/components/CurrencyInput";
@@ -68,7 +68,9 @@ export default function KiraciForm({ onSuccess, onCancel }: { onSuccess: () => v
       const data = await res.json();
       const list: Property[] = data.properties || [];
       setProperties(list);
-      if (list.length > 0) setPropertyId(list[0].id);
+      // İlk mülk otomatik SEÇİLMEZ. Önceden seçiliyordu ve kullanıcı arama
+      // yapınca <select> içinde o mülk kalmadığı için tarayıcı aradığı mülkü
+      // gösteriyor, ancak tıklanmadığı için kayıt ilk mülke yazılıyordu.
       setLoadingProperties(false);
     }
     loadProperties();
@@ -83,9 +85,21 @@ export default function KiraciForm({ onSuccess, onCancel }: { onSuccess: () => v
       ? addMonthsClamped(new Date(contractStart), durationMonths)
       : null;
 
-  const filteredProperties = propertySearch
-    ? properties.filter((p) => p.title.toLocaleLowerCase("tr").includes(propertySearch.toLocaleLowerCase("tr")))
-    : properties;
+  // Seçili mülk, arama sonucuna uymasa bile listede tutulur. Aksi halde
+  // <select> ekranda başka bir mülkü gösterirken kayıt seçili kalana
+  // yazılıyordu; bu şekilde görünen ile kaydedilen hiçbir zaman ayrışamaz.
+  const filteredProperties = useMemo(() => {
+    const list = propertySearch
+      ? properties.filter((p) =>
+          p.title.toLocaleLowerCase("tr").includes(propertySearch.toLocaleLowerCase("tr"))
+        )
+      : properties;
+    const secili = properties.find((p) => p.id === propertyId);
+    if (secili && !list.some((p) => p.id === secili.id)) return [secili, ...list];
+    return list;
+  }, [properties, propertySearch, propertyId]);
+
+  const seciliMulk = properties.find((p) => p.id === propertyId);
 
   function goToStep2(e: React.FormEvent) {
     e.preventDefault();
@@ -195,13 +209,24 @@ export default function KiraciForm({ onSuccess, onCancel }: { onSuccess: () => v
               onChange={(e) => setPropertyId(e.target.value)}
               className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30 bg-white"
             >
-              {filteredProperties.length === 0 && <option value="">Sonuç bulunamadı</option>}
+              {/* Boş seçenek şart: seçili değer hiçbir seçeneğe uymazsa
+                  tarayıcı listedeki ilk mülkü gösterip yanıltıyordu. */}
+              <option value="">
+                {filteredProperties.length === 0 ? "Sonuç bulunamadı" : "Mülk seçin..."}
+              </option>
               {filteredProperties.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.title}
                 </option>
               ))}
             </select>
+            {seciliMulk ? (
+              <p className="mt-1.5 text-xs text-[#17B6AE] font-medium">
+                Seçilen mülk: {seciliMulk.title}
+              </p>
+            ) : (
+              <p className="mt-1.5 text-xs text-amber-600">Henüz mülk seçmediniz.</p>
+            )}
           </div>
 
           <div>
