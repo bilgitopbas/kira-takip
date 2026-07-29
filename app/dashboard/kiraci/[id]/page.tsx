@@ -121,12 +121,52 @@ function Stars({ rating }: { rating: number | null }) {
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
+// Satır ayırıcıları marka turkuazının çok açık bir tonu — gri çizgiye göre
+// sayfayı canlandırıyor ama okumayı zorlaştıracak kadar belirgin değil.
+const AYIRICI = "border-t border-[#17B6AE]/20";
+
+// Kısa değerler sağda; adres/not gibi uzun metinler etikete yapışıp düzeni
+// bozmasın diye kendi satırında, sola yaslı akar (stacked).
+function InfoRow({
+  label,
+  value,
+  stacked = false,
+}: {
+  label: string;
+  value: React.ReactNode;
+  stacked?: boolean;
+}) {
+  const bos = value === null || value === undefined || value === "";
+
+  if (stacked) {
+    return (
+      <div className={`py-2.5 ${AYIRICI}`}>
+        <span className="block text-xs text-slate-500 mb-0.5">{label}</span>
+        {bos ? (
+          <span className="text-sm text-slate-300">—</span>
+        ) : (
+          <span className="block text-sm text-slate-700 leading-relaxed">{value}</span>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className="flex items-center justify-between py-2.5 text-[15px]">
-      <span className="text-slate-500">{label}</span>
-      <span className="text-slate-800 font-semibold text-right">{value ?? "—"}</span>
+    <div className={`flex items-baseline justify-between gap-4 py-2.5 ${AYIRICI}`}>
+      <span className="text-[13px] text-slate-500 flex-shrink-0">{label}</span>
+      <span className={`text-sm text-right ${bos ? "text-slate-300" : "text-slate-700"}`}>
+        {bos ? "—" : value}
+      </span>
     </div>
+  );
+}
+
+// Kart içindeki küçük grup başlığı ("Tarihler", "Koşullar")
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[11px] font-semibold text-[#17B6AE]/70 uppercase tracking-wider mt-4 mb-0.5">
+      {children}
+    </p>
   );
 }
 
@@ -628,10 +668,10 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
             value={tenant.tenantType === "CORPORATE" ? tenant.taxNumber : tenant.nationalId}
           />
           <InfoRow label="Telefon" value={tenant.phone} />
-          <InfoRow label="Tebligat Adresi" value={tenant.notificationAddress} />
-          <InfoRow label="Notlar" value={tenant.notes} />
-          <div className="flex items-center justify-between py-2 text-sm">
-            <span className="text-slate-500">Puan</span>
+          <InfoRow label="Tebligat Adresi" value={tenant.notificationAddress} stacked />
+          <InfoRow label="Notlar" value={tenant.notes} stacked />
+          <div className={`flex items-center justify-between py-2.5 ${AYIRICI}`}>
+            <span className="text-[13px] text-slate-500">Puan</span>
             <Stars rating={tenant.rating} />
           </div>
         </div>
@@ -645,28 +685,36 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
               </svg>
             }
           />
-          <InfoRow
-            label="Aylık Kira"
-            value={
-              tenant.monthlyRent ? (
-                <span className="text-[#17B6AE] text-lg font-bold">
+          {/* Kartın en çok bakılan bilgisi: aylık kira büyük ve vurgulu,
+              yıllık karşılığı yanında ikincil olarak durur. */}
+          <div className="bg-[#17B6AE]/[0.07] border border-[#17B6AE]/15 rounded-xl px-4 py-3 flex items-end justify-between gap-4 mb-1">
+            <div className="min-w-0">
+              <span className="block text-xs text-slate-500 mb-0.5">Aylık Kira</span>
+              {tenant.monthlyRent ? (
+                <span className="block text-2xl font-bold text-[#17B6AE] leading-tight">
                   {Number(tenant.monthlyRent).toLocaleString("tr-TR")} ₺
                 </span>
               ) : (
-                <span className="text-slate-400 text-sm font-normal">Henüz borçlandırılmadı</span>
-              )
-            }
-          />
+                <span className="block text-sm text-slate-400">Henüz borçlandırılmadı</span>
+              )}
+            </div>
+            {tenant.monthlyRent && (
+              <div className="text-right flex-shrink-0">
+                <span className="block text-xs text-slate-500 mb-0.5">Yıllık</span>
+                <span className="block text-sm font-semibold text-slate-700">
+                  {(Number(tenant.monthlyRent) * 12).toLocaleString("tr-TR")} ₺
+                </span>
+              </div>
+            )}
+          </div>
+
+          <SectionLabel>Tarihler</SectionLabel>
           <InfoRow
-            label="Yıllık Kira"
-            value={tenant.monthlyRent ? `${(Number(tenant.monthlyRent) * 12).toLocaleString("tr-TR")} ₺` : null}
-          />
-          <InfoRow
-            label="Sözleşme Başlangıç"
+            label="Sözleşme Başlangıç Tarihi"
             value={tenant.contractStart ? new Date(tenant.contractStart).toLocaleDateString("tr-TR") : null}
           />
           <InfoRow
-            label="Sözleşme Bitiş"
+            label="Sözleşme Bitiş Tarihi"
             value={tenant.contractEnd ? new Date(tenant.contractEnd).toLocaleDateString("tr-TR") : null}
           />
           <InfoRow
@@ -677,13 +725,19 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
             label="Kira Ödeme Tarihi"
             value={tenant.rentPaymentDate ? new Date(tenant.rentPaymentDate).toLocaleDateString("tr-TR") : null}
           />
+
+          <SectionLabel>Koşullar</SectionLabel>
           <InfoRow
             label="Ödeme Şekli"
             value={tenant.paymentFrequency === "YEARLY" ? "Yıllık" : "Aylık"}
           />
           <InfoRow
             label="Artış Oranı"
-            value={tenant.increaseType === "CUSTOM" ? `%${tenant.increaseRate ?? "—"}` : "TÜFE"}
+            value={
+              <span className="inline-block bg-[#17B6AE]/10 text-[#17B6AE] text-xs font-semibold px-2.5 py-1 rounded-lg">
+                {tenant.increaseType === "CUSTOM" ? `%${tenant.increaseRate ?? "—"}` : "TÜFE"}
+              </span>
+            }
           />
           <InfoRow
             label="Depozito"
@@ -694,8 +748,8 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
             }
           />
           {tenant.contractFileUrl && (
-            <div className="flex items-center justify-between py-2 text-sm">
-              <span className="text-slate-500">Sözleşme Dosyası</span>
+            <div className={`flex items-center justify-between gap-4 py-2.5 ${AYIRICI}`}>
+              <span className="text-[13px] text-slate-500 flex-shrink-0">Sözleşme Dosyası</span>
               <a
                 href={
                   nativeApp && contractToken
@@ -711,7 +765,7 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
               </a>
             </div>
           )}
-          <InfoRow label="Sözleşme Notları" value={tenant.contractNotes} />
+          <InfoRow label="Sözleşme Notları" value={tenant.contractNotes} stacked />
         </div>
       </div>
 
