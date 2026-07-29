@@ -59,6 +59,7 @@ export async function GET(req: NextRequest) {
         monthlyRent: true,
         contractStart: true,
         rating: true,
+        occupancyStatus: true,
         property: { select: { title: true } },
       },
       orderBy,

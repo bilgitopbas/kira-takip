@@ -23,6 +23,7 @@ type Tenant = {
   monthlyRent: string | null;
   contractStart: string | null;
   rating: number | null;
+  occupancyStatus: "LIVING" | "VACATED";
   property: { title: string };
 };
 
@@ -256,6 +257,16 @@ export default function KiraciListPage() {
                     <div className="min-w-0">
                       <p className="font-semibold text-slate-800 truncate">{t.fullName}</p>
                       <p className="text-xs text-slate-500 truncate">{t.property.title}</p>
+                      {/* Oturum durumu: kiracıya girmeden listede görünsün */}
+                      <span
+                        className={`inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                          t.occupancyStatus === "VACATED"
+                            ? "bg-red-50 text-red-600"
+                            : "bg-emerald-50 text-emerald-600"
+                        }`}
+                      >
+                        {t.occupancyStatus === "VACATED" ? "Tahliye etti" : "Oturmaya devam ediyor"}
+                      </span>
                     </div>
                   </div>
                   <button
