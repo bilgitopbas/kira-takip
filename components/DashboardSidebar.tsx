@@ -59,6 +59,12 @@ const ICONS = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M9.5 9a2.5 2.5 0 015 .5c0 1.5-2.5 2-2.5 3.5M12 17h.01" />
     </svg>
   ),
+  ledger: (
+    <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 5a2 2 0 012-2h12a1 1 0 011 1v16a1 1 0 01-1 1H6a2 2 0 01-2-2V5z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 17h15M8 7h7M8 11h7" />
+    </svg>
+  ),
   settings: (
     <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <circle cx="12" cy="12" r="3" />
@@ -72,6 +78,7 @@ const NAV_ITEMS: { href: string; label: string; icon: keyof typeof ICONS; exact?
   { href: "/dashboard/mulk", label: "Mülklerim", icon: "properties", exact: true },
   { href: "/dashboard/kiraci", label: "Kiracılar", icon: "tenants", exact: true },
   { href: "/dashboard/finans-raporlari", label: "Finans Raporları", icon: "reports", exact: true },
+  { href: "/dashboard/tahsilat-defteri", label: "Tahsilat Defteri", icon: "ledger", exact: true },
   { href: "/dashboard/bildirimler", label: "Bildirimler", icon: "bell", exact: true },
   { href: "/dashboard/takvim", label: "Takvim", icon: "calendar", exact: true },
   { href: "/dashboard/kira-artis-hesapla", label: "Kira Artış Hesapla", icon: "calculator", exact: true },

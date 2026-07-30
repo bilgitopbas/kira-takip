@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import YazdirButonu from "@/components/YazdirButonu";
 import YazdirmaBasligi from "@/components/YazdirmaBasligi";
-import Pagination from "@/components/Pagination";
+import TarihAraligiFiltresi from "@/components/TarihAraligiFiltresi";
+import { useTarihAraligi } from "@/lib/tarihAraligi";
 
 type Payment = {
   id: string;
@@ -51,77 +51,16 @@ type Props = {
   debts: Debt[];
 };
 
-function toDateInput(d: Date) {
-  return d.toISOString().slice(0, 10);
-}
-
-const DEFTER_SAYFA_BOYUTU = 15;
-
-// Hızlı aralık seçenekleri: bugünden geriye doğru
-const HIZLI_ARALIKLAR = [
-  { key: "1a", label: "1 Ay", months: 1 },
-  { key: "3a", label: "3 Ay", months: 3 },
-  { key: "6a", label: "6 Ay", months: 6 },
-  { key: "1y", label: "1 Yıl", months: 12 },
-  { key: "3y", label: "3 Yıl", months: 36 },
-  { key: "tum", label: "Tümü", months: null },
-] as const;
-
 export default function FinansRaporlari({ payments, debts }: Props) {
-  const now = new Date();
-  // Sayfa açılırken tüm geçmiş yerine son 1 ay gösterilir; tahsilat defteri
-  // yüzlerce satırla açılmasın.
-  const [startDate, setStartDate] = useState(
-    toDateInput(new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()))
-  );
-  const [endDate, setEndDate] = useState(toDateInput(now));
-  // Hangi hızlı seçeneğin etkin olduğunu göstermek için (tarih elle
-  // değiştirilirse boşalır)
-  const [aktifAralik, setAktifAralik] = useState<string | null>("1a");
-  const [seciliAy, setSeciliAy] = useState("");
-  const [defterSayfa, setDefterSayfa] = useState(1);
-
-  function tarihAraligiSec(baslangic: Date, bitis: Date, aralikKey: string | null) {
-    setStartDate(toDateInput(baslangic));
-    setEndDate(toDateInput(bitis));
-    setAktifAralik(aralikKey);
-    // Aralık değişince defterin ilk sayfasına dön
-    setDefterSayfa(1);
-  }
-
-  function hizliAralikSec(secenek: (typeof HIZLI_ARALIKLAR)[number]) {
-    setSeciliAy("");
-    if (secenek.months === null) {
-      // Tümü: en eski kayıttan bugüne
-      const tumTarihler = [
-        ...payments.map((p) => new Date(p.paidAt)),
-        ...debts.map((d) => new Date(d.dueDate)),
-      ];
-      const enEski = tumTarihler.length
-        ? new Date(Math.min(...tumTarihler.map((d) => d.getTime())))
-        : new Date(now.getFullYear(), 0, 1);
-      tarihAraligiSec(enEski, now, secenek.key);
-      return;
-    }
-    const baslangic = new Date(now.getFullYear(), now.getMonth() - secenek.months, now.getDate());
-    tarihAraligiSec(baslangic, now, secenek.key);
-  }
-
-  // "2026-05" biçimindeki ay seçimi -> o ayın ilk ve son günü
-  function aySec(deger: string) {
-    setSeciliAy(deger);
-    if (!deger) return;
-    const [yil, ay] = deger.split("-").map(Number);
-    tarihAraligiSec(new Date(yil, ay - 1, 1), new Date(yil, ay, 0), null);
-  }
-
-  function elleTarihDegistir(tip: "start" | "end", deger: string) {
-    if (tip === "start") setStartDate(deger);
-    else setEndDate(deger);
-    setAktifAralik(null);
-    setSeciliAy("");
-    setDefterSayfa(1);
-  }
+  // Tarih aralığı mantığı Tahsilat Defteri sayfasıyla ortak
+  const aralik = useTarihAraligi(() => {
+    const tarihler = [
+      ...payments.map((p) => new Date(p.paidAt).getTime()),
+      ...debts.map((d) => new Date(d.dueDate).getTime()),
+    ];
+    return tarihler.length ? new Date(Math.min(...tarihler)) : new Date(new Date().getFullYear(), 0, 1);
+  });
+  const { startDate, endDate } = aralik;
 
   const filteredPayments = useMemo(() => {
     const start = new Date(startDate);
@@ -142,11 +81,6 @@ export default function FinansRaporlari({ payments, debts }: Props) {
       return due >= start && due <= end;
     });
   }, [debts, startDate, endDate]);
-
-  // Tahsilat defteri ekranda 15'erli sayfalanır; filtre değişince ilk sayfaya
-  // döner. Yazdırmada sayfalama uygulanmaz, tüm kayıtlar basılır.
-  const sayfaBasi = (defterSayfa - 1) * DEFTER_SAYFA_BOYUTU;
-  const sayfaSonu = defterSayfa * DEFTER_SAYFA_BOYUTU;
 
   const totalCollected = filteredPayments.reduce((sum, p) => sum + p.amount, 0);
   const totalOwed = filteredDebts.reduce((sum, d) => sum + d.amount, 0);
@@ -224,86 +158,13 @@ export default function FinansRaporlari({ payments, debts }: Props) {
       .sort((a, b) => b.tutar - a.tutar);
   }, [filteredPayments]);
 
-  async function exportExcel() {
-    const XLSX = await import("xlsx");
-    const rows = filteredPayments.map((p) => ({
-      Tarih: new Date(p.paidAt).toLocaleDateString("tr-TR"),
-      Kiracı: p.tenantName,
-      Mülk: p.propertyTitle,
-      "Tutar (₺)": p.amount,
-      Yöntem: p.method || "—",
-      Notlar: p.notes || "—",
-    }));
-    const sheet = XLSX.utils.json_to_sheet(rows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, sheet, "Tahsilat Defteri");
-    XLSX.writeFile(workbook, `tahsilat-defteri-${startDate}-${endDate}.xlsx`);
-  }
-
   return (
     <div>
       <YazdirmaBasligi
         baslik="Finans Raporu"
         altBaslik={`${new Date(startDate).toLocaleDateString("tr-TR")} – ${new Date(endDate).toLocaleDateString("tr-TR")}`}
       />
-      <div className="no-print bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6 space-y-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Başlangıç</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => elleTarihDegistir("start", e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Bitiş</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => elleTarihDegistir("end", e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Tek Ay Seç</label>
-            <input
-              type="month"
-              value={seciliAy}
-              onChange={(e) => aySec(e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
-            />
-          </div>
-          <div className="flex-1" />
-          <button
-            type="button"
-            onClick={exportExcel}
-            className="bg-white hover:bg-gray-50 text-slate-700 font-semibold px-4 py-2.5 rounded-xl transition text-sm border border-gray-200"
-          >
-            Excel&apos;e Aktar
-          </button>
-          <YazdirButonu />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
-          <span className="text-xs font-semibold text-slate-500 mr-1">Hızlı aralık:</span>
-          {HIZLI_ARALIKLAR.map((a) => (
-            <button
-              key={a.key}
-              type="button"
-              onClick={() => hizliAralikSec(a)}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition ${
-                aktifAralik === a.key
-                  ? "bg-[#17B6AE] text-white border-[#17B6AE]"
-                  : "bg-white text-slate-600 border-gray-200 hover:border-[#17B6AE]"
-              }`}
-            >
-              {a.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <TarihAraligiFiltresi {...aralik} />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
@@ -322,11 +183,11 @@ export default function FinansRaporlari({ payments, debts }: Props) {
         </div>
       </div>
 
-      {/* Sıralama: üstte Mülk Bazlı Gelir Kırılımı (grafik), altında Tahsilat
-          Defteri. Blokları taşımak yerine flex sırası kullanıldı. */}
+      {/* Sıralama: Mülk Bazlı Gelir Kırılımı > Gecikme Yaşlandırma > İlk 5 >
+          Yıl Karşılaştırma. Blokları taşımak yerine flex sırası kullanıldı. */}
       <div className="flex flex-col gap-6">
-      {/* 1) Gecikme yaşlandırma — bugün itibarıyla, seçili aralıktan bağımsız */}
-      <div className="order-1 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      {/* Gecikme yaşlandırma — bugün itibarıyla, seçili aralıktan bağımsız */}
+      <div className="order-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
         <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
           <h2 className="text-sm font-bold text-slate-800">Gecikme Yaşlandırma Analizi</h2>
           {gecikmeAnalizi.adet > 0 && (
@@ -378,8 +239,8 @@ export default function FinansRaporlari({ payments, debts }: Props) {
       {/* 3) Seçili aralıkta en çok tahsilat yapılan ilk 5 mülk ve kiracı */}
       <div className="order-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
         {[
-          { baslik: "En Çok Getiren 5 Mülk", satirlar: enCokGetiren.mulkler },
-          { baslik: "En Çok Ödeyen 5 Kiracı", satirlar: enCokGetiren.kiracilar },
+          { baslik: "En Çok Kira Getiren 5 Mülk", satirlar: enCokGetiren.mulkler },
+          { baslik: "En Çok Kira Ödeyen 5 Kiracı", satirlar: enCokGetiren.kiracilar },
         ].map((blok) => {
           const enBuyuk = blok.satirlar[0]?.tutar ?? 0;
           return (
@@ -462,77 +323,13 @@ export default function FinansRaporlari({ payments, debts }: Props) {
         </div>
       </div>
 
-      <div className="order-5 bg-white rounded-2xl border border-gray-100 shadow-sm">
-        <div className="px-6 py-4 border-b-2 border-[#17B6AE]/20 flex items-center justify-between gap-3">
-          <h2 className="text-sm font-bold text-slate-800">Tahsilat Defteri</h2>
-          <span className="text-xs text-slate-500">
-            {filteredPayments.length} kayıt ·{" "}
-            <span className="font-semibold text-[#17B6AE]">
-              {totalCollected.toLocaleString("tr-TR")} ₺
-            </span>
-          </span>
-        </div>
-        {filteredPayments.length === 0 ? (
-          <p className="text-sm text-slate-500 text-center py-10">Seçili tarih aralığında tahsilat kaydı yok.</p>
-        ) : (
-          <div className="overflow-x-auto">
-          <table className="w-full text-xs sm:text-sm">
-            <thead>
-              <tr className="bg-[#17B6AE]/8 text-left">
-                <th className="px-1 py-1.5 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Tarih</th>
-                <th className="px-1 py-1.5 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Kiracı</th>
-                <th className="px-1 py-1.5 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Mülk</th>
-                <th className="px-1 py-1.5 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Tutar</th>
-                <th className="hidden sm:table-cell px-1 py-1.5 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Dekont</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {filteredPayments.map((p, i) => (
-                <tr
-                  key={p.id}
-                  className={`hover:bg-gray-50/60 transition-colors ${
-                    i >= sayfaBasi && i < sayfaSonu ? "" : "hidden print:table-row"
-                  }`}
-                >
-                  <td className="px-1 py-1.5 sm:px-5 sm:py-3 text-slate-700 whitespace-nowrap">
-                    {new Date(p.paidAt).toLocaleDateString("tr-TR")}
-                  </td>
-                  <td className="px-1 py-1.5 sm:px-5 sm:py-3 text-slate-800 font-medium max-w-[70px] sm:max-w-none truncate">{p.tenantName}</td>
-                  <td className="px-1 py-1.5 sm:px-5 sm:py-3 text-slate-700 max-w-[60px] sm:max-w-none truncate">{p.propertyTitle}</td>
-                  <td className="px-1 py-1.5 sm:px-5 sm:py-3 text-slate-800 font-medium whitespace-nowrap">
-                    {p.amount.toLocaleString("tr-TR")} ₺
-                  </td>
-                  <td className="hidden sm:table-cell px-1 py-1.5 sm:px-5 sm:py-3 text-slate-500">{p.hasReceipt ? "Var" : "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </div>
-        )}
-        {filteredPayments.length > DEFTER_SAYFA_BOYUTU && (
-          <div className="no-print flex flex-col items-center gap-2 px-6 py-4 border-t border-gray-100">
-            <p className="text-xs text-slate-400">
-              {filteredPayments.length} kayıttan{" "}
-              {(defterSayfa - 1) * DEFTER_SAYFA_BOYUTU + 1}–
-              {Math.min(defterSayfa * DEFTER_SAYFA_BOYUTU, filteredPayments.length)} arası
-            </p>
-            <Pagination
-              page={defterSayfa}
-              total={filteredPayments.length}
-              pageSize={DEFTER_SAYFA_BOYUTU}
-              onPageChange={setDefterSayfa}
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="order-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <div className="order-1 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
         <h2 className="text-sm font-bold text-slate-800">Mülk Bazlı Gelir Kırılımı</h2>
         <p className="text-xs text-slate-500 mt-1 mb-4">
           Seçili tarih aralığında tahsil edilen kiraların hangi mülkten geldiğini
           gösterir. Hangi mülkün ne kadar getirdiğini karşılaştırmak için kullanılır;
-          yeni bir tahsilat eklemez, yukarıdaki tahsilat defterindeki kayıtları
-          mülke göre toplar.
+          yeni bir tahsilat eklemez, Tahsilat Defteri sayfasındaki kayıtları mülke
+          göre toplar.
         </p>
         {propertyBreakdown.length === 0 ? (
           <p className="text-sm text-slate-500">Seçili tarih aralığında tahsilat yok.</p>
