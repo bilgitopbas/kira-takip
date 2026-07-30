@@ -3,6 +3,8 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import MonthlyIncomeChart from "@/components/MonthlyIncomeChart";
 import OccupancyChart from "@/components/OccupancyChart";
+import PropertyTypeChart, { BELIRTILMEMIS } from "@/components/PropertyTypeChart";
+import { PROPERTY_TYPE_LABELS } from "@/lib/excelImport";
 import MonthlyPaymentsPie from "@/components/MonthlyPaymentsPie";
 import MulkEkleButton from "@/components/MulkEkleButton";
 import KiraciEkleButton from "@/components/KiraciEkleButton";
@@ -28,6 +30,7 @@ async function getStats(ownerId: string) {
   const [
     propertyCount,
     occupiedCount,
+    propertyTypeGroups,
     tenantCount,
     monthCollections,
     yearCollections,
@@ -38,6 +41,11 @@ async function getStats(ownerId: string) {
   ] = await Promise.all([
     prisma.property.count({ where: { ownerId } }),
     prisma.property.count({ where: { ownerId, isOccupied: true } }),
+    prisma.property.groupBy({
+      by: ["propertyType"],
+      where: { ownerId },
+      _count: { _all: true },
+    }),
     prisma.tenant.count({ where: { property: { ownerId } } }),
     prisma.payment.aggregate({
       where: { tenant: { property: { ownerId } }, paidAt: { gte: monthStart, lt: monthEnd } },
@@ -148,10 +156,24 @@ async function getStats(ownerId: string) {
     };
   });
 
+  // Mulk tipi dagilimi: cok olandan aza sirali, tipi girilmemis mulkler en
+  // sonda tek bir "Belirtilmemis" dilimi olarak toplanir.
+  const propertyTypes = propertyTypeGroups
+    .map((g) => ({
+      label: g.propertyType ? PROPERTY_TYPE_LABELS[g.propertyType] ?? g.propertyType : BELIRTILMEMIS,
+      value: g._count._all,
+    }))
+    .sort((a, b) => {
+      if (a.label === BELIRTILMEMIS) return 1;
+      if (b.label === BELIRTILMEMIS) return -1;
+      return b.value - a.value;
+    });
+
   return {
     propertyCount,
     occupiedCount,
     vacantCount: propertyCount - occupiedCount,
+    propertyTypes,
     tenantCount,
     collected: monthCollectedAmount,
     yearlyCollected: yearCollections._sum.amount ? Number(yearCollections._sum.amount) : 0,
@@ -199,6 +221,7 @@ export default async function DashboardPage() {
     propertyCount,
     occupiedCount,
     vacantCount,
+    propertyTypes,
     tenantCount,
     collected,
     yearlyCollected,
@@ -297,7 +320,13 @@ export default async function DashboardPage() {
           {propertyCount === 0 ? (
             <p className="text-sm text-slate-500">Henüz mülk eklenmedi.</p>
           ) : (
-            <OccupancyChart occupied={occupiedCount} vacant={vacantCount} />
+            <>
+              <OccupancyChart occupied={occupiedCount} vacant={vacantCount} />
+              <div className="mt-6 pt-5 border-t border-[#17B6AE]/20">
+                <h3 className="text-sm font-bold text-slate-800 mb-4">Mülk Tipi Dağılımı</h3>
+                <PropertyTypeChart data={propertyTypes} />
+              </div>
+            </>
           )}
         </div>
 
