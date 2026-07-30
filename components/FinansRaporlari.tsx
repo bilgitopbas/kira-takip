@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import YazdirmaBasligi from "@/components/YazdirmaBasligi";
 import TarihAraligiFiltresi from "@/components/TarihAraligiFiltresi";
+import SayacDeger from "@/components/SayacDeger";
 import { useTarihAraligi } from "@/lib/tarihAraligi";
 
 type Payment = {
@@ -166,28 +167,44 @@ export default function FinansRaporlari({ payments, debts }: Props) {
       />
       <TarihAraligiFiltresi {...aralik} />
 
+      {/* Kartlar sırayla süzülerek girer, rakamlar 0'dan hedefe sayar.
+          Sayaçlar filtre değiştikçe de yeni değere doğru animasyonla gider. */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <p className="text-xs font-medium text-slate-500 mb-1">Toplam Tahsilat</p>
-          <p className="text-2xl font-bold text-slate-900">{totalCollected.toLocaleString("tr-TR")} ₺</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <p className="text-xs font-medium text-slate-500 mb-1">Vadesi Gelen Borç</p>
-          <p className="text-2xl font-bold text-slate-900">{totalOwed.toLocaleString("tr-TR")} ₺</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <p className="text-xs font-medium text-slate-500 mb-1">Tahsilat Oranı</p>
-          <p className="text-2xl font-bold text-slate-900">
-            {collectionRate === null ? "—" : `%${collectionRate}`}
-          </p>
-        </div>
+        {[
+          { baslik: "Toplam Tahsilat", deger: totalCollected, sonEk: " ₺" },
+          { baslik: "Vadesi Gelen Borç", deger: totalOwed, sonEk: " ₺" },
+          {
+            baslik: "Tahsilat Oranı",
+            deger: collectionRate,
+            onEk: "%",
+            bos: collectionRate === null,
+          },
+        ].map((kart, i) => (
+          <div
+            key={kart.baslik}
+            className="kart-girisi bg-white rounded-2xl border border-gray-100 shadow-sm p-6"
+            style={{ animationDelay: `${i * 80}ms` }}
+          >
+            <p className="text-xs font-medium text-slate-500 mb-1">{kart.baslik}</p>
+            <p className="text-2xl font-bold text-slate-900">
+              {kart.bos ? (
+                "—"
+              ) : (
+                <SayacDeger hedef={kart.deger ?? 0} onEk={kart.onEk} sonEk={kart.sonEk} />
+              )}
+            </p>
+          </div>
+        ))}
       </div>
 
       {/* Sıralama: Mülk Bazlı Gelir Kırılımı > Gecikme Yaşlandırma > İlk 5 >
           Yıl Karşılaştırma. Blokları taşımak yerine flex sırası kullanıldı. */}
       <div className="flex flex-col gap-6">
       {/* Gecikme yaşlandırma — bugün itibarıyla, seçili aralıktan bağımsız */}
-      <div className="order-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <div
+        className="order-2 kart-girisi bg-white rounded-2xl border border-gray-100 shadow-sm p-6"
+        style={{ animationDelay: "320ms" }}
+      >
         <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
           <h2 className="text-sm font-bold text-slate-800">Gecikme Yaşlandırma Analizi</h2>
           {gecikmeAnalizi.adet > 0 && (
@@ -225,8 +242,12 @@ export default function FinansRaporlari({ payments, debts }: Props) {
                   </div>
                   <div className="h-2.5 bg-gray-50 rounded-r-[4px]">
                     <div
-                      className="h-full rounded-r-[4px]"
-                      style={{ width: `${oran}%`, backgroundColor: k.color }}
+                      className="cubuk-dolum h-full rounded-r-[4px]"
+                      style={{
+                        width: `${oran}%`,
+                        backgroundColor: k.color,
+                        animationDelay: "420ms",
+                      }}
                     />
                   </div>
                 </div>
@@ -237,7 +258,7 @@ export default function FinansRaporlari({ payments, debts }: Props) {
       </div>
 
       {/* 3) Seçili aralıkta en çok tahsilat yapılan ilk 5 mülk ve kiracı */}
-      <div className="order-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="order-3 grid grid-cols-1 lg:grid-cols-2 gap-6 kart-girisi" style={{ animationDelay: "400ms" }}>
         {[
           { baslik: "En Çok Kira Getiren 5 Mülk", satirlar: enCokGetiren.mulkler },
           { baslik: "En Çok Kira Ödeyen 5 Kiracı", satirlar: enCokGetiren.kiracilar },
@@ -263,8 +284,11 @@ export default function FinansRaporlari({ payments, debts }: Props) {
                       </div>
                       <div className="h-2 bg-gray-50 rounded-r-[4px]">
                         <div
-                          className="h-full rounded-r-[4px] bg-[#17B6AE]"
-                          style={{ width: `${enBuyuk > 0 ? (s.tutar / enBuyuk) * 100 : 0}%` }}
+                          className="cubuk-dolum h-full rounded-r-[4px] bg-[#17B6AE]"
+                          style={{
+                            width: `${enBuyuk > 0 ? (s.tutar / enBuyuk) * 100 : 0}%`,
+                            animationDelay: `${500 + i * 60}ms`,
+                          }}
                         />
                       </div>
                     </div>
@@ -277,7 +301,10 @@ export default function FinansRaporlari({ payments, debts }: Props) {
       </div>
 
       {/* 4) Bu yıl / geçen yıl karşılaştırması — takvim yılı bazlı */}
-      <div className="order-4 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <div
+        className="order-4 kart-girisi bg-white rounded-2xl border border-gray-100 shadow-sm p-6"
+        style={{ animationDelay: "480ms" }}
+      >
         <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
           <h2 className="text-sm font-bold text-slate-800">Yıl Karşılaştırma</h2>
           <div className="flex items-center gap-4 text-xs">
@@ -323,7 +350,10 @@ export default function FinansRaporlari({ payments, debts }: Props) {
         </div>
       </div>
 
-      <div className="order-1 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <div
+        className="order-1 kart-girisi bg-white rounded-2xl border border-gray-100 shadow-sm p-6"
+        style={{ animationDelay: "240ms" }}
+      >
         <h2 className="text-sm font-bold text-slate-800">Mülk Bazlı Gelir Kırılımı</h2>
         <p className="text-xs text-slate-500 mt-1 mb-4">
           Seçili tarih aralığında tahsil edilen kiraların hangi mülkten geldiğini

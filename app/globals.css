@@ -116,6 +116,55 @@ body {
   thead {
     display: table-header-group;
   }
+  /* Animasyonlu ögeler çıktıda son hâlinde görünsün */
+  .kart-girisi,
+  .cubuk-dolum {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* Rapor kartlarinin acilis girisi: hafif derinlikli yukari suzulme.
+   "both" ile animasyon bittiginde son karede kalir. */
+@keyframes kartGirisi {
+  from {
+    opacity: 0;
+    transform: perspective(1000px) rotateX(7deg) translateY(26px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(1000px) rotateX(0) translateY(0) scale(1);
+  }
+}
+
+.kart-girisi {
+  animation: kartGirisi 550ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Cubuk grafiklerin soldan dolmasi. Genislik inline yuzde olarak veriliyor,
+   animasyon yalnizca olcegi buyutuyor. */
+@keyframes cubukDolum {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.cubuk-dolum {
+  transform-origin: left center;
+  animation: cubukDolum 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Hareketi azaltmayi tercih eden kullanicida ve YAZDIRIRKEN animasyon yok;
+   ogeler dogrudan son halinde gorunur (aksi halde cikti bos cikabilir). */
+@media (prefers-reduced-motion: reduce) {
+  .kart-girisi,
+  .cubuk-dolum {
+    animation: none;
+  }
 }
 
 @keyframes fadeIn {
