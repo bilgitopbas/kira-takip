@@ -1,5 +1,5 @@
-import "server-only";
-
+// Bu dosya yalnızca sunucuda çalışır (node:fs / child_process kullanır);
+// istemci bileşeninden import edilirse derleme hata verir.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -7,7 +7,12 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
-import { TUM_ALANLAR } from "@/lib/kiraSozlesmesiAlanlari";
+import { alanGorunurMu, TUM_ALANLAR } from "@/lib/kiraSozlesmesiAlanlari";
+
+const AY_ADLARI = [
+  "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+  "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
+];
 
 const calistir = promisify(execFile);
 
@@ -36,34 +41,88 @@ function tarihYaz(ham: string) {
  * edilemesin diye yalnızca tanımlı alanlar geçirilir.
  */
 export function sablonVerisiHazirla(girdi: Record<string, unknown>) {
-  const veri: Record<string, string> = {};
+  const al = (k: string) => (typeof girdi[k] === "string" ? (girdi[k] as string).trim() : "");
+  const veri: Record<string, string | boolean> = {};
 
   for (const alan of TUM_ALANLAR) {
-    const ham = girdi[alan.key];
-    const metin = typeof ham === "string" ? ham.trim() : "";
+    const metin = al(alan.key);
     if (!metin) {
       veri[alan.key] = "";
       continue;
     }
     if (alan.tip === "para") veri[alan.key] = paraYaz(metin);
     else if (alan.tip === "tarih") veri[alan.key] = tarihYaz(metin);
+    else if (alan.tip === "iban") veri[alan.key] = ibanYaz(metin);
     else veri[alan.key] = metin;
   }
+
+  // Ödeme şekli: "Diğer" seçilmişse serbest metin kullanılır
+  if (al("Odemesekli") === "OZEL") veri["Odemesekli"] = al("OdemesekliOzel");
+
+  // Kira artışı: TÜFE seçeneklerinde cümle, kira başlangıç ayına göre kurulur
+  const artisTipi = al("ArtisTipi");
+  const baslangicAyi = ayAdi(al("Kirabaslangıctarihi"));
+  if (artisTipi === "TUFE") {
+    veri["Artis_Bilgisi"] = `TÜİK'in açıkladığı ${baslangicAyi} ayı 12 aylık ortalamasına göre TÜFE oranında`;
+  } else if (artisTipi === "TUFE_YIUFE") {
+    veri["Artis_Bilgisi"] = `TÜİK'in açıkladığı ${baslangicAyi} ayı 12 aylık ortalamalarına göre TÜFE/2 + Yİ-ÜFE/2 oranında`;
+  } else {
+    // "Diğer": kullanıcının elle yazdığı oran. Artis_Bilgisi bir form alanı
+    // değil (ArtisTipi'nin serbest kutusu) olduğu için burada açıkça atanır.
+    veri["Artis_Bilgisi"] = al("Artis_Bilgisi");
+  }
+
+  // Depozito: tutar yerine "son güncel 1 aylık kira bedeli" yazılabilir
+  if (al("DepozitoTipi") === "KIRA") {
+    veri["Depozitotutarı"] = "son güncel 1 aylık kira bedeli";
+  }
+
+  // Kefil bölümü şablonda koşullu; boolean olarak geçilir
+  veri["Kefilvar"] = al("Kefilvar") === "VAR";
 
   return veri;
 }
 
-/** Zorunlu alanlardan boş olanların etiketlerini döner. */
+/** "2026-08-01" -> "Ağustos" */
+function ayAdi(isoTarih: string) {
+  const ay = Number(isoTarih.split("-")[1]);
+  return AY_ADLARI[ay - 1] ?? "";
+}
+
+/** Girilen haneleri TR ön ekiyle IBAN'a çevirir */
+function ibanYaz(ham: string) {
+  const haneler = ham.replace(/[^0-9]/g, "");
+  if (!haneler) return "";
+  // TR dahil baştan 4'erli gruplanır: TR12 0006 2001 ...
+  return `TR${haneler}`.replace(/(.{4})/g, "$1 ").trim();
+}
+
+/**
+ * Zorunlu alanlardan boş olanların etiketlerini döner.
+ * Koşullu alanlar yalnızca görünür durumdaysa zorunlu sayılır (ör. kefil
+ * yoksa kefil alanları istenmez).
+ */
 export function eksikZorunluAlanlar(girdi: Record<string, unknown>) {
+  const degerler: Record<string, string> = {};
+  for (const [k, v] of Object.entries(girdi)) {
+    if (typeof v === "string") degerler[k] = v;
+  }
+
   return TUM_ALANLAR.filter((a) => {
     if (!a.zorunlu) return false;
-    const d = girdi[a.key];
-    return typeof d !== "string" || d.trim() === "";
+    if (!alanGorunurMu(a, degerler)) return false;
+    // "Diğer" seçilen serbest alanlarda asıl doldurulması gereken serbest metin
+    if (a.serbestDeger && degerler[a.key] === a.serbestDeger) {
+      const serbest = a.serbestKey ? degerler[a.serbestKey] : "";
+      return !serbest || serbest.trim() === "";
+    }
+    const d = degerler[a.key];
+    return !d || d.trim() === "";
   }).map((a) => a.label);
 }
 
 /** Şablonu doldurup .docx içeriğini döner. */
-export function sozlesmeUret(veri: Record<string, string>): Buffer {
+export function sozlesmeUret(veri: Record<string, string | boolean>): Buffer {
   const sablon = fs.readFileSync(SABLON_YOLU, "binary");
   const zip = new PizZip(sablon);
 

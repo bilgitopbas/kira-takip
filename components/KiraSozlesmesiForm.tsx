@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import CurrencyInput from "@/components/CurrencyInput";
-import { SOZLESME_BOLUMLERI, type Alan } from "@/lib/kiraSozlesmesiAlanlari";
+import { alanGorunurMu, SOZLESME_BOLUMLERI, type Alan } from "@/lib/kiraSozlesmesiAlanlari";
 
 type Sonuc = {
   dosyaAdi: string;
@@ -31,12 +31,20 @@ function indir(base64: string, dosyaAdi: string, tur: string) {
   URL.revokeObjectURL(url);
 }
 
+// CurrencyInput kendi varsayilan stilini tasimiyor; bu sinif verilmezse
+// kutu cerceve-siz ve gorunmez kaliyor.
 const GIRDI =
-  "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30";
+  "w-full px-3 py-2.5 text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-gray-300 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30 focus:border-[#17B6AE]";
 
 export default function KiraSozlesmesiForm() {
+  // En sık kullanılan seçenekler önceden işaretli gelir; kullanıcı yalnızca
+  // farklı olan durumlarda değiştirir.
   const [alanlar, setAlanlar] = useState<Record<string, string>>({
     Duzenlenmetarihi: bugununTarihi(),
+    Odemesekli: "Aylık peşin",
+    ArtisTipi: "TUFE",
+    DepozitoTipi: "TUTAR",
+    Kefilvar: "YOK",
   });
   // Yıllık bedeli kullanıcı elle değiştirdiyse otomatik hesaplamayı bırak
   const [yillikElle, setYillikElle] = useState(false);
@@ -83,16 +91,37 @@ export default function KiraSozlesmesiForm() {
   }
 
   function alanCiz(alan: Alan) {
+    // Koşullu alan (ör. kefil bilgileri) koşul sağlanmadıkça çizilmez
+    if (!alanGorunurMu(alan, alanlar)) return null;
+
     const deger = alanlar[alan.key] ?? "";
+    const serbestAcik = !!alan.serbestDeger && deger === alan.serbestDeger;
 
     return (
       <div key={alan.key} className={alan.genisMi ? "sm:col-span-2" : ""}>
-        <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+        <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
           {alan.label}
           {alan.zorunlu && <span className="text-red-500 ml-0.5">*</span>}
         </label>
 
-        {alan.tip === "uzunMetin" ? (
+        {alan.tip === "secim" ? (
+          <div className="flex flex-wrap gap-2">
+            {alan.secenekler?.map((s) => (
+              <button
+                key={s.deger}
+                type="button"
+                onClick={() => degistir(alan.key, s.deger)}
+                className={`text-sm font-semibold px-4 py-2 rounded-xl border transition ${
+                  deger === s.deger
+                    ? "bg-[#17B6AE] text-white border-[#17B6AE]"
+                    : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-gray-300 dark:border-slate-600 hover:border-[#17B6AE]"
+                }`}
+              >
+                {s.etiket}
+              </button>
+            ))}
+          </div>
+        ) : alan.tip === "uzunMetin" ? (
           <textarea
             value={deger}
             onChange={(e) => degistir(alan.key, e.target.value)}
@@ -100,7 +129,25 @@ export default function KiraSozlesmesiForm() {
             className={GIRDI}
           />
         ) : alan.tip === "para" ? (
-          <CurrencyInput value={deger} onChange={(v) => degistir(alan.key, v)} />
+          <CurrencyInput
+            value={deger}
+            onChange={(v) => degistir(alan.key, v)}
+            className={GIRDI}
+            suffix="TL"
+          />
+        ) : alan.tip === "iban" ? (
+          <div className="flex items-stretch">
+            <span className="flex items-center px-3 text-sm font-semibold text-slate-500 bg-gray-50 dark:bg-slate-800 border border-r-0 border-gray-300 dark:border-slate-600 rounded-l-xl">
+              TR
+            </span>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={deger}
+              onChange={(e) => degistir(alan.key, e.target.value.replace(/[^0-9 ]/g, ""))}
+              className={`${GIRDI} rounded-l-none`}
+            />
+          </div>
         ) : (
           <input
             type={alan.tip === "tarih" ? "date" : alan.tip === "sayi" ? "number" : "text"}
@@ -110,7 +157,26 @@ export default function KiraSozlesmesiForm() {
           />
         )}
 
+        {serbestAcik && alan.serbestKey && (
+          <div className="mt-2">
+            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
+              {alan.serbestEtiket ?? "Değer"}
+            </label>
+            <input
+              type="text"
+              value={alanlar[alan.serbestKey] ?? ""}
+              onChange={(e) => degistir(alan.serbestKey!, e.target.value)}
+              className={GIRDI}
+            />
+          </div>
+        )}
+
         {alan.ipucu && <p className="text-[11px] text-slate-400 mt-1">{alan.ipucu}</p>}
+        {alan.not && (
+          <p className="mt-2 text-[11px] leading-relaxed text-amber-800 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+            {alan.not}
+          </p>
+        )}
       </div>
     );
   }

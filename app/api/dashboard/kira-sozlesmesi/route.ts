@@ -52,7 +52,8 @@ export async function POST(req: Request) {
   }
 
   const pdf = await pdfeCevir(docx);
-  const dosyaAdi = dosyaAdiUret(veri["Kiracıadsoyad"] || "");
+  const kiraciAdi = typeof veri["Kiracıadsoyad"] === "string" ? veri["Kiracıadsoyad"] : "";
+  const dosyaAdi = dosyaAdiUret(kiraciAdi);
 
   // E-posta yalnızca oturum sahibine gider; kiracıya doğrudan gönderilmez.
   let mailGonderildi = false;
@@ -69,7 +70,7 @@ export async function POST(req: Request) {
           { filename: `${dosyaAdi}.docx`, content: docx },
         ];
         if (pdf) ekler.push({ filename: `${dosyaAdi}.pdf`, content: pdf });
-        await sendKiraSozlesmesiEmail(alici, ad, veri["Kiracıadsoyad"], ekler);
+        await sendKiraSozlesmesiEmail(alici, ad, kiraciAdi, ekler);
         mailGonderildi = true;
       }
     } catch (hata) {
