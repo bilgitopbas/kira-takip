@@ -14,7 +14,17 @@ async function getData(ownerId: string) {
     }),
     prisma.debt.findMany({
       where: { tenant: { property: { ownerId } } },
-      select: { amount: true, dueDate: true },
+      select: {
+        id: true,
+        amount: true,
+        dueDate: true,
+        // Gecikme yaslandirma analizi icin: borcun ne kadari tahsil edilmis
+        // ve kime/hangi mulke ait
+        payments: { select: { amount: true } },
+        tenant: {
+          select: { id: true, fullName: true, property: { select: { title: true } } },
+        },
+      },
     }),
   ]);
 
@@ -30,7 +40,15 @@ async function getData(ownerId: string) {
       tenantName: p.tenant.fullName,
       propertyTitle: p.tenant.property.title,
     })),
-    debts: debts.map((d) => ({ amount: Number(d.amount), dueDate: d.dueDate.toISOString() })),
+    debts: debts.map((d) => ({
+      id: d.id,
+      amount: Number(d.amount),
+      dueDate: d.dueDate.toISOString(),
+      paid: d.payments.reduce((sum, p) => sum + Number(p.amount), 0),
+      tenantId: d.tenant.id,
+      tenantName: d.tenant.fullName,
+      propertyTitle: d.tenant.property.title,
+    })),
   };
 }
 
