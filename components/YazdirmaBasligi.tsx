@@ -10,15 +10,12 @@ export default function YazdirmaBasligi({
   return (
     <div className="hidden print:block mb-6">
       <div className="flex items-center justify-between gap-4 pb-4 border-b-4 border-[#17B6AE]">
-        <div className="flex items-center gap-4">
+        {/* Logonun içinde marka adı zaten yazıyor, ayrıca metin olarak
+            tekrarlanmıyor. */}
+        <div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-yeni.png" alt="" className="h-16 w-auto" />
-          <div>
-            <p className="text-3xl font-bold text-[#17B6AE] leading-tight tracking-tight">
-              MİZAN MÜLK YÖNETİMİ
-            </p>
-            <p className="text-sm text-slate-500">mizanmulkyonetimi.com</p>
-          </div>
+          <img src="/logo-yeni.png" alt="Mizan Mülk Yönetimi" className="h-20 w-auto" />
+          <p className="text-sm text-slate-500 mt-1">mizanmulkyonetimi.com</p>
         </div>
         <div className="text-right">
           <p className="text-lg font-bold text-slate-800">{baslik}</p>

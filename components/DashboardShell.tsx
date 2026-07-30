@@ -31,16 +31,16 @@ export default function DashboardShell({
   // (Topbas Hukuk'ta dogrulanan duzen; html/body'ye dokunulmaz.)
   return (
     <div
-      className={`${nativeApp ? "h-[100dvh] overflow-hidden" : "min-h-screen"} bg-[#F8F9FB] dark:bg-slate-950 flex transition-colors`}
+      className={`${nativeApp ? "h-[100dvh] overflow-hidden" : "min-h-screen"} bg-[#F8F9FB] dark:bg-slate-950 flex transition-colors print:block print:h-auto print:min-h-0 print:overflow-visible`}
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <OneSignalBridge userId={userId} />
       <DashboardSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
-      <div className="flex-1 flex flex-col min-w-0 min-h-0">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 print:block print:min-h-0">
         {impersonating && <ImpersonationBanner customerName={fullName} />}
         <DashboardHeader fullName={fullName} onMenuClick={() => setMobileOpen(true)} />
         <main
-          className={`flex-1 min-h-0 py-4 sm:p-6 lg:p-8 overflow-y-auto overscroll-contain ${nativeApp ? "pb-24 overflow-x-hidden" : ""}`}
+          className={`flex-1 min-h-0 py-4 sm:p-6 lg:p-8 overflow-y-auto overscroll-contain print:block print:h-auto print:min-h-0 print:overflow-visible ${nativeApp ? "pb-24 overflow-x-hidden" : ""}`}
           style={{
             paddingLeft: "max(1rem, env(safe-area-inset-left))",
             paddingRight: "max(1rem, env(safe-area-inset-right))",
