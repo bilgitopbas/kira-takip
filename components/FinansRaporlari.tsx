@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import YazdirButonu from "@/components/YazdirButonu";
 
 type Payment = {
   id: string;
@@ -26,10 +27,63 @@ function toDateInput(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
+// Hızlı aralık seçenekleri: bugünden geriye doğru
+const HIZLI_ARALIKLAR = [
+  { key: "1a", label: "1 Ay", months: 1 },
+  { key: "3a", label: "3 Ay", months: 3 },
+  { key: "6a", label: "6 Ay", months: 6 },
+  { key: "1y", label: "1 Yıl", months: 12 },
+  { key: "3y", label: "3 Yıl", months: 36 },
+  { key: "tum", label: "Tümü", months: null },
+] as const;
+
 export default function FinansRaporlari({ payments, debts }: Props) {
   const now = new Date();
   const [startDate, setStartDate] = useState(toDateInput(new Date(now.getFullYear(), 0, 1)));
   const [endDate, setEndDate] = useState(toDateInput(now));
+  // Hangi hızlı seçeneğin etkin olduğunu göstermek için (tarih elle
+  // değiştirilirse boşalır)
+  const [aktifAralik, setAktifAralik] = useState<string | null>(null);
+  const [seciliAy, setSeciliAy] = useState("");
+
+  function tarihAraligiSec(baslangic: Date, bitis: Date, aralikKey: string | null) {
+    setStartDate(toDateInput(baslangic));
+    setEndDate(toDateInput(bitis));
+    setAktifAralik(aralikKey);
+  }
+
+  function hizliAralikSec(secenek: (typeof HIZLI_ARALIKLAR)[number]) {
+    setSeciliAy("");
+    if (secenek.months === null) {
+      // Tümü: en eski kayıttan bugüne
+      const tumTarihler = [
+        ...payments.map((p) => new Date(p.paidAt)),
+        ...debts.map((d) => new Date(d.dueDate)),
+      ];
+      const enEski = tumTarihler.length
+        ? new Date(Math.min(...tumTarihler.map((d) => d.getTime())))
+        : new Date(now.getFullYear(), 0, 1);
+      tarihAraligiSec(enEski, now, secenek.key);
+      return;
+    }
+    const baslangic = new Date(now.getFullYear(), now.getMonth() - secenek.months, now.getDate());
+    tarihAraligiSec(baslangic, now, secenek.key);
+  }
+
+  // "2026-05" biçimindeki ay seçimi -> o ayın ilk ve son günü
+  function aySec(deger: string) {
+    setSeciliAy(deger);
+    if (!deger) return;
+    const [yil, ay] = deger.split("-").map(Number);
+    tarihAraligiSec(new Date(yil, ay - 1, 1), new Date(yil, ay, 0), null);
+  }
+
+  function elleTarihDegistir(tip: "start" | "end", deger: string) {
+    if (tip === "start") setStartDate(deger);
+    else setEndDate(deger);
+    setAktifAralik(null);
+    setSeciliAy("");
+  }
 
   const filteredPayments = useMemo(() => {
     const start = new Date(startDate);
@@ -81,46 +135,73 @@ export default function FinansRaporlari({ payments, debts }: Props) {
     XLSX.writeFile(workbook, `tahsilat-defteri-${startDate}-${endDate}.xlsx`);
   }
 
-  function exportPdf() {
-    window.print();
-  }
-
   return (
     <div>
-      <div className="no-print bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6 flex flex-wrap items-end gap-4">
-        <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Başlangıç</label>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
-          />
+      {/* Yalnızca çıktıda görünür: hangi aralığın raporu olduğu belli olsun */}
+      <div className="hidden print:block mb-4">
+        <h1 className="text-lg font-bold text-slate-900">Finans Raporu</h1>
+        <p className="text-sm text-slate-600">
+          {new Date(startDate).toLocaleDateString("tr-TR")} –{" "}
+          {new Date(endDate).toLocaleDateString("tr-TR")}
+        </p>
+      </div>
+      <div className="no-print bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6 space-y-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Başlangıç</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => elleTarihDegistir("start", e.target.value)}
+              className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Bitiş</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => elleTarihDegistir("end", e.target.value)}
+              className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Tek Ay Seç</label>
+            <input
+              type="month"
+              value={seciliAy}
+              onChange={(e) => aySec(e.target.value)}
+              className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
+            />
+          </div>
+          <div className="flex-1" />
+          <button
+            type="button"
+            onClick={exportExcel}
+            className="bg-white hover:bg-gray-50 text-slate-700 font-semibold px-4 py-2.5 rounded-xl transition text-sm border border-gray-200"
+          >
+            Excel&apos;e Aktar
+          </button>
+          <YazdirButonu />
         </div>
-        <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Bitiş</label>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
-          />
+
+        <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
+          <span className="text-xs font-semibold text-slate-500 mr-1">Hızlı aralık:</span>
+          {HIZLI_ARALIKLAR.map((a) => (
+            <button
+              key={a.key}
+              type="button"
+              onClick={() => hizliAralikSec(a)}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition ${
+                aktifAralik === a.key
+                  ? "bg-[#17B6AE] text-white border-[#17B6AE]"
+                  : "bg-white text-slate-600 border-gray-200 hover:border-[#17B6AE]"
+              }`}
+            >
+              {a.label}
+            </button>
+          ))}
         </div>
-        <div className="flex-1" />
-        <button
-          type="button"
-          onClick={exportExcel}
-          className="bg-white hover:bg-gray-50 text-slate-700 font-semibold px-4 py-2.5 rounded-xl transition text-sm border border-gray-200"
-        >
-          Excel&apos;e Aktar
-        </button>
-        <button
-          type="button"
-          onClick={exportPdf}
-          className="bg-white hover:bg-gray-50 text-slate-700 font-semibold px-4 py-2.5 rounded-xl transition text-sm border border-gray-200"
-        >
-          PDF Olarak Yazdır
-        </button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
