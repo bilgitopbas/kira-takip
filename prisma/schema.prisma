@@ -74,25 +74,25 @@ enum Currency {
 }
 
 model User {
-  id                String   @id @default(cuid())
-  email             String   @unique
-  passwordHash      String?
-  googleId          String?  @unique
-  fullName          String
-  phone             String?
-  city              String?
-  role              Role     @default(CUSTOMER)
-  wantsManagement   Boolean  @default(false)
+  id              String  @id @default(cuid())
+  email           String  @unique
+  passwordHash    String?
+  googleId        String? @unique
+  fullName        String
+  phone           String?
+  city            String?
+  role            Role    @default(CUSTOMER)
+  wantsManagement Boolean @default(false)
 
-  accountType       AccountType?
-  accountTypeOther  String?
+  accountType      AccountType?
+  accountTypeOther String?
 
   propertyCountRange PropertyCountRange?
 
-  termsAcceptedAt      DateTime?
-  marketingConsentAt   DateTime?
+  termsAcceptedAt    DateTime?
+  marketingConsentAt DateTime?
 
-  trialEndsAt       DateTime
+  trialEndsAt        DateTime
   subscriptionStatus SubscriptionStatus @default(TRIAL)
 
   passwordResetToken   String?   @unique
@@ -107,49 +107,50 @@ model User {
   notifyFiveYear        Boolean @default(true)
   notifyMonthlySummary  Boolean @default(true)
 
-  properties        Property[]
-  supportTickets    SupportTicket[]
-  notifications     Notification[]
-  accountMembers    AccountMember[]
-  announcements     Announcement[]  @relation("AnnouncementSender")
+  properties     Property[]
+  supportTickets SupportTicket[]
+  notifications  Notification[]
+  accountMembers AccountMember[]
+  announcements  Announcement[]  @relation("AnnouncementSender")
+  paymentNotices PaymentNotice[]
 
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("users")
 }
 
 model AccountMember {
-  id                 String    @id @default(cuid())
-  owner              User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerId            String
+  id      String @id @default(cuid())
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
 
-  email              String    @unique
-  fullName           String
-  passwordHash       String?
+  email        String  @unique
+  fullName     String
+  passwordHash String?
 
   inviteToken        String?   @unique
   inviteTokenExpires DateTime?
   acceptedAt         DateTime?
 
-  createdAt          DateTime  @default(now())
+  createdAt DateTime @default(now())
 
   @@map("account_members")
 }
 
 model Property {
-  id          String   @id @default(cuid())
-  owner       User     @relation(fields: [ownerId], references: [id])
-  ownerId     String
+  id      String @id @default(cuid())
+  owner   User   @relation(fields: [ownerId], references: [id])
+  ownerId String
 
-  title       String
-  address     String
-  city        String?
-  district    String?
+  title        String
+  address      String
+  city         String?
+  district     String?
   squareMeters Float?
   propertyType PropertyType?
-  notes       String?
-  isOccupied  Boolean  @default(false)
+  notes        String?
+  isOccupied   Boolean       @default(false)
 
   tenants     Tenant[]
   // Bu mülke birincil olarak bağlı olmayan ama aynı sözleşme kapsamında
@@ -157,60 +158,60 @@ model Property {
   tenantLinks TenantProperty[]
   expenses    Expense[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([ownerId, createdAt])
   @@map("properties")
 }
 
 model Tenant {
-  id           String   @id @default(cuid())
-  property     Property @relation(fields: [propertyId], references: [id])
-  propertyId   String
+  id         String   @id @default(cuid())
+  property   Property @relation(fields: [propertyId], references: [id])
+  propertyId String
 
-  fullName     String
-  phone        String?
-  email        String?
+  fullName String
+  phone    String?
+  email    String?
 
-  tenantType   TenantType?
-  nationalId   String?
-  taxNumber    String?
+  tenantType          TenantType?
+  nationalId          String?
+  taxNumber           String?
   notificationAddress String?
-  notes        String?
-  rating       Int?
+  notes               String?
+  rating              Int?
 
-  monthlyRent  Decimal? @db.Decimal(10, 2)
-  contractStart DateTime?
-  contractEnd   DateTime?
-  rentRevisionDate DateTime?
-  rentPaymentDate  DateTime?
+  monthlyRent            Decimal?          @db.Decimal(10, 2)
+  contractStart          DateTime?
+  contractEnd            DateTime?
+  rentRevisionDate       DateTime?
+  rentPaymentDate        DateTime?
   contractDurationMonths Int?
-  paymentFrequency PaymentFrequency?
-  increaseType     IncreaseType?
-  increaseRate     Decimal? @db.Decimal(5, 2)
-  depositAmount    Decimal? @db.Decimal(10, 2)
-  depositCurrency  Currency?
-  contractFileUrl  String?
+  paymentFrequency       PaymentFrequency?
+  increaseType           IncreaseType?
+  increaseRate           Decimal?          @db.Decimal(5, 2)
+  depositAmount          Decimal?          @db.Decimal(10, 2)
+  depositCurrency        Currency?
+  contractFileUrl        String?
   // Diskte dosya rastgele bir kimlikle saklanıyor; kullanıcıya gösterilecek
   // orijinal ad (örn. "Kira Sözleşmesi.pdf") ayrıca tutulur.
-  contractFileName String?
-  contractNotes    String?
+  contractFileName       String?
+  contractNotes          String?
 
   // Kiracı hâlâ oturuyor mu, tahliye etti mi
   occupancyStatus TenantOccupancyStatus @default(LIVING)
 
-  debts        Debt[]
-  payments     Payment[]
-  expenses     Expense[]
-  tenantNotes  TenantNote[]
+  debts           Debt[]
+  payments        Payment[]
+  expenses        Expense[]
+  tenantNotes     TenantNote[]
   // Kiracının birincil mülkü dışında kiraladığı diğer mülkler.
   // propertyId (birincil) bilerek korundu: yetkilendirme kontrolleri ve
   // mevcut tüm sorgular bu alan üzerinden çalışmaya devam ediyor.
   otherProperties TenantProperty[]
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([propertyId])
   @@map("tenants")
@@ -225,7 +226,7 @@ model TenantProperty {
   property   Property @relation(fields: [propertyId], references: [id])
   propertyId String
 
-  createdAt  DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([tenantId, propertyId])
   @@index([propertyId])
@@ -241,61 +242,61 @@ enum TenantOccupancyStatus {
 // kullanabildiği için (bkz. AccountMember) notu yazanın e-postası ve adı
 // kayıt anında saklanır - üye sonradan silinse bile not sahipsiz kalmaz.
 model TenantNote {
-  id          String   @id @default(cuid())
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  tenantId    String
+  id       String @id @default(cuid())
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String
 
   content     String
   authorEmail String
   authorName  String?
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([tenantId, createdAt])
   @@map("tenant_notes")
 }
 
 model Expense {
-  id          String   @id @default(cuid())
-  property    Property @relation(fields: [propertyId], references: [id])
-  propertyId  String
-  tenant      Tenant?  @relation(fields: [tenantId], references: [id])
-  tenantId    String?
+  id         String   @id @default(cuid())
+  property   Property @relation(fields: [propertyId], references: [id])
+  propertyId String
+  tenant     Tenant?  @relation(fields: [tenantId], references: [id])
+  tenantId   String?
 
   description String
   amount      Decimal  @db.Decimal(10, 2)
   date        DateTime
   notes       String?
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([propertyId, date])
   @@map("expenses")
 }
 
 model Debt {
-  id          String        @id @default(cuid())
-  tenant      Tenant        @relation(fields: [tenantId], references: [id])
-  tenantId    String
+  id       String @id @default(cuid())
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String
 
-  year        Int
-  month       Int
-  amount      Decimal       @db.Decimal(10, 2)
-  dueDate     DateTime
-  status      PaymentStatus @default(UNPAID)
+  year           Int
+  month          Int
+  amount         Decimal       @db.Decimal(10, 2)
+  dueDate        DateTime
+  status         PaymentStatus @default(UNPAID)
   // Borcun kapsadığı ay sayısı: 1 = aylık (varsayılan, mevcut tüm kayıtlar),
   // 12 = yıllık peşin. Ödeme planında ve yenileme hatırlatmasında kullanılır.
-  periodMonths Int          @default(1)
+  periodMonths   Int           @default(1)
   // Aynı "Kiracıyı Borçlandır" işleminde oluşan borçlar aynı kimliği paylaşır.
   // Ödeme planı dönemleri böylece gerçek borçlandırmalara göre ayrılır; sabit
   // 12'şerli gruplama erken zam gibi durumlarda yanlış sınırlar üretiyordu.
   // Eski kayıtlarda boş; onlar için 12'şerli gruplamaya geri düşülür.
   billingGroupId String?
 
-  payments    Payment[]
+  payments Payment[]
 
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([tenantId, year, month])
   @@index([tenantId])
@@ -305,20 +306,20 @@ model Debt {
 }
 
 model Payment {
-  id          String   @id @default(cuid())
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  tenantId    String
+  id       String @id @default(cuid())
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String
 
-  debt        Debt?    @relation(fields: [debtId], references: [id])
-  debtId      String?
+  debt   Debt?   @relation(fields: [debtId], references: [id])
+  debtId String?
 
-  amount      Decimal  @db.Decimal(10, 2)
-  paidAt      DateTime @default(now())
-  method      String?
+  amount         Decimal  @db.Decimal(10, 2)
+  paidAt         DateTime @default(now())
+  method         String?
   receiptFileUrl String?
-  notes       String?
+  notes          String?
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([tenantId])
   @@index([paidAt])
@@ -326,37 +327,38 @@ model Payment {
 }
 
 model Subscription {
-  id            String   @id @default(cuid())
-  userId        String   @unique
+  id     String @id @default(cuid())
+  userId String @unique
 
-  propertyCount Int      @default(0)
-  monthlyPrice  Decimal  @db.Decimal(10, 2) @default(0)
+  propertyCount Int     @default(0)
+  monthlyPrice  Decimal @default(0) @db.Decimal(10, 2)
 
   currentPeriodStart DateTime?
   currentPeriodEnd   DateTime?
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("subscriptions")
 }
 
 model PlatformSetting {
-  id              String  @id @default(cuid())
-  key             String  @unique
-  value           String
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
 
-  updatedAt       DateTime @updatedAt
+  updatedAt DateTime @updatedAt
 
   @@map("platform_settings")
 }
+
 model ContactRequest {
-  id              String   @id @default(cuid())
-  name            String
-  phone           String
-  marketingConsent Boolean @default(false)
-  isRead          Boolean  @default(false)
-  createdAt       DateTime @default(now())
+  id               String   @id @default(cuid())
+  name             String
+  phone            String
+  marketingConsent Boolean  @default(false)
+  isRead           Boolean  @default(false)
+  createdAt        DateTime @default(now())
 
   @@map("contact_requests")
 }
@@ -403,6 +405,7 @@ enum NotificationType {
   ANNOUNCEMENT
   NEW_CUSTOMER
   IYZICO_PAYMENT
+  EFT_PAYMENT_NOTICE
 }
 
 // Admin duyuruları: herkese veya seçilen tek kullanıcıya (push + uygulama içi)
@@ -411,8 +414,8 @@ model Announcement {
   title      String
   subtitle   String?
   message    String
-  targetId   String?  // boş = herkese; doluysa sadece o kullanıcıya
-  targetName String?  // geçmiş listesinde göstermek için ad-soyad
+  targetId   String? // boş = herkese; doluysa sadece o kullanıcıya
+  targetName String? // geçmiş listesinde göstermek için ad-soyad
   createdAt  DateTime @default(now())
 
   sender   User   @relation("AnnouncementSender", fields: [senderId], references: [id])
@@ -453,4 +456,35 @@ model PriceIndex {
 
   @@unique([type, year, month])
   @@map("price_indices")
+}
+
+enum PaymentNoticeStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+}
+
+// Musteri EFT/havale ile odeme yaptigini bildirir; admin onaylayinca
+// abonelik acilir. Otomatik aktivasyon YOKTUR (sahte beyani onlemek icin).
+model PaymentNotice {
+  id     String @id @default(cuid())
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  // Havale aciklamasina yazilan benzersiz kod (or. MZN-4F7K)
+  referenceCode String  @unique
+  propertyCount Int
+  months        Int
+  amount        Decimal @db.Decimal(10, 2)
+  note          String?
+
+  status     PaymentNoticeStatus @default(PENDING)
+  reviewedAt DateTime?
+  reviewNote String?
+
+  createdAt DateTime @default(now())
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+  @@map("payment_notices")
 }

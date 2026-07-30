@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import type { AccessState } from "@/lib/access";
-
-const PRICE_PER_PROPERTY = 75;
+import HavaleOdeme, { type BankaBilgisi } from "@/components/HavaleOdeme";
+import { useNativeApp } from "@/lib/useNativeApp";
+import { PRICE_PER_PROPERTY } from "@/lib/fiyat";
 
 type Access = {
   state: AccessState;
@@ -47,13 +48,16 @@ export default function MizanProView({
   currentPropertyCount,
   planPropertyLimit,
   isActive,
+  banka,
 }: {
   access: Access;
   profile: Profile;
   currentPropertyCount: number;
   planPropertyLimit: number | null;
   isActive: boolean;
+  banka: BankaBilgisi;
 }) {
+  const nativeApp = useNativeApp();
   const [propertyCount, setPropertyCount] = useState(Math.max(currentPropertyCount, 1));
   const [showPayment, setShowPayment] = useState(false);
   const [planSubmitting, setPlanSubmitting] = useState(false);
@@ -202,44 +206,38 @@ export default function MizanProView({
 
         {showPayment && (
           <div className="mt-6 border-t border-gray-100 pt-6">
-            <h3 className="text-sm font-bold text-slate-700 mb-3">Kredi Kartı ile Ödeme</h3>
-            <div className="bg-gray-50 rounded-2xl border border-gray-100 p-6 space-y-3">
-              <div className="grid sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">Kart Numarası</label>
-                  <input disabled placeholder="•••• •••• •••• ••••" className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-slate-400" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">Kart Üzerindeki İsim</label>
-                  <input disabled placeholder={profile.fullName} className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-slate-400" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">Son Kullanma Tarihi</label>
-                  <input disabled placeholder="AA/YY" className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-slate-400" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">CVC</label>
-                  <input disabled placeholder="•••" className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-slate-400" />
-                </div>
+            {/* Havale bölümü yalnızca web tarayıcısında görünür. App Store
+                kuralları (3.1.1) uygulama içinden kendi ödeme yöntemini
+                göstermeyi yasaklıyor. */}
+            {nativeApp ? (
+              <div className="bg-gray-50 rounded-2xl border border-gray-100 p-6">
+                <h3 className="text-sm font-bold text-slate-700 mb-2">Ödeme</h3>
+                <p className="text-sm text-slate-500">
+                  Aboneliğinizi web tarayıcınızdan{" "}
+                  <strong>mizanmulkyonetimi.com</strong> adresine giriş yaparak
+                  başlatabilirsiniz. Dilerseniz aşağıdan talep bırakın, sizi arayalım.
+                </p>
+                <button
+                  type="button"
+                  onClick={submitPlanRequest}
+                  disabled={planSubmitting}
+                  className="mt-4 w-full bg-[#17B6AE] hover:bg-[#149891] disabled:opacity-60 text-white font-semibold py-3 rounded-xl transition text-sm"
+                >
+                  {planSubmitting ? "Gönderiliyor..." : "Beni Arayın"}
+                </button>
+                {planMsg && (
+                  <p className="text-sm text-center text-emerald-600 font-medium mt-3">{planMsg}</p>
+                )}
               </div>
-              <div className="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 text-xs text-amber-700">
-                <span className="font-bold">Bilgi:</span>
-                <span>
-                  Online ödeme altyapımız (iyzico) entegrasyon aşamasındadır. Aşağıdan{" "}
-                  <strong>{propertyCount} mülk / {price.toLocaleString("tr-TR")} TL</strong> için talebinizi hemen
-                  iletebilirsiniz — ekibimiz sizinle iletişime geçip ödemenizi güvenli şekilde tamamlayacaktır.
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={submitPlanRequest}
-                disabled={planSubmitting}
-                className="w-full bg-[#17B6AE] hover:bg-[#149891] disabled:opacity-60 text-white font-semibold py-3 rounded-xl transition text-sm"
-              >
-                {planSubmitting ? "Gönderiliyor..." : "Talebi Gönder"}
-              </button>
-              {planMsg && <p className="text-sm text-center text-emerald-600 font-medium">{planMsg}</p>}
-            </div>
+            ) : (
+              <HavaleOdeme
+                propertyCount={propertyCount}
+                banka={banka}
+                onTalep={submitPlanRequest}
+                talepGonderiliyor={planSubmitting}
+                talepMesaji={planMsg}
+              />
+            )}
           </div>
         )}
       </div>

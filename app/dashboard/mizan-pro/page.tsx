@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { computeAccessState } from "@/lib/access";
+import { bankaBilgileri } from "@/lib/odemeBildirimi";
 import MizanProView from "@/components/MizanProView";
 
 export default async function MizanProPage() {
@@ -42,6 +43,7 @@ export default async function MizanProPage() {
       currentPropertyCount={propertyCount}
       planPropertyLimit={subscription?.propertyCount || null}
       isActive={user.subscriptionStatus === "ACTIVE"}
+      banka={bankaBilgileri()}
     />
   );
 }

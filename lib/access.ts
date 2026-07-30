@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 
 const GRACE_DAYS = 7;
-const PRICE_PER_PROPERTY = 75;
+// Fiyat sabitleri istemciden de erisilebilsin diye ayri dosyada
+import { PRICE_PER_PROPERTY, calculatePlanPrice } from "@/lib/fiyat";
 
 export type AccessState = "TRIAL" | "GRACE" | "LOCKED" | "ACTIVE";
 
@@ -86,8 +87,5 @@ export async function checkPropertyLimit(userId: string): Promise<{ ok: true } |
   return { ok: true };
 }
 
-export function calculatePlanPrice(propertyCount: number) {
-  return propertyCount * PRICE_PER_PROPERTY;
-}
 
-export { PRICE_PER_PROPERTY };
+export { PRICE_PER_PROPERTY, calculatePlanPrice };

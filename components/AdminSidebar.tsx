@@ -174,6 +174,10 @@ export default function AdminSidebar({
           <span className="flex-shrink-0">{ICONS.revenue}</span>
           Gelirler
         </a>
+        <a href="/admin/odeme-bildirimleri" className={lc("/admin/odeme-bildirimleri")}>
+          <span className="flex-shrink-0">{ICONS.revenue}</span>
+          Ödeme Bildirimleri
+        </a>
         <a href="/admin/destek" className={lc("/admin/destek")}>
           <span className="flex-shrink-0">{ICONS.support}</span>
           Destek Talepleri
