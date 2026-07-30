@@ -109,3 +109,37 @@ export async function sendPasswordResetEmail(to: string, fullName: string, reset
   `);
   await sendMail(to, "Şifre Sıfırlama - MizanMülk", html);
 }
+
+/**
+ * Oluşturulan kira sözleşmesini ek olarak gönderir.
+ * Alıcı yalnızca sözleşmeyi oluşturan panel kullanıcısıdır; belge kiracıya
+ * doğrudan gönderilmez.
+ */
+export async function sendKiraSozlesmesiEmail(
+  to: string,
+  fullName: string,
+  kiraciAdi: string,
+  ekler: { filename: string; content: Buffer }[]
+) {
+  const html = emailShell(`
+    <h1 style="font-size:20px; color:#0f172a; margin:0 0 16px;">Kira Sözleşmeniz Hazır</h1>
+    <p style="font-size:14px; color:#334155; line-height:1.6;">Merhaba ${fullName},</p>
+    <p style="font-size:14px; color:#334155; line-height:1.6;">
+      <strong>${kiraciAdi}</strong> için hazırladığınız kira sözleşmesi ekte yer alıyor.
+      Belgeyi yazdırıp taraflarca imzalatmanız gerekmektedir.
+    </p>
+    <p style="font-size:12px; color:#94a3b8; line-height:1.6;">
+      Bu belge girdiğiniz bilgilerle otomatik olarak dolduruldu. Göndermeden önce
+      tüm alanları kontrol etmenizi öneririz.
+    </p>
+  `);
+
+  const transporter = getTransporter();
+  await transporter.sendMail({
+    from: `MizanMülk <${process.env.SMTP_USER}>`,
+    to,
+    subject: `Kira Sözleşmesi - ${kiraciAdi}`,
+    html,
+    attachments: ekler,
+  });
+}
