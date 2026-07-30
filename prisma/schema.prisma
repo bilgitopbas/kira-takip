@@ -406,6 +406,7 @@ enum NotificationType {
   NEW_CUSTOMER
   IYZICO_PAYMENT
   EFT_PAYMENT_NOTICE
+  TRIAL_REMINDER
 }
 
 // Admin duyuruları: herkese veya seçilen tek kullanıcıya (push + uygulama içi)

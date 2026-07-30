@@ -143,3 +143,128 @@ export async function sendKiraSozlesmesiEmail(
     attachments: ekler,
   });
 }
+
+/** E-postalardaki butonların işaret ettiği panel adresi */
+function panelAdresi(yol: string) {
+  const taban = process.env.APP_URL?.replace(/\/$/, "") || "https://mizanmulkyonetimi.com";
+  return `${taban}${yol}`;
+}
+
+function proButonu(metin = "Mizan Pro'ya Geç") {
+  return `<p style="text-align:center; margin:28px 0;">
+      <a href="${panelAdresi("/dashboard/mizan-pro")}" style="background:#17B6AE; color:#ffffff; text-decoration:none; font-weight:700; font-size:15px; padding:14px 32px; border-radius:10px; display:inline-block;">${metin}</a>
+    </p>`;
+}
+
+/** "12 mülk, 18 kiracı ve 143 tahsilat kaydı" gibi kişisel özet */
+function veriOzeti(o: { mulk: number; kiraci: number; tahsilat: number }) {
+  const parcalar: string[] = [];
+  if (o.mulk) parcalar.push(`<strong>${o.mulk} mülk</strong>`);
+  if (o.kiraci) parcalar.push(`<strong>${o.kiraci} kiracı</strong>`);
+  if (o.tahsilat) parcalar.push(`<strong>${o.tahsilat} tahsilat kaydı</strong>`);
+  if (parcalar.length === 0) return "";
+  const son = parcalar.pop();
+  return parcalar.length ? `${parcalar.join(", ")} ve ${son}` : son!;
+}
+
+type DenemeVeri = {
+  mulk: number;
+  kiraci: number;
+  tahsilat: number;
+  aylikTutar: number;
+};
+
+/** Deneme bitimine 7 gün kala */
+export async function sendTrialEndingEmail(
+  to: string,
+  fullName: string,
+  kalanGun: number,
+  veri: DenemeVeri
+) {
+  const ozet = veriOzeti(veri);
+  const html = emailShell(`
+    <h1 style="font-size:22px; color:#0f172a; margin:0 0 16px;">Deneme sürenizin bitmesine ${kalanGun} gün kaldı</h1>
+    <p style="font-size:14px; color:#334155; line-height:1.7;">Merhaba ${fullName},</p>
+    ${
+      ozet
+        ? `<p style="font-size:14px; color:#334155; line-height:1.7;">MizanMülk'te şu ana kadar ${ozet} oluşturdunuz. Deneme süreniz dolduğunda bu kayıtlar silinmez — ancak <strong>yeni kayıt ekleyemez, tahsilat işleyemez ve hatırlatma bildirimleri alamazsınız.</strong></p>`
+        : `<p style="font-size:14px; color:#334155; line-height:1.7;">Deneme süreniz dolduğunda kayıtlarınız silinmez — ancak <strong>yeni kayıt ekleyemez, tahsilat işleyemez ve hatırlatma bildirimleri alamazsınız.</strong></p>`
+    }
+    <div style="background:#F8F9FB; border:1px solid #eef0f3; border-radius:12px; padding:18px 20px; margin:20px 0;">
+      <p style="font-size:13px; color:#64748b; margin:0 0 6px;">Sizin için aylık tutar</p>
+      <p style="font-size:26px; font-weight:700; color:#17B6AE; margin:0;">${veri.aylikTutar.toLocaleString("tr-TR")} TL</p>
+      <p style="font-size:12px; color:#94a3b8; margin:6px 0 0;">${veri.mulk || 1} mülk × 75 TL · aylık</p>
+    </div>
+    <p style="font-size:14px; color:#334155; line-height:1.7;">
+      Kira takibini elektronik tabloya geri döndürmeden önce bir düşünün: gecikmiş kira uyarıları,
+      kira artış hesaplaması, 5. yıl kira tespit takvimi ve tek tuşla sözleşme oluşturma hepsi
+      Mizan Pro ile devam ediyor.
+    </p>
+    ${proButonu()}
+    <p style="font-size:12px; color:#94a3b8; line-height:1.6;">Sorularınız için bu e-postayı yanıtlayabilirsiniz.</p>
+  `);
+  await sendMail(to, `Deneme sürenizin bitmesine ${kalanGun} gün kaldı - MizanMülk`, html);
+}
+
+/** Deneme bitti, 7 günlük ek süre başladı */
+export async function sendTrialGraceEmail(
+  to: string,
+  fullName: string,
+  veri: DenemeVeri
+) {
+  const ozet = veriOzeti(veri);
+  const html = emailShell(`
+    <div style="background:#FEF3C7; border:1px solid #FDE68A; border-radius:10px; padding:10px 14px; margin:0 0 18px;">
+      <span style="font-size:12px; font-weight:700; color:#B45309; letter-spacing:0.08em;">SON FIRSAT</span>
+    </div>
+    <h1 style="font-size:22px; color:#0f172a; margin:0 0 16px;">Hesabınız 7 gün sonra kilitleniyor</h1>
+    <p style="font-size:14px; color:#334155; line-height:1.7;">Merhaba ${fullName},</p>
+    <p style="font-size:14px; color:#334155; line-height:1.7;">
+      45 günlük ücretsiz deneme süreniz doldu. Size <strong>7 günlük ek süre</strong> tanımladık —
+      bu sürede paneli eskisi gibi kullanmaya devam edebilirsiniz.
+    </p>
+    ${
+      ozet
+        ? `<p style="font-size:14px; color:#334155; line-height:1.7;">Ek süre de dolduğunda ${ozet} yerinde duracak, ancak panel <strong>yalnızca görüntüleme moduna</strong> geçecek.</p>`
+        : `<p style="font-size:14px; color:#334155; line-height:1.7;">Ek süre de dolduğunda panel <strong>yalnızca görüntüleme moduna</strong> geçecek.</p>`
+    }
+    <div style="background:#F8F9FB; border:1px solid #eef0f3; border-radius:12px; padding:18px 20px; margin:20px 0;">
+      <p style="font-size:13px; color:#64748b; margin:0 0 6px;">Sizin için aylık tutar</p>
+      <p style="font-size:26px; font-weight:700; color:#17B6AE; margin:0;">${veri.aylikTutar.toLocaleString("tr-TR")} TL</p>
+      <p style="font-size:12px; color:#94a3b8; margin:6px 0 0;">${veri.mulk || 1} mülk × 75 TL · aylık</p>
+    </div>
+    ${proButonu("Aboneliğimi Başlat")}
+    <p style="font-size:12px; color:#94a3b8; line-height:1.6;">Ödeme veya fatura konusunda yardıma ihtiyacınız varsa bu e-postayı yanıtlamanız yeterli.</p>
+  `);
+  await sendMail(to, "SON FIRSAT: Hesabınız 7 gün sonra kilitleniyor - MizanMülk", html);
+}
+
+/** Ek süre de doldu, hesap kilitlendi */
+export async function sendTrialLockedEmail(
+  to: string,
+  fullName: string,
+  veri: DenemeVeri
+) {
+  const ozet = veriOzeti(veri);
+  const html = emailShell(`
+    <h1 style="font-size:22px; color:#0f172a; margin:0 0 16px;">Hesabınız görüntüleme moduna geçti</h1>
+    <p style="font-size:14px; color:#334155; line-height:1.7;">Merhaba ${fullName},</p>
+    <p style="font-size:14px; color:#334155; line-height:1.7;">
+      Deneme ve ek süreniz sona erdi. <strong>Verilerinizin hiçbiri silinmedi</strong> —
+      ${ozet ? `${ozet} olduğu gibi duruyor. ` : ""}Panele girip görüntüleyebilir,
+      raporlarınızı yazdırabilir ve Excel'e aktarabilirsiniz.
+    </p>
+    <p style="font-size:14px; color:#334155; line-height:1.7;">
+      Yeni kayıt eklemek, tahsilat işlemek ve hatırlatma bildirimleri almak için aboneliğinizi
+      başlatmanız yeterli. Kaldığınız yerden devam edersiniz.
+    </p>
+    <div style="background:#F8F9FB; border:1px solid #eef0f3; border-radius:12px; padding:18px 20px; margin:20px 0;">
+      <p style="font-size:13px; color:#64748b; margin:0 0 6px;">Sizin için aylık tutar</p>
+      <p style="font-size:26px; font-weight:700; color:#17B6AE; margin:0;">${veri.aylikTutar.toLocaleString("tr-TR")} TL</p>
+      <p style="font-size:12px; color:#94a3b8; margin:6px 0 0;">${veri.mulk || 1} mülk × 75 TL · aylık</p>
+    </div>
+    ${proButonu("Hesabımı Yeniden Aç")}
+    <p style="font-size:12px; color:#94a3b8; line-height:1.6;">Vazgeçtiyseniz bu e-postayı görmezden gelebilirsiniz; verileriniz yerinde kalır.</p>
+  `);
+  await sendMail(to, "Hesabınız görüntüleme moduna geçti - MizanMülk", html);
+}
