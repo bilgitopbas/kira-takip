@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import YazdirButonu from "@/components/YazdirButonu";
+import YazdirmaBasligi from "@/components/YazdirmaBasligi";
 
 type Payment = {
   id: string;
@@ -39,11 +40,15 @@ const HIZLI_ARALIKLAR = [
 
 export default function FinansRaporlari({ payments, debts }: Props) {
   const now = new Date();
-  const [startDate, setStartDate] = useState(toDateInput(new Date(now.getFullYear(), 0, 1)));
+  // Sayfa açılırken tüm geçmiş yerine son 1 ay gösterilir; tahsilat defteri
+  // yüzlerce satırla açılmasın.
+  const [startDate, setStartDate] = useState(
+    toDateInput(new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()))
+  );
   const [endDate, setEndDate] = useState(toDateInput(now));
   // Hangi hızlı seçeneğin etkin olduğunu göstermek için (tarih elle
   // değiştirilirse boşalır)
-  const [aktifAralik, setAktifAralik] = useState<string | null>(null);
+  const [aktifAralik, setAktifAralik] = useState<string | null>("1a");
   const [seciliAy, setSeciliAy] = useState("");
 
   function tarihAraligiSec(baslangic: Date, bitis: Date, aralikKey: string | null) {
@@ -137,14 +142,10 @@ export default function FinansRaporlari({ payments, debts }: Props) {
 
   return (
     <div>
-      {/* Yalnızca çıktıda görünür: hangi aralığın raporu olduğu belli olsun */}
-      <div className="hidden print:block mb-4">
-        <h1 className="text-lg font-bold text-slate-900">Finans Raporu</h1>
-        <p className="text-sm text-slate-600">
-          {new Date(startDate).toLocaleDateString("tr-TR")} –{" "}
-          {new Date(endDate).toLocaleDateString("tr-TR")}
-        </p>
-      </div>
+      <YazdirmaBasligi
+        baslik="Finans Raporu"
+        altBaslik={`${new Date(startDate).toLocaleDateString("tr-TR")} – ${new Date(endDate).toLocaleDateString("tr-TR")}`}
+      />
       <div className="no-print bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6 space-y-4">
         <div className="flex flex-wrap items-end gap-3">
           <div>
@@ -221,8 +222,58 @@ export default function FinansRaporlari({ payments, debts }: Props) {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
-        <h2 className="text-sm font-bold text-slate-800 mb-4">Mülk Bazlı Gelir Kırılımı</h2>
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+        <div className="px-6 py-4 border-b-2 border-[#17B6AE]/20 flex items-center justify-between gap-3">
+          <h2 className="text-sm font-bold text-slate-800">Tahsilat Defteri</h2>
+          <span className="text-xs text-slate-500">
+            {filteredPayments.length} kayıt ·{" "}
+            <span className="font-semibold text-[#17B6AE]">
+              {totalCollected.toLocaleString("tr-TR")} ₺
+            </span>
+          </span>
+        </div>
+        {filteredPayments.length === 0 ? (
+          <p className="text-sm text-slate-500 text-center py-10">Seçili tarih aralığında tahsilat kaydı yok.</p>
+        ) : (
+          <div className="overflow-x-auto">
+          <table className="w-full text-xs sm:text-sm">
+            <thead>
+              <tr className="bg-[#17B6AE]/8 text-left">
+                <th className="px-1 py-1.5 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Tarih</th>
+                <th className="px-1 py-1.5 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Kiracı</th>
+                <th className="px-1 py-1.5 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Mülk</th>
+                <th className="px-1 py-1.5 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Tutar</th>
+                <th className="hidden sm:table-cell px-1 py-1.5 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Dekont</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {filteredPayments.map((p) => (
+                <tr key={p.id} className="hover:bg-gray-50/60 transition-colors">
+                  <td className="px-1 py-1.5 sm:px-5 sm:py-3 text-slate-700 whitespace-nowrap">
+                    {new Date(p.paidAt).toLocaleDateString("tr-TR")}
+                  </td>
+                  <td className="px-1 py-1.5 sm:px-5 sm:py-3 text-slate-800 font-medium max-w-[70px] sm:max-w-none truncate">{p.tenantName}</td>
+                  <td className="px-1 py-1.5 sm:px-5 sm:py-3 text-slate-700 max-w-[60px] sm:max-w-none truncate">{p.propertyTitle}</td>
+                  <td className="px-1 py-1.5 sm:px-5 sm:py-3 text-slate-800 font-medium whitespace-nowrap">
+                    {p.amount.toLocaleString("tr-TR")} ₺
+                  </td>
+                  <td className="hidden sm:table-cell px-1 py-1.5 sm:px-5 sm:py-3 text-slate-500">{p.hasReceipt ? "Var" : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mt-6">
+        <h2 className="text-sm font-bold text-slate-800">Mülk Bazlı Gelir Kırılımı</h2>
+        <p className="text-xs text-slate-500 mt-1 mb-4">
+          Seçili tarih aralığında tahsil edilen kiraların hangi mülkten geldiğini
+          gösterir. Hangi mülkün ne kadar getirdiğini karşılaştırmak için kullanılır;
+          yeni bir tahsilat eklemez, yukarıdaki tahsilat defterindeki kayıtları
+          mülke göre toplar.
+        </p>
         {propertyBreakdown.length === 0 ? (
           <p className="text-sm text-slate-500">Seçili tarih aralığında tahsilat yok.</p>
         ) : (
@@ -249,64 +300,34 @@ export default function FinansRaporlari({ payments, debts }: Props) {
               </ResponsiveContainer>
             </div>
             <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 text-left">
-                  <th className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Mülk</th>
-                  <th className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Toplam</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {propertyBreakdown.map((row) => (
-                  <tr key={row.mulk}>
-                    <td className="px-4 py-2 text-slate-700">{row.mulk}</td>
-                    <td className="px-4 py-2 text-slate-800 font-medium text-right">
-                      {row.tutar.toLocaleString("tr-TR")} ₺
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-[#17B6AE]/8 text-left">
+                    <th className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Mülk</th>
+                    <th className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Toplam</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#17B6AE]/15">
+                  {propertyBreakdown.map((row) => (
+                    <tr key={row.mulk}>
+                      <td className="px-4 py-2 text-slate-700">{row.mulk}</td>
+                      <td className="px-4 py-2 text-slate-800 font-medium text-right whitespace-nowrap">
+                        {row.tutar.toLocaleString("tr-TR")} ₺
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-[#17B6AE]/30 font-bold">
+                    <td className="px-4 py-2.5 text-slate-800">Toplam</td>
+                    <td className="px-4 py-2.5 text-[#17B6AE] text-right whitespace-nowrap">
+                      {propertyBreakdown.reduce((s, r) => s + r.tutar, 0).toLocaleString("tr-TR")} ₺
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </tfoot>
+              </table>
             </div>
           </>
-        )}
-      </div>
-
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
-        <div className="px-6 py-4 border-b border-gray-50">
-          <h2 className="text-sm font-bold text-slate-800">Tahsilat Defteri</h2>
-        </div>
-        {filteredPayments.length === 0 ? (
-          <p className="text-sm text-slate-500 text-center py-10">Seçili tarih aralığında tahsilat kaydı yok.</p>
-        ) : (
-          <div className="overflow-x-auto">
-          <table className="w-full text-xs sm:text-sm">
-            <thead>
-              <tr className="bg-gray-50 text-left">
-                <th className="px-1 py-1.5 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Tarih</th>
-                <th className="px-1 py-1.5 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Kiracı</th>
-                <th className="px-1 py-1.5 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Mülk</th>
-                <th className="px-1 py-1.5 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Tutar</th>
-                <th className="hidden sm:table-cell px-1 py-1.5 sm:px-5 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Dekont</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {filteredPayments.map((p) => (
-                <tr key={p.id} className="hover:bg-gray-50/60 transition-colors">
-                  <td className="px-1 py-1.5 sm:px-5 sm:py-3 text-slate-700 whitespace-nowrap">
-                    {new Date(p.paidAt).toLocaleDateString("tr-TR")}
-                  </td>
-                  <td className="px-1 py-1.5 sm:px-5 sm:py-3 text-slate-800 font-medium max-w-[70px] sm:max-w-none truncate">{p.tenantName}</td>
-                  <td className="px-1 py-1.5 sm:px-5 sm:py-3 text-slate-700 max-w-[60px] sm:max-w-none truncate">{p.propertyTitle}</td>
-                  <td className="px-1 py-1.5 sm:px-5 sm:py-3 text-slate-800 font-medium whitespace-nowrap">
-                    {p.amount.toLocaleString("tr-TR")} ₺
-                  </td>
-                  <td className="hidden sm:table-cell px-1 py-1.5 sm:px-5 sm:py-3 text-slate-500">{p.hasReceipt ? "Var" : "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </div>
         )}
       </div>
     </div>

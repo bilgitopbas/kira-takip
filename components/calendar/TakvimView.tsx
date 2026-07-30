@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import CalendarGrid, { type CalendarEvent } from "@/components/calendar/CalendarGrid";
 import YazdirButonu from "@/components/YazdirButonu";
+import YazdirmaBasligi from "@/components/YazdirmaBasligi";
 
 const AY_ADLARI = [
   "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
@@ -144,33 +145,7 @@ export default function TakvimView({
 
   return (
     <>
-      {/* Ay seçimi + yazdırma. Çıktıda yalnızca aşağıdaki özet basılır. */}
-      <div className="no-print bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5 flex flex-wrap items-end gap-3">
-        <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-            Yazdırılacak Ay
-          </label>
-          <input
-            type="month"
-            value={yazdirilacakAy}
-            onChange={(e) => setYazdirilacakAy(e.target.value || buAy)}
-            className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
-          />
-        </div>
-        <div className="flex-1" />
-        <YazdirButonu label="Bu Ayı Yazdır" />
-      </div>
-
-      {/* Ekranda özet kartı, çıktıda tek başına basılan bölüm */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5 print:border-0 print:shadow-none print:p-0">
-        <AylikOzet
-          ay={yazdirilacakAy}
-          fiveYearEvents={fiveYearEvents}
-          renewalEvents={renewalEvents}
-        />
-      </div>
-
-    <div className="no-print grid grid-cols-1 lg:grid-cols-2 gap-5">
+    <div className="no-print grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
         <div className="flex items-center gap-2 mb-1">
           <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
@@ -205,6 +180,35 @@ export default function TakvimView({
         <EventInfoPanel date={renewalSelected} events={renewalEventsByDate} />
       </div>
     </div>
+
+      {/* Takvimlerin ALTINDA: ay seçimi + yazdırma. Çıktıda yalnızca özet basılır. */}
+      <div className="no-print bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5 flex flex-wrap items-end gap-3">
+        <div>
+          <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+            Yazdırılacak Ay
+          </label>
+          <input
+            type="month"
+            value={yazdirilacakAy}
+            onChange={(e) => setYazdirilacakAy(e.target.value || buAy)}
+            className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
+          />
+        </div>
+        <div className="flex-1" />
+        <YazdirButonu label="Bu Ayı Yazdır" />
+      </div>
+
+      <YazdirmaBasligi
+        baslik="Takvim Ay Özeti"
+        altBaslik={`${AY_ADLARI[Number(yazdirilacakAy.split("-")[1]) - 1]} ${yazdirilacakAy.split("-")[0]}`}
+      />
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 print:border-0 print:shadow-none print:p-0">
+        <AylikOzet
+          ay={yazdirilacakAy}
+          fiveYearEvents={fiveYearEvents}
+          renewalEvents={renewalEvents}
+        />
+      </div>
     </>
   );
 }

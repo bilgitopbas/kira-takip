@@ -81,6 +81,22 @@ body {
   .no-print {
     display: none !important;
   }
+  /* Tarayıcılar yazdırırken arka plan ve kenarlık renklerini varsayılan
+     olarak atar; marka rengi (turkuaz) çıktıda görünsün diye zorluyoruz. */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  /* Tablolar sayfa sonunda ortadan bölünmesin */
+  table {
+    page-break-inside: auto;
+  }
+  tr {
+    page-break-inside: avoid;
+  }
+  thead {
+    display: table-header-group;
+  }
 }
 
 @keyframes fadeIn {
