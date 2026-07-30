@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import YazdirButonu from "@/components/YazdirButonu";
 import YazdirmaBasligi from "@/components/YazdirmaBasligi";
+import Pagination from "@/components/Pagination";
 
 type Payment = {
   id: string;
@@ -28,6 +29,8 @@ function toDateInput(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
+const DEFTER_SAYFA_BOYUTU = 15;
+
 // Hızlı aralık seçenekleri: bugünden geriye doğru
 const HIZLI_ARALIKLAR = [
   { key: "1a", label: "1 Ay", months: 1 },
@@ -50,11 +53,14 @@ export default function FinansRaporlari({ payments, debts }: Props) {
   // değiştirilirse boşalır)
   const [aktifAralik, setAktifAralik] = useState<string | null>("1a");
   const [seciliAy, setSeciliAy] = useState("");
+  const [defterSayfa, setDefterSayfa] = useState(1);
 
   function tarihAraligiSec(baslangic: Date, bitis: Date, aralikKey: string | null) {
     setStartDate(toDateInput(baslangic));
     setEndDate(toDateInput(bitis));
     setAktifAralik(aralikKey);
+    // Aralık değişince defterin ilk sayfasına dön
+    setDefterSayfa(1);
   }
 
   function hizliAralikSec(secenek: (typeof HIZLI_ARALIKLAR)[number]) {
@@ -88,6 +94,7 @@ export default function FinansRaporlari({ payments, debts }: Props) {
     else setEndDate(deger);
     setAktifAralik(null);
     setSeciliAy("");
+    setDefterSayfa(1);
   }
 
   const filteredPayments = useMemo(() => {
@@ -109,6 +116,11 @@ export default function FinansRaporlari({ payments, debts }: Props) {
       return due >= start && due <= end;
     });
   }, [debts, startDate, endDate]);
+
+  // Tahsilat defteri ekranda 15'erli sayfalanır; filtre değişince ilk sayfaya
+  // döner. Yazdırmada sayfalama uygulanmaz, tüm kayıtlar basılır.
+  const sayfaBasi = (defterSayfa - 1) * DEFTER_SAYFA_BOYUTU;
+  const sayfaSonu = defterSayfa * DEFTER_SAYFA_BOYUTU;
 
   const totalCollected = filteredPayments.reduce((sum, p) => sum + p.amount, 0);
   const totalOwed = filteredDebts.reduce((sum, d) => sum + d.amount, 0);
@@ -222,7 +234,10 @@ export default function FinansRaporlari({ payments, debts }: Props) {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+      {/* Sıralama: üstte Mülk Bazlı Gelir Kırılımı (grafik), altında Tahsilat
+          Defteri. Blokları taşımak yerine flex sırası kullanıldı. */}
+      <div className="flex flex-col gap-6">
+      <div className="order-2 bg-white rounded-2xl border border-gray-100 shadow-sm">
         <div className="px-6 py-4 border-b-2 border-[#17B6AE]/20 flex items-center justify-between gap-3">
           <h2 className="text-sm font-bold text-slate-800">Tahsilat Defteri</h2>
           <span className="text-xs text-slate-500">
@@ -247,8 +262,13 @@ export default function FinansRaporlari({ payments, debts }: Props) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filteredPayments.map((p) => (
-                <tr key={p.id} className="hover:bg-gray-50/60 transition-colors">
+              {filteredPayments.map((p, i) => (
+                <tr
+                  key={p.id}
+                  className={`hover:bg-gray-50/60 transition-colors ${
+                    i >= sayfaBasi && i < sayfaSonu ? "" : "hidden print:table-row"
+                  }`}
+                >
                   <td className="px-1 py-1.5 sm:px-5 sm:py-3 text-slate-700 whitespace-nowrap">
                     {new Date(p.paidAt).toLocaleDateString("tr-TR")}
                   </td>
@@ -264,9 +284,24 @@ export default function FinansRaporlari({ payments, debts }: Props) {
           </table>
           </div>
         )}
+        {filteredPayments.length > DEFTER_SAYFA_BOYUTU && (
+          <div className="no-print flex flex-col items-center gap-2 px-6 py-4 border-t border-gray-100">
+            <p className="text-xs text-slate-400">
+              {filteredPayments.length} kayıttan{" "}
+              {(defterSayfa - 1) * DEFTER_SAYFA_BOYUTU + 1}–
+              {Math.min(defterSayfa * DEFTER_SAYFA_BOYUTU, filteredPayments.length)} arası
+            </p>
+            <Pagination
+              page={defterSayfa}
+              total={filteredPayments.length}
+              pageSize={DEFTER_SAYFA_BOYUTU}
+              onPageChange={setDefterSayfa}
+            />
+          </div>
+        )}
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mt-6">
+      <div className="order-1 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
         <h2 className="text-sm font-bold text-slate-800">Mülk Bazlı Gelir Kırılımı</h2>
         <p className="text-xs text-slate-500 mt-1 mb-4">
           Seçili tarih aralığında tahsil edilen kiraların hangi mülkten geldiğini
@@ -299,36 +334,9 @@ export default function FinansRaporlari({ payments, debts }: Props) {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-[#17B6AE]/8 text-left">
-                    <th className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Mülk</th>
-                    <th className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Toplam</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#17B6AE]/15">
-                  {propertyBreakdown.map((row) => (
-                    <tr key={row.mulk}>
-                      <td className="px-4 py-2 text-slate-700">{row.mulk}</td>
-                      <td className="px-4 py-2 text-slate-800 font-medium text-right whitespace-nowrap">
-                        {row.tutar.toLocaleString("tr-TR")} ₺
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t-2 border-[#17B6AE]/30 font-bold">
-                    <td className="px-4 py-2.5 text-slate-800">Toplam</td>
-                    <td className="px-4 py-2.5 text-[#17B6AE] text-right whitespace-nowrap">
-                      {propertyBreakdown.reduce((s, r) => s + r.tutar, 0).toLocaleString("tr-TR")} ₺
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
           </>
         )}
+      </div>
       </div>
     </div>
   );
