@@ -7,6 +7,7 @@ const STATIC_ROUTES: { path: string; priority: number; changeFrequency: Metadata
   { path: "/blog", priority: 0.8, changeFrequency: "daily" },
   { path: "/register", priority: 0.6, changeFrequency: "monthly" },
   { path: "/login", priority: 0.3, changeFrequency: "monthly" },
+  { path: "/gizlilik-politikasi", priority: 0.3, changeFrequency: "yearly" },
   { path: "/aydinlatma-metni", priority: 0.2, changeFrequency: "yearly" },
   { path: "/acik-riza-metni", priority: 0.2, changeFrequency: "yearly" },
   { path: "/kullanim-kosullari", priority: 0.2, changeFrequency: "yearly" },

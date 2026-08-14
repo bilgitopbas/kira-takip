@@ -42,6 +42,7 @@ const SOCIALS = [
 ];
 
 const LEGAL_LINKS = [
+  { label: "Gizlilik Politikası", href: "/gizlilik-politikasi" },
   { label: "Aydınlatma Metni", href: "/aydinlatma-metni" },
   { label: "Açık Rıza Metni", href: "/acik-riza-metni" },
   { label: "Kullanım Koşulları", href: "/kullanim-kosullari" },
