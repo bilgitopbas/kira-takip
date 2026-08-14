@@ -6,6 +6,7 @@ import {
   sendTrialLockedEmail,
 } from "@/lib/mail";
 import { sendPushNotification } from "@/lib/onesignal";
+import { hesapPushHedefleri } from "@/lib/pushHedef";
 
 const GRACE_DAYS = 7;
 const UYARI_GUNU = 7; // deneme bitimine kaç gün kala ilk uyarı
@@ -145,7 +146,12 @@ async function asamayiIsle(
 
   // Mobil uygulamaya push (başarısız olursa akış kesilmez)
   try {
-    await sendPushNotification(kullanici.id, baslik, "Detaylar için panele girin.", "/dashboard/mizan-pro");
+    await sendPushNotification(
+      await hesapPushHedefleri(kullanici.id),
+      baslik,
+      "Detaylar için panele girin.",
+      "/dashboard/mizan-pro"
+    );
   } catch {
     // yoksay
   }

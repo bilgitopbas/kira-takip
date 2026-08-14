@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendPushNotification, sendPushToAll } from "@/lib/onesignal";
+import { hesapPushHedefleri } from "@/lib/pushHedef";
 
 // Duyuru (sadece admin): targetId yoksa HERKESE, varsa sadece o kullanıcıya
 // uygulama içi bildirim + telefon push'u gönderilir.
@@ -58,8 +59,10 @@ export async function POST(req: Request) {
           dedupeKey: `announcement-${announcement.id}`,
         },
       });
-      await sendPushNotification(target.id, announcement.title, announcement.message);
-      pushRecipients = 1;
+      // Hesap sahibi + davetli üyelerin cihazları
+      const hedefler = await hesapPushHedefleri(target.id);
+      await sendPushNotification(hedefler, announcement.title, announcement.message);
+      pushRecipients = hedefler.length;
     } else {
       // Herkese: tüm kullanıcılara uygulama içi bildirim + genel push
       const users = await prisma.user.findMany({ select: { id: true } });

@@ -28,16 +28,21 @@ async function oneSignalRequest(body: Record<string, unknown>) {
 // tasinir; uygulama tarafinda OneSignalBridge'teki "click" dinleyicisi bunu
 // okuyup panel icinde yonlendirme yapar.
 export async function sendPushNotification(
-  externalUserId: string,
+  externalUserId: string | string[],
   title: string,
   message: string,
   path?: string
 ) {
   if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) return;
 
+  // Bir hesabın birden fazla kişisi olabilir (sahip + davetli üyeler);
+  // hepsi tek istekte hedeflenir.
+  const hedefler = (Array.isArray(externalUserId) ? externalUserId : [externalUserId]).filter(Boolean);
+  if (hedefler.length === 0) return;
+
   try {
     const result = await oneSignalRequest({
-      include_aliases: { external_id: [externalUserId] },
+      include_aliases: { external_id: hedefler },
       target_channel: "push",
       headings: { tr: title, en: title },
       contents: { tr: message, en: message },

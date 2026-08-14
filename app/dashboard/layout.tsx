@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/DashboardShell";
 import { generateNotificationsForOwner } from "@/lib/notifications";
+import { uyePushKimligi } from "@/lib/pushHedef";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -27,7 +28,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
   });
 
   return (
-    <DashboardShell fullName={user?.fullName || ""} userId={session.userId} impersonating={!!session.impersonatedBy}>
+    <DashboardShell
+      fullName={user?.fullName || ""}
+      // Davetli üye kendi kimliğiyle kaydolur; hesap sahibiyle aynı kimliği
+      // paylaşan iki cihazda push güvenilir dağıtılmıyordu.
+      pushId={session.memberId ? uyePushKimligi(session.memberId) : session.userId}
+      impersonating={!!session.impersonatedBy}
+    >
       {children}
     </DashboardShell>
   );

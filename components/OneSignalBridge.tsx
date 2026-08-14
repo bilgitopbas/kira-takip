@@ -5,14 +5,17 @@ import { isNativeApp } from "@/lib/native";
 
 const ONESIGNAL_APP_ID = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
 
-// Cihaz her zaman "şu an girişli hesabı" takip eder:
-// - Girişte login(hesapId) → hesaba özel bildirimler bu cihaza gelir
+// Cihaz her zaman "şu an girişli KİŞİYİ" takip eder:
+// - Girişte login(pushId) → o kişiye gönderilen bildirimler bu cihaza gelir
 // - Çıkışta / hesap değişiminde logout → eski hesabın bildirimi sızmaz
 //   (bu bileşen yalnızca girişli panel kabuklarında durur; panelden
-//   ayrılınca unmount olur ve cihaz-hesap bağı çözülür)
-// Not: "Kullanıcı ekle" ile davet edilen ekip üyeleri asıl hesabın (owner)
-// oturumuyla çalıştığı için userId zaten hesap sahibinin id'sidir — üyenin
-// telefonu da otomatik olarak hesabın bildirimlerini alır.
+//   ayrılınca unmount olur ve cihaz-kişi bağı çözülür)
+//
+// pushId hesap sahibinde kullanıcı id'si, davetli üyede "member:<üyeId>"dir.
+// Üyenin telefonu ESKİDEN hesap sahibinin kimliğiyle kaydoluyordu; aynı
+// kimliği paylaşan iki cihazda bildirim güvenilir şekilde dağıtılmıyordu.
+// Artık her kişi ayrı kaydolur, sunucu gönderirken hepsini birden hedefler
+// (bkz. lib/pushHedef.ts).
 
 // Bildirim yükünde taşınan yol yalnızca uygulama içi göreli bir adres olabilir;
 // "https://..." veya "//" ile başlayan değerler dışarıya yönlendirme riski
@@ -21,9 +24,9 @@ function guvenliYolMu(path: unknown): path is string {
   return typeof path === "string" && path.startsWith("/") && !path.startsWith("//");
 }
 
-export default function OneSignalBridge({ userId }: { userId: string }) {
+export default function OneSignalBridge({ pushId }: { pushId: string }) {
   useEffect(() => {
-    if (!isNativeApp() || !ONESIGNAL_APP_ID || !userId) return;
+    if (!isNativeApp() || !ONESIGNAL_APP_ID || !pushId) return;
     let OneSignalRef: Awaited<typeof import("onesignal-cordova-plugin")>["default"] | null = null;
 
     // Bildirime tıklanınca ilgili detay sayfasına git (örn. ilgili kiracı).
@@ -42,7 +45,7 @@ export default function OneSignalBridge({ userId }: { userId: string }) {
         const { default: OneSignal } = await import("onesignal-cordova-plugin");
         OneSignalRef = OneSignal;
         OneSignal.initialize(ONESIGNAL_APP_ID);
-        OneSignal.login(userId);
+        OneSignal.login(pushId);
         OneSignal.Notifications.addEventListener("click", tiklama);
         await OneSignal.Notifications.requestPermission(true);
       } catch (err) {
@@ -76,7 +79,7 @@ export default function OneSignalBridge({ userId }: { userId: string }) {
         // plugin hazır değilse sessizce geç
       }
     };
-  }, [userId]);
+  }, [pushId]);
 
   return null;
 }

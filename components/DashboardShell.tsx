@@ -1,30 +1,26 @@
 "use client";
 
-import { useLayoutEffect, useState } from "react";
+import { useState } from "react";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
 import BottomTabBar from "@/components/BottomTabBar";
 import OneSignalBridge from "@/components/OneSignalBridge";
-import { isNativeApp } from "@/lib/native";
+import { useNativeApp } from "@/lib/useNativeApp";
 
 export default function DashboardShell({
   fullName,
-  userId,
+  pushId,
   impersonating,
   children,
 }: {
   fullName: string;
-  userId: string;
+  pushId: string;
   impersonating: boolean;
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [nativeApp, setNativeApp] = useState(false);
-
-  useLayoutEffect(() => {
-    setNativeApp(isNativeApp());
-  }, []);
+  const nativeApp = useNativeApp();
 
   // Native'de dis kabuk SABIT (ekran yuksekligi kadar, kendisi kaymaz);
   // kaydirma yalnizca <main> icindedir. Ust bar ve alt sekmeler boylece oynamaz.
@@ -34,7 +30,7 @@ export default function DashboardShell({
       className={`${nativeApp ? "h-[100dvh] overflow-hidden" : "min-h-screen"} bg-[#F8F9FB] dark:bg-slate-950 flex transition-colors print:block print:h-auto print:min-h-0 print:overflow-visible`}
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
-      <OneSignalBridge userId={userId} />
+      <OneSignalBridge pushId={pushId} />
       <DashboardSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0 min-h-0 print:block print:min-h-0">
         {impersonating && <ImpersonationBanner customerName={fullName} />}
