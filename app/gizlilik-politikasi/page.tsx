@@ -82,7 +82,7 @@ const BLOCKS: LegalBlock[] = [
     text: "Kişisel verileriniz 6698 sayılı Kişisel Verilerin Korunması Kanunu'nun 5. maddesi uyarınca; sözleşmenin kurulması ve ifası için gerekli olması, hukuki yükümlülüğümüzün yerine getirilmesi, bir hakkın tesisi ve korunması ile temel hak ve özgürlüklerinize zarar vermemek kaydıyla meşru menfaatimiz hukuki sebeplerine dayanılarak işlenir. Pazarlama iletişimi gibi bu kapsam dışında kalan işlemeler yalnızca açık rızanızla yapılır.",
   },
 
-  { type: "h2", text: "6. Verilerin Paylaşılması ve Yurt Dışına Aktarım" },
+  { type: "h2", text: "6. Verilerin Paylaşılması" },
   {
     type: "p",
     text: "Verileriniz aşağıdaki hizmet sağlayıcılarla, yalnızca Hizmetin çalışması için gereken ölçüde paylaşılır:",
@@ -92,8 +92,6 @@ const BLOCKS: LegalBlock[] = [
     items: [
       "Barındırma sağlayıcımız: Verileriniz sunucularımızda saklanır.",
       "E-posta sunucusu: Bilgilendirme, doğrulama ve hatırlatma e-postalarının iletilmesi amacıyla e-posta adresiniz ve ilgili mesaj içeriği.",
-      "OneSignal (push bildirim altyapısı): Yalnızca cihazınıza ait bildirim kimliği ile gönderilen bildirim başlığı ve metni. Merkezi yurt dışındadır.",
-      "Google (Google ile Giriş ve güvenlik doğrulaması): Google ile giriş yapmayı seçerseniz kimlik doğrulama bilgileri; kayıt sırasında bot koruması için doğrulama verileri. Merkezi yurt dışındadır.",
     ],
   },
   {
