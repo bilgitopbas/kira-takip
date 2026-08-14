@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/DashboardShell";
-import { generateNotificationsForOwner } from "@/lib/notifications";
 import { uyePushKimligi } from "@/lib/pushHedef";
 
 export const metadata: Metadata = {
@@ -16,12 +15,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect("/login");
   }
 
-  try {
-    await generateNotificationsForOwner(session.userId);
-  } catch {
-    // bildirim üretimi sayfayı bloklamamalı
-  }
-
+  // Bildirim üretimi artık burada DEĞİL, günlük zamanlanmış görevde
+  // (/api/cron/bildirimler). Eskiden her panel isteğinde çalışıyordu; bu hem
+  // her sayfa açılışını yavaşlatıyordu hem de panele girmeyen kullanıcıya
+  // bildirim hiç ulaşmıyordu.
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
     select: { fullName: true },

@@ -191,3 +191,35 @@ export async function generateNotificationsForOwner(ownerId: string) {
     }
   }
 }
+
+/**
+ * TÜM müşteri hesapları için bildirim üretir.
+ * Sunucudaki zamanlanmış görev günde bir çağırır — kullanıcının panele
+ * girmesini beklemez. Bildirimlerin asıl vaadi bu: kullanıcı takip etmese de
+ * gecikmiş kira, zam dönemi ve 5. yıl uyarıları zamanında düşsün.
+ *
+ * Bir hesapta hata çıkarsa diğerleri etkilenmez. Kilitli hesaplar ve
+ * kullanıcının kapattığı bildirim türleri zaten generateNotificationsForOwner
+ * içinde eleniyor.
+ */
+export async function tumHesaplarIcinBildirimUret() {
+  const kullanicilar = await prisma.user.findMany({
+    where: { role: "CUSTOMER" },
+    select: { id: true },
+  });
+
+  const sonuc = { toplam: kullanicilar.length, basarili: 0, hata: 0 };
+
+  // Sırayla: aynı anda yüzlerce sorgu açıp veritabanını yormamak için
+  for (const k of kullanicilar) {
+    try {
+      await generateNotificationsForOwner(k.id);
+      sonuc.basarili++;
+    } catch (hata) {
+      sonuc.hata++;
+      console.error(`Bildirim uretilemedi (${k.id}):`, hata);
+    }
+  }
+
+  return sonuc;
+}
