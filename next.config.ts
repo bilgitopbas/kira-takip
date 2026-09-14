@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Yanıtlarda "X-Powered-By: Next.js" başlığı gönderilmesin (sürüm/altyapı ipucu vermesin).
+  poweredByHeader: false,
   async headers() {
     return [
       {
