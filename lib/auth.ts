@@ -1,6 +1,8 @@
 import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { cache } from "react";
+import { prisma } from "@/lib/prisma";
 
 const secretKey = process.env.SESSION_SECRET!;
 const key = new TextEncoder().encode(secretKey);
@@ -26,8 +28,19 @@ type SessionPayload = {
   memberName?: string;
 };
 
+// Jetonun içinde ayrıca taşınan oturum sürümü (users.sessionVersion).
+// Bu alanın olmadığı eski jetonlar sürüm 0 kabul edilir.
+type TokenPayload = SessionPayload & { sv?: number };
+
 export async function createSession(payload: SessionPayload) {
-  const token = await new SignJWT(payload)
+  // Sürüm her zaman veritabanından okunur; çağıranın göndermesine gerek yok.
+  const user = await prisma.user.findUnique({
+    where: { id: payload.userId },
+    select: { sessionVersion: true },
+  });
+
+  const tokenPayload: TokenPayload = { ...payload, sv: user?.sessionVersion ?? 0 };
+  const token = await new SignJWT(tokenPayload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
@@ -43,6 +56,29 @@ export async function createSession(payload: SessionPayload) {
   });
 }
 
+// Aynı istek içinde getSession birden çok kez çağrılırsa veritabanına bir kez gidilir.
+const oturumHalaGecerli = cache(
+  async (userId: string, sv: number, memberId: string | undefined): Promise<boolean> => {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { sessionVersion: true },
+    });
+    // Hesap silinmiş ya da parola değişmiş/sıfırlanmış → eski oturum geçersiz.
+    if (!user || user.sessionVersion !== sv) return false;
+
+    if (memberId) {
+      // Ekip üyesi hesaptan çıkarıldıysa oturumu da hemen düşer.
+      const member = await prisma.accountMember.findUnique({
+        where: { id: memberId },
+        select: { ownerId: true },
+      });
+      if (!member || member.ownerId !== userId) return false;
+    }
+
+    return true;
+  }
+);
+
 export async function getSession(): Promise<SessionPayload | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
@@ -50,7 +86,11 @@ export async function getSession(): Promise<SessionPayload | null> {
 
   try {
     const { payload } = await jwtVerify(token, key);
-    return payload as unknown as SessionPayload;
+    const oturum = payload as unknown as TokenPayload;
+    if (!(await oturumHalaGecerli(oturum.userId, oturum.sv ?? 0, oturum.memberId))) {
+      return null;
+    }
+    return oturum;
   } catch {
     return null;
   }

@@ -98,6 +98,10 @@ model User {
   passwordResetToken   String?   @unique
   passwordResetExpires DateTime?
 
+  // Oturum sürümü: parola değişince/sıfırlanınca artırılır. Oturum jetonundaki
+  // sürüm bununla eşleşmezse (eski cihazlardaki oturumlar) oturum geçersiz sayılır.
+  sessionVersion Int @default(0)
+
   emailVerifiedAt          DateTime?
   emailVerificationToken   String?   @unique
   emailVerificationExpires DateTime?

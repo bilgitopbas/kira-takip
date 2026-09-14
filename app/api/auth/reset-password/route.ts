@@ -27,7 +27,13 @@ export async function POST(req: NextRequest) {
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { passwordHash, passwordResetToken: null, passwordResetExpires: null },
+      // Oturum sürümünü artır: parola sıfırlanınca tüm cihazlardaki açık oturumlar kapanır.
+      data: {
+        passwordHash,
+        passwordResetToken: null,
+        passwordResetExpires: null,
+        sessionVersion: { increment: 1 },
+      },
     });
 
     return NextResponse.json({ success: true });
