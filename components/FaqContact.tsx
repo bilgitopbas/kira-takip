@@ -1,7 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import Script from "next/script";
 import { WordsReveal, FadeInView } from "@/components/motion/Reveal";
+
+const RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+
+declare global {
+  interface Window {
+    grecaptcha?: { getResponse: (id?: number) => string; reset: (id?: number) => void };
+  }
+}
 
 const FAQS = [
   {
@@ -41,19 +50,35 @@ export default function FaqContact() {
   const [form, setForm] = useState({ name: "", phone: "", consent: false });
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError("");
+
+    const recaptchaToken = RECAPTCHA_SITE_KEY ? window.grecaptcha?.getResponse() : "";
+    if (RECAPTCHA_SITE_KEY && !recaptchaToken) {
+      setError("Lütfen robot olmadığınızı doğrulayın.");
+      return;
+    }
+
     setLoading(true);
     try {
-      await fetch("/api/contact", {
+      const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, recaptchaToken }),
       });
-      setSent(true);
+      if (res.ok) {
+        setSent(true);
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Talebiniz gönderilemedi. Lütfen tekrar deneyin.");
+      window.grecaptcha?.reset();
     } catch {
-      setSent(true);
+      setError("Bağlantı hatası. Lütfen tekrar deneyin.");
+      window.grecaptcha?.reset();
     } finally {
       setLoading(false);
     }
@@ -106,19 +131,28 @@ export default function FaqContact() {
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Adınız Soyadınız *</label>
-                    <input type="text" required placeholder="Adınız Soyadınız" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#17B6AE] focus:border-transparent" />
+                    <input type="text" required minLength={2} maxLength={100} placeholder="Adınız Soyadınız" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#17B6AE] focus:border-transparent" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Telefon Numaranız *</label>
                     <div className="flex gap-2">
                       <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-3 text-sm font-semibold text-slate-600 flex-shrink-0">🇹🇷 +90</div>
-                      <input type="tel" required placeholder="5XX XXX XX XX" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#17B6AE] focus:border-transparent" />
+                      <input type="tel" inputMode="tel" required maxLength={20} placeholder="5XX XXX XX XX" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#17B6AE] focus:border-transparent" />
                     </div>
                   </div>
                   <label className="flex items-start gap-3 text-xs text-slate-500 cursor-pointer">
                     <input type="checkbox" className="mt-0.5 flex-shrink-0 w-4 h-4 accent-[#17B6AE]" checked={form.consent} onChange={(e) => setForm({ ...form, consent: e.target.checked })} />
                     <span>Mizan Mülk Yönetimi kampanyaları hakkında elektronik ileti almak istiyorum.</span>
                   </label>
+                  {RECAPTCHA_SITE_KEY && (
+                    <>
+                      <Script src="https://www.google.com/recaptcha/api.js" strategy="afterInteractive" />
+                      <div className="g-recaptcha" data-sitekey={RECAPTCHA_SITE_KEY} />
+                    </>
+                  )}
+                  {error && (
+                    <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">{error}</p>
+                  )}
                   <button type="submit" disabled={loading} className="w-full bg-[#17B6AE] hover:bg-[#149891] text-white font-bold py-3.5 rounded-xl transition disabled:opacity-60 text-sm tracking-wide shadow-lg shadow-[#17B6AE]/20">
                     {loading ? "Gönderiliyor..." : "Teklif Al"}
                   </button>
