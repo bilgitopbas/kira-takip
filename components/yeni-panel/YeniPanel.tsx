@@ -24,7 +24,6 @@ import BinaPaneli from "@/components/yeni-panel/BinaPaneli";
 import { binalariKur, binaSuzgectenGecer, type TipAilesi } from "@/lib/yeniPanelBina";
 import type { BirimDurumu } from "@/lib/yeniPanelTipleri";
 import type { Nokta } from "@/lib/haritaModeli";
-import { panelGecisAdresi } from "@/lib/panelTercihi";
 import { useNativeApp } from "@/lib/useNativeApp";
 import type { BugunListeleri, PanelBirimi, PanelOzeti } from "@/lib/yeniPanelTipleri";
 
@@ -195,10 +194,7 @@ export default function YeniPanel({
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Ana Sayfa</h1>
           <p className="text-sm text-slate-500 mt-1">
-            {tarihMetni} ·{" "}
-            <a href={panelGecisAdresi("klasik")} className="font-semibold text-[#0a7c76] hover:underline">
-              Klasik panele dön
-            </a>
+            {tarihMetni}
           </p>
         </div>
         <div className="grid grid-cols-3 sm:flex sm:items-center gap-2">

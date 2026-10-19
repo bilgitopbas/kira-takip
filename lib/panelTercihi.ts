@@ -1,25 +1,17 @@
-// "Yeni panel" geçişi. Klasik panel her zaman varsayılandır.
+// Ana sayfa paneli: YENI_PANEL=1 iken herkes için yeni panel açılır.
 //
-// Üç katman:
-//  1) Sunucu izni: YENI_PANEL=1 tanımlı değilse yeni panel hiçbir koşulda
-//     açılmaz (acil kapatma anahtarı budur; tanımı kaldırıp yeniden başlatmak
-//     herkesi klasik panele döndürür).
-//  2) Kullanıcı tercihi: cihaz başına çerez (şema gerektirmez).
-//  3) Adres: /dashboard?panel=yeni | ?panel=klasik tercihi değiştirir.
-
-export const PANEL_CEREZI = "mizan_panel";
-
-export type PanelTercihi = "yeni" | "klasik";
+//  1) Sunucu izni (acil kapatma): YENI_PANEL=1 tanımlı değilse yeni panel
+//     hiçbir koşulda açılmaz; tanımı kaldırıp `pm2 restart --update-env`
+//     herkesi klasik panele döndürür.
+//  2) Gizli tek seferlik görünüm: /dashboard?panel=klasik o istekte klasik
+//     paneli gösterir; tercih saklanmaz (çerez yok), sonraki girişte yine
+//     yeni panel açılır.
 
 export function yeniPanelIzinli(): boolean {
   return process.env.YENI_PANEL === "1";
 }
 
-export function panelTercihiCoz(deger: unknown): PanelTercihi | null {
-  return deger === "yeni" || deger === "klasik" ? deger : null;
-}
-
-/** Tercihi değiştiren uç; çerezi yazıp panele geri yönlendirir. */
-export function panelGecisAdresi(hedef: PanelTercihi) {
-  return `/api/dashboard/panel-tercihi?panel=${hedef}`;
+/** Bu istekte klasik panel mi istendi (?panel=klasik) */
+export function klasikIstendi(deger: unknown): boolean {
+  return deger === "klasik" || (Array.isArray(deger) && deger.includes("klasik"));
 }

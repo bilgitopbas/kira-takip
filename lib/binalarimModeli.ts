@@ -2,8 +2,8 @@
 // Kayıtlı binalar olduğu gibi gelir; bir binaya bağlanmamış mülkler başlık/
 // adres eşlemesinden (lib/binaEslestir.ts) ÖNERİ grupları olarak gelir.
 // Düşük güvenli ("2A" gibi) öneriler en üstte "kontrol edin" ile gösterilir.
-import { binaCoz } from "@/lib/binaEslestir";
-import { ilCoz, ILLER } from "@/lib/iller";
+import { binaAnahtariOlustur, binaCoz } from "@/lib/binaEslestir";
+import { ilCoz, ILLER, katla } from "@/lib/iller";
 import type { KayitBinasi } from "@/lib/binalarimKayit";
 
 export type BMulk = {
@@ -27,7 +27,15 @@ export type BBina = {
   locationVerified: boolean;
 };
 
-export type EBirim = { propertyId: string; title: string; blok: string; daireNo: string; kontrol: boolean };
+export type EBirim = {
+  propertyId: string;
+  title: string;
+  blok: string;
+  daireNo: string;
+  kontrol: boolean;
+  /** Kayıtlı binaya yalnız ad + il eşleşmesiyle önerildi (kaydedince bağlanır) */
+  yeniOneri?: boolean;
+};
 export type EGrup = {
   /** Ekran anahtarı: kayıtlı "b:<id>", öneri "o:<eşleme anahtarı>", yeni "y:<n>" */
   anahtar: string;
@@ -75,6 +83,9 @@ export function baslangicGruplari(mulkler: BMulk[], binalar: BBina[]): EGrup[] {
     ])
   );
   const oneriler = new Map<string, { grup: EGrup; ilceler: (string | null)[] }>();
+  // Kayıtlı binalar il + ad anahtarıyla: bağlanmamış mülkün önerisi aynı
+  // ildeki aynı adlı kayıtlı binaya denk gelirse oraya önerilir.
+  const kayitliAnahtarla = new Map<string, EGrup>(binalar.map((b) => [binaAnahtariOlustur(b.city, b.name), kayitli.get(b.id)!]));
 
   for (const m of mulkler) {
     const k = m.buildingId ? kayitli.get(m.buildingId) : undefined;
@@ -83,6 +94,11 @@ export function baslangicGruplari(mulkler: BMulk[], binalar: BBina[]): EGrup[] {
       continue;
     }
     const c = binaCoz(m);
+    const esKayitli = kayitliAnahtarla.get(c.binaAnahtari);
+    if (esKayitli) {
+      esKayitli.birimler.push({ propertyId: m.id, title: m.title, blok: c.blok ?? "", daireNo: c.birimNo ?? "", kontrol: c.guven === "dusuk", yeniOneri: true });
+      continue;
+    }
     let o = oneriler.get(c.binaAnahtari);
     if (!o) {
       o = {
@@ -96,7 +112,7 @@ export function baslangicGruplari(mulkler: BMulk[], binalar: BBina[]): EGrup[] {
   }
 
   const oneriGruplari = [...oneriler.values()].map(({ grup, ilceler }) => ({ ...grup, ilce: enSik(ilceler) }));
-  const kontrolVar = (g: EGrup) => g.birimler.some((b) => b.kontrol);
+  const kontrolVar = (g: EGrup) => g.birimler.some((b) => b.kontrol || b.yeniOneri) || !g.il;
   const tum = [...oneriGruplari, ...[...kayitli.values()].filter((g) => g.birimler.length > 0)];
   for (const g of tum) g.birimler.sort(noSirasi);
   return tum.sort(
@@ -122,4 +138,62 @@ export function kayitGovdesi(gruplar: EGrup[]): { binalar: KayitBinasi[] } {
         birimler: g.birimler.map((b) => ({ propertyId: b.propertyId, blok: b.blok || null, daireNo: b.daireNo || null })),
       })),
   };
+}
+
+export type IlUyarisi = {
+  /** İl seçilmemiş: haritada gösterilmez */
+  ilYok: boolean;
+  /** Aynı bina adı başka il(ler)de daha çok birimle var: il yanlış girilmiş olabilir */
+  digerIller: { il: string; birim: number }[];
+};
+
+/** Grup başına il uyarıları (ör. "Beştepe" Konya'da 2, Ankara'da 49 birim) */
+export function ilUyarilari(gruplar: EGrup[]): Map<string, IlUyarisi> {
+  const adaGore = new Map<string, EGrup[]>();
+  for (const g of gruplar) {
+    const k = katla(g.ad);
+    if (!k) continue;
+    adaGore.set(k, [...(adaGore.get(k) ?? []), g]);
+  }
+  const sonuc = new Map<string, IlUyarisi>();
+  for (const g of gruplar) {
+    const digerIller = (adaGore.get(katla(g.ad)) ?? [])
+      .filter((x) => x.anahtar !== g.anahtar && x.il && x.il !== g.il && x.birimler.length >= g.birimler.length)
+      .map((x) => ({ il: x.il, birim: x.birimler.length }));
+    if (!g.il || digerIller.length) sonuc.set(g.anahtar, { ilYok: !g.il, digerIller });
+  }
+  return sonuc;
+}
+
+/**
+ * "Yeniden eşle": bir grubun birimlerini mülklerin GÜNCEL başlık/adres/il
+ * bilgisinden yeniden önerir (ör. il düzeltildikten sonra). Birimler kendi
+ * önerisine (aynı ildeki aynı adlı kayıtlı bina, mevcut öneri grubu ya da
+ * yeni öneri grubu) taşınır; blok/daire no da yeniden hesaplanır. Boşalan
+ * grup listeden düşer (kayıtlı ise kaydedince silinir).
+ */
+export function yenidenEsle(gruplar: EGrup[], anahtar: string, mulkler: BMulk[]): EGrup[] {
+  const kaynak = gruplar.find((g) => g.anahtar === anahtar);
+  if (!kaynak) return gruplar;
+  const mulkHaritasi = new Map(mulkler.map((m) => [m.id, m]));
+  let liste = gruplar.map((g) => (g.anahtar === anahtar ? { ...g, birimler: [] as EBirim[], onayli: true } : g));
+  for (const b of kaynak.birimler) {
+    const m = mulkHaritasi.get(b.propertyId);
+    if (!m) continue;
+    const c = binaCoz(m);
+    const birim: EBirim = { propertyId: m.id, title: m.title, blok: c.blok ?? "", daireNo: c.birimNo ?? "", kontrol: c.guven === "dusuk" };
+    const il = c.il ?? "";
+    const hedef =
+      liste.find((g) => g.id && binaAnahtariOlustur(g.il, g.ad) === c.binaAnahtari) ??
+      liste.find((g) => g.anahtar === `o:${c.binaAnahtari}`);
+    if (hedef) {
+      liste = liste.map((g) => (g === hedef ? { ...g, birimler: [...g.birimler, birim], onayli: true } : g));
+    } else {
+      liste = [
+        { anahtar: `o:${c.binaAnahtari}`, id: null, ad: c.binaAdi, il, ilce: m.district?.trim() ?? "", konum: null, birimler: [birim], oneri: true, onayli: true },
+        ...liste,
+      ];
+    }
+  }
+  return liste.filter((g) => g.birimler.length > 0).map((g) => ({ ...g, birimler: [...g.birimler].sort(noSirasi) }));
 }

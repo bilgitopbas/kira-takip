@@ -98,7 +98,10 @@ function motorKur(
   const kamera = new THREE.PerspectiveCamera(34, 1, 1, 1600);
   const kontrol = new OrbitControls(kamera, R.domElement);
   // Dokunmatikte dikey tek parmak kaydırma tarayıcıya bırakılır (sayfa kayar);
-  // sahne iki parmakla kaydırılır/yakınlaştırılır, dokunma seçer. (OrbitControls
+  // iki parmak jesti (yakınlaştır + kaydır) aşağıda dokunma olaylarıyla
+  // ELLE işlenir: OrbitControls'ün işaretçi tabanlı iki parmak jesti, ilk
+  // parmak sayfayı kaydırmaya başlayınca tarayıcının pointercancel'ıyla
+  // kopuyordu (iPhone'da "iki parmakla yaklaşamıyorum"). (OrbitControls
   // kurulurken touch-action:none yazdığı için bu satır ondan SONRA gelmeli.)
   R.domElement.style.touchAction = dokunmatik ? "pan-y" : "none";
   kontrol.enableDamping = false;
@@ -109,9 +112,7 @@ function motorKur(
   kontrol.panSpeed = 1.1;
   kontrol.screenSpacePanning = false;
   kontrol.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
-  kontrol.touches = dokunmatik
-    ? { ONE: null, TWO: THREE.TOUCH.DOLLY_PAN }
-    : { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
+  kontrol.touches = dokunmatik ? { ONE: null, TWO: null } : { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
 
   const yari = new THREE.HemisphereLight("#e6f0f3", "#a89a7c", 1.25);
   const gunes = new THREE.DirectionalLight("#fff2dc", 2.7);
@@ -372,16 +373,36 @@ function motorKur(
     if (govde) return { bina: govde.object.userData.bina, birim: null, blok: govde.object.userData.blok ?? null };
     return null;
   }
-  let basili: { x: number; y: number; dugme: number } | null = null;
+  let basili: { x: number; y: number; dugme: number; t: number } | null = null;
+  // İki parmak jesti (dokunmatik): başlangıç durumuna göre birikimli hesap
+  let jest: { d0: number; mx: number; my: number; hedef: THREE.Vector3; yon: THREE.Vector3; uzunluk: number } | null = null;
+  let sonJest = 0;
+  let sonDokunma: { x: number; y: number; t: number } | null = null;
   const onDown = (e: PointerEvent) => {
-    basili = { x: e.clientX, y: e.clientY, dugme: e.button };
+    basili = { x: e.clientX, y: e.clientY, dugme: e.button, t: performance.now() };
   };
   const onUp = (e: PointerEvent) => {
     if (!basili) return;
     const oynadi = Math.abs(e.clientX - basili.x) + Math.abs(e.clientY - basili.y);
     const dugme = basili.dugme;
+    const basladi = basili.t;
     basili = null;
     if (oynadi > 6 || dugme !== 0) return;
+    // İki parmak jestinin ardından kalkan parmak seçim sayılmaz
+    if (jest || sonJest > basladi) return;
+    if (e.pointerType === "touch") {
+      const simdi = performance.now();
+      const onceki = sonDokunma;
+      sonDokunma = { x: e.clientX, y: e.clientY, t: simdi };
+      // Çift dokunma: binaya (ya da dokunulan yere) yaklaş
+      if (onceki && simdi - onceki.t < 320 && Math.abs(e.clientX - onceki.x) + Math.abs(e.clientY - onceki.y) < 30) {
+        sonDokunma = null;
+        const h2 = sec(e.clientX, e.clientY);
+        if (h2 && (h2.bina !== secim.bina || (h2.blok ?? null) !== secim.blok)) geri.onSec(h2.bina, h2.birim, h2.blok);
+        else motor.yakinlas(0.55);
+        return;
+      }
+    }
     const h = sec(e.clientX, e.clientY);
     if (!h) {
       if (secim.bina) geri.onSec(null, null, null);
@@ -403,6 +424,56 @@ function motorKur(
   R.domElement.addEventListener("pointerup", onUp);
   R.domElement.addEventListener("pointermove", onMove);
   R.domElement.addEventListener("pointerleave", onLeave);
+
+  // Dokunmatik iki parmak: kıstır = yakınlaştır/uzaklaştır, birlikte sürükle =
+  // kaydır. Etiketlerin üstünde başlayan jest de sayılsın diye sahne yüzeyine
+  // (tuval + etiket katmanı) bağlanır. Tek parmak sayfayı kaydırır (pan-y).
+  const yuzey = kap.parentElement ?? kap;
+  const parmakArasi = (t: TouchList) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  const _sag = new THREE.Vector3();
+  const _ileri = new THREE.Vector3();
+  const onJestBasla = (e: TouchEvent) => {
+    if (e.touches.length < 2) return;
+    e.preventDefault();
+    ucus = null;
+    donus = null;
+    const yon = kamera.position.clone().sub(kontrol.target);
+    jest = {
+      d0: Math.max(1, parmakArasi(e.touches)),
+      mx: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+      my: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+      hedef: kontrol.target.clone(),
+      uzunluk: yon.length(),
+      yon: yon.normalize(),
+    };
+  };
+  const onJest = (e: TouchEvent) => {
+    if (!jest || e.touches.length < 2) return;
+    e.preventDefault();
+    const uz = THREE.MathUtils.clamp((jest.uzunluk * jest.d0) / Math.max(1, parmakArasi(e.touches)), kontrol.minDistance, kontrol.maxDistance);
+    const dx = (e.touches[0].clientX + e.touches[1].clientX) / 2 - jest.mx;
+    const dy = (e.touches[0].clientY + e.touches[1].clientY) / 2 - jest.my;
+    // Piksel başına zemin mesafesi (OrbitControls kaydırmasıyla aynı yaklaşım)
+    const pp = (2 * uz * Math.tan(THREE.MathUtils.degToRad(kamera.fov) / 2)) / Math.max(1, R.domElement.clientHeight);
+    _sag.setFromMatrixColumn(kamera.matrixWorld, 0).setY(0).normalize();
+    _ileri.crossVectors(Y, _sag);
+    kontrol.target.copy(jest.hedef).addScaledVector(_sag, -dx * pp).addScaledVector(_ileri, dy * pp);
+    kamera.position.copy(kontrol.target).addScaledVector(jest.yon, uz);
+    kontrol.update();
+    iste();
+  };
+  const onJestBitti = (e: TouchEvent) => {
+    if (!jest || e.touches.length >= 2) return;
+    jest = null;
+    sonJest = performance.now();
+  };
+  if (dokunmatik) {
+    yuzey.style.touchAction = "pan-y";
+    yuzey.addEventListener("touchstart", onJestBasla, { passive: false });
+    yuzey.addEventListener("touchmove", onJest, { passive: false });
+    yuzey.addEventListener("touchend", onJestBitti);
+    yuzey.addEventListener("touchcancel", onJestBitti);
+  }
   function uzerindeAyarla(h: { bina: string; blok: string | null } | null) {
     const id = h ? `${h.bina}|${h.blok ?? ""}` : null;
     if (id === uzerindeAnahtar) return;
@@ -659,6 +730,10 @@ function motorKur(
       R.domElement.removeEventListener("pointerup", onUp);
       R.domElement.removeEventListener("pointermove", onMove);
       R.domElement.removeEventListener("pointerleave", onLeave);
+      yuzey.removeEventListener("touchstart", onJestBasla);
+      yuzey.removeEventListener("touchmove", onJest);
+      yuzey.removeEventListener("touchend", onJestBitti);
+      yuzey.removeEventListener("touchcancel", onJestBitti);
       kontrol.dispose();
       sehriSok();
       binaMal.dispose();
@@ -789,7 +864,7 @@ export default function Sehir3D({
       ) : (
         <div className="absolute left-3 bottom-3 z-[3] max-w-[calc(100%-80px)] text-[11px] text-slate-500 bg-white/95 border border-gray-200 rounded-md px-2 py-1">
           <span className="hidden [@media(pointer:fine)]:inline">Sürükle: kaydır · Sağ tık: döndür · Tekerlek: yakınlaştır · Binaya dokun</span>
-          <span className="[@media(pointer:fine)]:hidden">İki parmak: kaydır/yakınlaştır · Binaya dokun</span>
+          <span className="[@media(pointer:fine)]:hidden">İki parmak: yakınlaştır/kaydır · Çift dokun: yaklaş · Binaya dokun</span>
         </div>
       )}
     </div>

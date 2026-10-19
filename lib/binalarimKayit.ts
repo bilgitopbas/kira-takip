@@ -105,3 +105,38 @@ export function konumDogrula(govde: unknown): KayitKonumu | null {
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < ENLEM[0] || lat > ENLEM[1] || lng < BOYLAM[0] || lng > BOYLAM[1]) return null;
   return { lat: Number(lat.toFixed(6)), lng: Number(lng.toFixed(6)), dogrulandi: true };
 }
+
+export type Atama = {
+  propertyId: string;
+  /** null: mülk binadan çıkarılır */
+  bina: { id: string | null; ad: string; il: string | null; ilce: string | null; konum: KayitKonumu | null } | null;
+  blok: string | null;
+  daireNo: string | null;
+};
+
+/**
+ * Mülk formundan tek mülkün bina/blok/daire no/konum ataması. Kurallar
+ * Binalarım kaydıyla aynıdır (kayitDogrula üzerinden).
+ */
+export function atamaDogrula(
+  govde: unknown,
+  sahipMulkleri: Set<string>,
+  sahipBinalari: Set<string>
+): { ok: true; atama: Atama } | { ok: false; hata: string } {
+  const g = govde as Record<string, unknown>;
+  const propertyId = metin(g?.propertyId);
+  if (!propertyId || !sahipMulkleri.has(propertyId)) return { ok: false, hata: "Mülk bulunamadı." };
+  if (g.bina === null || g.bina === undefined) return { ok: true, atama: { propertyId, bina: null, blok: null, daireNo: null } };
+  const b = g.bina as Record<string, unknown>;
+  const sonuc = kayitDogrula(
+    { binalar: [{ id: b.id ?? null, ad: b.ad, il: b.il, ilce: b.ilce, konum: b.konum ?? null, birimler: [{ propertyId, blok: g.blok, daireNo: g.daireNo }]}] },
+    sahipMulkleri,
+    sahipBinalari
+  );
+  if (!sonuc.ok) return { ok: false, hata: sonuc.hata.replace(/^1\. bina: /, "") };
+  const k = sonuc.binalar[0];
+  return {
+    ok: true,
+    atama: { propertyId, bina: { id: k.id, ad: k.ad, il: k.il, ilce: k.ilce, konum: k.konum }, blok: k.birimler[0].blok, daireNo: k.birimler[0].daireNo },
+  };
+}

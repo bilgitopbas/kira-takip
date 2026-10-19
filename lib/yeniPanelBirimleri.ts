@@ -8,7 +8,7 @@
 // VERİ AZALTMA: Kiracıdan yalnız ad, aylık kira, başlangıç, puan ve borç
 // tutarları alınır. TC kimlik/vergi no, telefon, e-posta, adres SEÇİLMEZ.
 import { prisma } from "@/lib/prisma";
-import { binaCoz } from "@/lib/binaEslestir";
+import { binaAnahtariOlustur, binaCoz } from "@/lib/binaEslestir";
 import { ilCoz } from "@/lib/iller";
 import { birimDurumuHesapla } from "@/lib/birimDurumu";
 import { getEffectiveDebtStatus } from "@/lib/debtStatus";
@@ -101,6 +101,13 @@ export async function panelBirimleriGetir(
   const bugunBasi = gunBasi(bugun);
   const gorulenKiraci = new Set<string>();
 
+  // Kayıtlı binalar (il + ad anahtarıyla): bağlanmamış mülkün önerisi aynı
+  // ildeki aynı adlı kayıtlı binaya denk gelirse o binada gösterilir.
+  const kayitliAnahtarla = new Map<string, NonNullable<(typeof mulkler)[number]["building"]>>();
+  for (const m of mulkler) {
+    if (m.building) kayitliAnahtarla.set(binaAnahtariOlustur(m.building.city, m.building.name), m.building);
+  }
+
   for (const m of mulkler) {
     // Birincil kiracılar + bağlı mülk üzerinden gelenler (tekrarsız)
     const kiracilar = [...m.tenants, ...m.tenantLinks.map((l) => l.tenant)].filter(
@@ -111,7 +118,8 @@ export async function panelBirimleriGetir(
     const cozum = binaCoz(m);
     const ilk = kiracilar[0] ?? null;
     // Binalarım ekranında kaydedilmiş bina önerinin yerine geçer
-    const kayitli = m.building;
+    const kayitli = m.building ?? kayitliAnahtarla.get(cozum.binaAnahtari) ?? null;
+    const bagli = !!m.building;
     const kayitliIl = kayitli ? ilCoz(kayitli.city) ?? cozum.il : cozum.il;
 
     birimler.push({
@@ -128,9 +136,10 @@ export async function panelBirimleriGetir(
         ? {
             anahtar: `b:${kayitli.id}`,
             ad: kayitli.name,
-            blok: m.block,
-            birimNo: m.unitNo,
-            guven: "yuksek",
+            // Bağlı mülkte kayıtlı blok/no; yalnız ad eşleşmesiyle gelende öneri
+            blok: bagli ? m.block : cozum.blok,
+            birimNo: bagli ? m.unitNo : cozum.birimNo,
+            guven: bagli ? "yuksek" : cozum.guven,
             kaynak: "kayit",
             binaId: kayitli.id,
             konum:

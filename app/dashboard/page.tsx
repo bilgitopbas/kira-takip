@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import MonthlyIncomeChart from "@/components/MonthlyIncomeChart";
@@ -15,7 +14,7 @@ import OverdueDebtsBanner from "@/components/OverdueDebtsBanner";
 import EmailVerificationBanner from "@/components/EmailVerificationBanner";
 import { getEffectiveDebtStatus } from "@/lib/debtStatus";
 import { getAccessStateForUser } from "@/lib/access";
-import { PANEL_CEREZI, panelGecisAdresi, panelTercihiCoz, yeniPanelIzinli } from "@/lib/panelTercihi";
+import { klasikIstendi, yeniPanelIzinli } from "@/lib/panelTercihi";
 import { panelOzetiGetir } from "@/lib/yeniPanelVeri";
 import { panelBirimleriGetir } from "@/lib/yeniPanelBirimleri";
 import YeniPanel from "@/components/yeni-panel/YeniPanel";
@@ -226,27 +225,22 @@ export default async function DashboardPage({
     redirect("/login");
   }
 
-  // Yeni panel geçişi (bkz. lib/panelTercihi.ts). Sunucu izni yoksa bu blok
-  // hiçbir şey yapmaz ve aşağıdaki klasik panel değişmeden çalışır.
-  const yeniPanelVar = yeniPanelIzinli();
-  if (yeniPanelVar) {
-    const istenen = panelTercihiCoz((await searchParams).panel);
-    if (istenen) redirect(panelGecisAdresi(istenen));
-    const cerezDeposu = await cookies();
-    if (cerezDeposu.get(PANEL_CEREZI)?.value === "yeni") {
-      const [ozet, { birimler, bugun }] = await Promise.all([
-        panelOzetiGetir(session.userId),
-        panelBirimleriGetir(session.userId),
-      ]);
-      const tarihMetni = new Date().toLocaleDateString("tr-TR", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-        weekday: "long",
-        timeZone: "Europe/Istanbul",
-      });
-      return <YeniPanel ozet={ozet} birimler={birimler} bugun={bugun} tarihMetni={tarihMetni} />;
-    }
+  // Yeni panel varsayılandır (bkz. lib/panelTercihi.ts). Sunucu izni yoksa
+  // (acil kapatma) ya da bu istekte ?panel=klasik verildiyse aşağıdaki klasik
+  // panel değişmeden çalışır.
+  if (yeniPanelIzinli() && !klasikIstendi((await searchParams).panel)) {
+    const [ozet, { birimler, bugun }] = await Promise.all([
+      panelOzetiGetir(session.userId),
+      panelBirimleriGetir(session.userId),
+    ]);
+    const tarihMetni = new Date().toLocaleDateString("tr-TR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      weekday: "long",
+      timeZone: "Europe/Istanbul",
+    });
+    return <YeniPanel ozet={ozet} birimler={birimler} bugun={bugun} tarihMetni={tarihMetni} />;
   }
 
   const {
@@ -290,14 +284,6 @@ export default async function DashboardPage({
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Kontrol Paneli</h1>
           <p className="text-sm text-slate-500 mt-1">
             Mülklerinizin genel durumu · Son güncelleme: Bugün {updatedAt}
-            {yeniPanelVar && (
-              <>
-                {" · "}
-                <a href={panelGecisAdresi("yeni")} className="font-semibold text-[#0a7c76] hover:underline">
-                  Yeni paneli dene
-                </a>
-              </>
-            )}
           </p>
         </div>
         <div className="grid grid-cols-3 sm:flex sm:items-center gap-2">

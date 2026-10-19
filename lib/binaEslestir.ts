@@ -181,6 +181,17 @@ export function metinCoz(hamMetin: string): Parca | null {
  * Bir mülkün bina çözümü. Önce başlık, olmazsa adres denenir. İkisi de
  * eşleşmezse mülk kendi başına bir "bina" sayılır (anahtarı mülk kimliği).
  */
+/**
+ * Bina anahtarı: il + katlanmış bina adı. Öneriler (binaCoz) ve kayıtlı binalar
+ * (Binalarım) aynı anahtarı kullanır; böylece bir binaya henüz bağlanmamış
+ * mülk, aynı ildeki aynı adlı kayıtlı binanın yanına düşer. İl çözülemezse
+ * "-" kullanılır: hiçbir ile VARSAYILMAZ.
+ */
+export function binaAnahtariOlustur(sehir: string | null | undefined, ad: string): string {
+  const il = ilCoz(sehir);
+  return `${il ? katla(il) : "-"}|${katla(ad)}`;
+}
+
 export function binaCoz(mulk: { id: string; title: string; address?: string | null; city?: string | null }): BinaCozumu {
   const il = ilCoz(mulk.city);
   const ilAnahtari = il ? katla(il) : "-";

@@ -13,7 +13,8 @@ import Link from "next/link";
 import veri from "@/lib/veri/il-ilce-merkezleri.json";
 import { ILLER } from "@/lib/iller";
 import { baslangicKonumu } from "@/lib/konumMerkezi";
-import { baslangicGruplari, kayitGovdesi, type BBina, type BMulk, type EGrup } from "@/lib/binalarimModeli";
+import { baslangicGruplari, ilUyarilari, kayitGovdesi, yenidenEsle, type BBina, type BMulk, type EGrup } from "@/lib/binalarimModeli";
+import MulkDuzenleButton from "@/components/MulkDuzenleButton";
 
 const KonumSecici = dynamic(() => import("@/components/binalarim/KonumSecici"), {
   ssr: false,
@@ -122,6 +123,7 @@ export default function BinalarimEditor({ mulkler, binalar }: { mulkler: BMulk[]
     });
   }, [gruplar, yalnizKontrol, sorgu]);
 
+  const uyarilar = useMemo(() => ilUyarilari(gruplar), [gruplar]);
   const onayBekleyen = gruplar.filter((g) => !g.onayli).length;
   const kontrolBekleyen = gruplar.filter((g) => g.birimler.some((b) => b.kontrol)).length;
 
@@ -204,7 +206,27 @@ export default function BinalarimEditor({ mulkler, binalar }: { mulkler: BMulk[]
                   {g.oneri ? "Öneri" : g.id ? "Kayıtlı" : "Yeni"}
                 </span>
                 {kontrol && <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-700">kontrol edin</span>}
+                {uyarilar.get(g.anahtar)?.ilYok && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-red-50 text-red-700">il seçin · haritada gösterilmez</span>
+                )}
+                {uyarilar.get(g.anahtar)?.digerIller.map((d) => (
+                  <span key={d.il} className="text-[10px] font-bold px-2 py-0.5 rounded bg-red-50 text-red-700" title="Aynı bina adı başka ilde daha çok birimle kayıtlı">
+                    aynı ad {d.il}&apos;da da var ({d.birim} birim) · il yanlış girilmiş olabilir
+                  </span>
+                ))}
                 <span className="text-xs text-slate-500">{g.birimler.length} birim</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGruplar((gs) => yenidenEsle(gs, g.anahtar, mulkler));
+                    setDegisti(true);
+                    setMesaj(null);
+                  }}
+                  title="Mülklerin güncel ad, adres ve il bilgisinden bina önerisini yeniden hesapla"
+                  className="text-[11px] font-semibold px-2 py-0.5 rounded-lg border border-gray-200 text-slate-600 hover:bg-gray-50"
+                >
+                  Yeniden eşle
+                </button>
                 {g.oneri && (
                   <label className="ml-auto inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700">
                     <input
@@ -311,9 +333,27 @@ export default function BinalarimEditor({ mulkler, binalar }: { mulkler: BMulk[]
                     onDragEnd={() => setSurukelenen(null)}
                     className="grid grid-cols-[minmax(0,1fr)_4rem_5rem] sm:grid-cols-[minmax(0,1fr)_4.5rem_6rem_10rem] items-center gap-2 px-3 py-2 cursor-grab active:cursor-grabbing"
                   >
-                    <span className="min-w-0 text-sm text-slate-700 truncate" title={b.title}>
-                      {b.kontrol && <span className="text-amber-600 font-bold mr-1" title="Blok '2A' gibi bir yazımdan tahmin edildi">⚠</span>}
-                      {b.title}
+                    <span className="min-w-0 flex items-center gap-1.5">
+                      <span className="min-w-0 text-sm text-slate-700 truncate" title={b.title}>
+                        {b.kontrol && <span className="text-amber-600 font-bold mr-1" title="Blok '2A' gibi bir yazımdan tahmin edildi">⚠</span>}
+                        {b.yeniOneri && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 mr-1 rounded bg-sky-50 text-sky-700" title="Bu binaya ad ve il eşleşmesiyle önerildi; kaydedince bağlanır">
+                            öneri
+                          </span>
+                        )}
+                        {b.title}
+                      </span>
+                      {degisti ? (
+                        <span className="flex-none text-[11px] text-slate-400" title="Mülkü düzenlemeden önce bu ekrandaki değişiklikleri kaydedin">
+                          Düzenle
+                        </span>
+                      ) : (
+                        <MulkDuzenleButton
+                          propertyId={b.propertyId}
+                          onUpdated={() => router.refresh()}
+                          className="flex-none text-[11px] font-semibold text-[#0a7c76] hover:underline"
+                        />
+                      )}
                     </span>
                     <input
                       value={b.blok}
