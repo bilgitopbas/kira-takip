@@ -12,10 +12,11 @@
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { gecikmeVar, sehirBinasi, type SehirBinasi } from "@/lib/sehir3dModeli";
+import { dumanBulutu, dumanEvresi, gecikmeVar, parlamaKatsayisi, sehirBinasi, type SehirBinasi } from "@/lib/sehir3dModeli";
+import { canliSahneUygun } from "@/lib/webglDestek";
 import type { Bina } from "@/lib/yeniPanelBina";
 import type { BirimDurumu } from "@/lib/yeniPanelTipleri";
-import { GY, sehirKur, type Kutu, type Sehir } from "@/components/yeni-panel/sehir3d/insa";
+import { DUMAN_BULUTU, GY, sehirKur, type Kutu, type Sehir } from "@/components/yeni-panel/sehir3d/insa";
 
 const VURGU = "#17B6AE";
 const PENCERE_RENGI: Record<BirimDurumu | "suslu", string> = {
@@ -68,6 +69,10 @@ function motorKur(
   const azHareket = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   // Telefon/tablet: DPR 1 (pil ve ısı), tek parmak sayfayı kaydırır
   const dokunmatik = window.matchMedia("(pointer: coarse)").matches;
+  // Canlılık (baca dumanı, seçili birim pencere nabzı): yalnız güçlü masaüstünde
+  // sahne görünürken sürekli çizilir; aksi hâlde sabit ve boşta hiç çizim yok.
+  const nav = navigator as Navigator & { deviceMemory?: number };
+  let canli = canliSahneUygun({ dokunmatik, azHareket, cekirdek: nav.hardwareConcurrency, bellek: nav.deviceMemory });
   const R = new THREE.WebGLRenderer({ antialias: !dokunmatik, powerPreference: "default" });
   R.setPixelRatio(dokunmatik ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
   R.outputColorSpace = THREE.SRGBColorSpace;
@@ -77,6 +82,9 @@ function motorKur(
   const golge = !dokunmatik;
   R.shadowMap.enabled = golge;
   R.shadowMap.type = THREE.PCFSoftShadowMap;
+  // Gölge düşüren her şey durağan (güneş, binalar): gölge haritası her karede
+  // değil, yalnız şehir kurulunca yeniden çizilir.
+  R.shadowMap.autoUpdate = false;
   R.domElement.style.width = "100%";
   R.domElement.style.height = "100%";
   R.domElement.style.display = "block";
@@ -156,6 +164,10 @@ function motorKur(
   const solukHedef: number[] = [];
   const solukSimdi: number[] = [];
   let solukAnim = false;
+  let parlama = parlamaKatsayisi(null);
+  let canlandirildi = false;
+  let oncekiKare = 0;
+  let yavasKare = 0;
 
   type Ucus = { t0: number; ms: number; ft: THREE.Vector3; fc: THREE.Vector3; tt: THREE.Vector3; tc: THREE.Vector3 };
   let ucus: Ucus | null = null;
@@ -191,13 +203,27 @@ function motorKur(
   const gozlem = new ResizeObserver(boyutla);
   gozlem.observe(kap);
 
+  // Sürekli çizim yalnız sahne görünürken: sekme gizli ya da sahne ekran dışındaysa durur
+  let sekmeAcik = document.visibilityState === "visible";
+  let ekranda = true;
+  const gorunurlukDegisti = () => {
+    sekmeAcik = document.visibilityState === "visible";
+    iste();
+  };
+  document.addEventListener("visibilitychange", gorunurlukDegisti);
+  const ekranGozlem = new IntersectionObserver(([g]) => {
+    ekranda = g ? g.isIntersecting : true;
+    iste();
+  });
+  ekranGozlem.observe(kap);
+
   function pencereRengi(i: number, out: THREE.Color) {
     if (!sehir) return out;
     const p = sehir.pencereler[i];
     out.set(PENCERE_RENGI[p.durum ?? "suslu"]);
     const d = p.idx >= 0 ? solukSimdi[p.idx] ?? 0 : 0;
     if (d > 0) out.lerp(SOLUK, Math.min(0.85, d * 1.1));
-    if (secim.birim && p.birim === secim.birim) out.lerp(BEYAZ, 0.45);
+    if (secim.birim && p.birim === secim.birim) out.lerp(BEYAZ, parlama);
     return out;
   }
   function pencereleriBoya() {
@@ -390,6 +416,55 @@ function motorKur(
     iste();
   }
 
+  const _dp = new THREE.Vector3();
+  const _dq = new THREE.Quaternion();
+  const _ds = new THREE.Vector3();
+  const _dm = new THREE.Matrix4();
+  function dumaniYerlestir(evre: (i: number) => number) {
+    const ag = sehir?.dumanAgi;
+    if (!sehir || !ag) return;
+    let k = 0;
+    for (const [x, y, z] of sehir.dumanKaynaklari) {
+      for (let i = 0; i < DUMAN_BULUTU; i++) {
+        const c = dumanBulutu(evre(i));
+        _dm.compose(_dp.set(x + c.dx, y + c.dy, z + c.dz), _dq, _ds.setScalar(c.olcek));
+        ag.setMatrixAt(k++, _dm);
+      }
+    }
+    ag.instanceMatrix.needsUpdate = true;
+  }
+  /** Bu karede canlılık öğesi oynatılmalı mı (cihaz + görünürlük + sahnede öğe var mı) */
+  function canliOge() {
+    if (!canli || !sekmeAcik || !ekranda || !sehir) return false;
+    return sehir.dumanKaynaklari.length > 0 || !!(secim.birim && sehir.birimPencereleri.has(secim.birim));
+  }
+  function canlandir(t: number) {
+    if (!sehir) return;
+    dumaniYerlestir((i) => dumanEvresi(t, i, DUMAN_BULUTU));
+    const pl = secim.birim ? sehir.birimPencereleri.get(secim.birim) : undefined;
+    if (pl) {
+      parlama = parlamaKatsayisi(t);
+      for (const i of pl) sehir.pencereAgi.setColorAt(i, pencereRengi(i, _col));
+      if (sehir.pencereAgi.instanceColor) sehir.pencereAgi.instanceColor.needsUpdate = true;
+    }
+    canlandirildi = true;
+    // Güvenlik: kareler sürekli yavaşsa (>28 ms) canlılık kapanır, sahne sabit kalır
+    const dt = oncekiKare ? t - oncekiKare : 0;
+    oncekiKare = t;
+    if (dt > 0 && dt < 200) {
+      yavasKare = dt > 28 ? yavasKare + 1 : Math.max(0, yavasKare - 1);
+      if (yavasKare > 90) canli = false;
+    }
+  }
+  /** Canlılık durunca öğeleri sabit hâline döndür (duman yerleşimi, sabit parlama) */
+  function sabitle() {
+    canlandirildi = false;
+    oncekiKare = 0;
+    parlama = parlamaKatsayisi(null);
+    dumaniYerlestir((i) => (i + 0.5) / DUMAN_BULUTU);
+    pencereleriBoya();
+  }
+
   function kare(t: number) {
     raf = 0;
     let devam = false;
@@ -430,6 +505,10 @@ function motorKur(
       uzerindeAyarla(h);
     }
     if (solukAnim && solukAdimi()) devam = true;
+    if (canliOge()) {
+      canlandir(t);
+      devam = true;
+    } else if (canlandirildi) sabitle();
     R.render(sahne, kamera);
     etiketleriYerlestir();
     if (devam) iste();
@@ -474,6 +553,7 @@ function motorKur(
       sahne.add(sehir.binaAgi, sehir.zeminAgi, sehir.pencereAgi);
       if (sehir.dumanAgi) sahne.add(sehir.dumanAgi);
       for (const t of sehir.tabelalar) sahne.add(t.mesh);
+      R.shadowMap.needsUpdate = true;
       sahne.fog = new THREE.Fog("#dfe6e1", 300 * sehir.olcek, 760 * sehir.olcek);
       kontrol.maxDistance = 380 * sehir.olcek;
       for (const h of sehir.vuruslar) {
@@ -573,6 +653,8 @@ function motorKur(
       if (raf) cancelAnimationFrame(raf);
       raf = 0;
       gozlem.disconnect();
+      ekranGozlem.disconnect();
+      document.removeEventListener("visibilitychange", gorunurlukDegisti);
       R.domElement.removeEventListener("pointerdown", onDown);
       R.domElement.removeEventListener("pointerup", onUp);
       R.domElement.removeEventListener("pointermove", onMove);

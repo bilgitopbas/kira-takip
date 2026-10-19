@@ -7,12 +7,14 @@
 // her pencere bir birime bağlıdır ve rengi birimin durumundan gelir.
 // Tabelalar küçük canvas dokusudur (metin canvas'a çizilir; HTML'e girmez).
 import * as THREE from "three";
-import { izgaraYerlesimi, type Hucre, type SehirBinasi } from "@/lib/sehir3dModeli";
+import { bacaTutuyor, dumanBulutu, izgaraYerlesimi, type Hucre, type SehirBinasi } from "@/lib/sehir3dModeli";
 import type { BirimDurumu } from "@/lib/yeniPanelTipleri";
 
 export const GY = 0.22;
 export const ARALIK = 52; // hücre aralığı
 const BS = 40; // blok (kaldırım dahil)
+/** Bir bacadaki duman bulutu sayısı */
+export const DUMAN_BULUTU = 7;
 const PARSEL = 34;
 
 export type Kutu = { x: number; z: number; w: number; d: number; ust: number };
@@ -25,8 +27,10 @@ export type Sehir = {
   binaAgi: THREE.Mesh;
   zeminAgi: THREE.Mesh;
   pencereAgi: THREE.InstancedMesh;
-  /** Fabrika bacası dumanı (sabit bulutlar; sürekli animasyon yok) */
+  /** Fabrika bacası dumanı: her bacada DUMAN_BULUTU bulut (sabit yerleşimle kurulur; güçlü masaüstünde motor canlandırır) */
   dumanAgi: THREE.InstancedMesh | null;
+  /** Baca ağızları (dumanAgi örnek sırasıyla: k. baca → k*DUMAN_BULUTU ...) */
+  dumanKaynaklari: [number, number, number][];
   tabelalar: Tabela[];
   pencereler: PencereBilgisi[];
   birimPencereleri: Map<string, number[]>;
@@ -663,7 +667,8 @@ class Insaatci {
     this.ham(this.T_CONE, this.OX + chx, GY, this.OZ + chz, 1.1, 24, 1.1, "#a35a43");
     this.ham(this.T_CYL, this.OX + chx, GY + 19, this.OZ + chz, 0.78, 0.9, 0.78, "#efebe2");
     this.ham(this.T_CYL, this.OX + chx, GY + 21.4, this.OZ + chz, 0.7, 0.9, 0.7, "#efebe2");
-    this.dumanlar.push([this.OX + chx, GY + 24.2, this.OZ + chz]);
+    // Tamamı boş fabrika tütmez (önizleme v6)
+    if (bacaTutuyor(this.b)) this.dumanlar.push([this.OX + chx, GY + 24.2, this.OZ + chz]);
     this.vurus(chx, 0, chz, 2.3, 24, 2.3);
     return H + 2.8;
   }
@@ -892,23 +897,25 @@ export function sehirKur(binalar: SehirBinasi[], binaMalzemesi: THREE.Material, 
   const solukDoku = new THREE.DataTexture(new Uint8Array(N * 4), N, 1, THREE.RGBAFormat);
   solukDoku.needsUpdate = true;
 
-  // Duman: her bacada 7 yarı saydam bulut, yukarı ve rüzgâr yönüne açılan iz
+  // Duman: her bacada DUMAN_BULUTU yarı saydam bulut, yukarı ve rüzgâr yönüne açılan iz
   let dumanAgi: THREE.InstancedMesh | null = null;
   let dumanGeo: THREE.BufferGeometry | null = null;
   let dumanMal: THREE.Material | null = null;
   if (ins.dumanlar.length) {
     dumanGeo = new THREE.IcosahedronGeometry(1, 0);
     dumanMal = new THREE.MeshLambertMaterial({ color: "#dcdbd5", transparent: true, opacity: 0.32, depthWrite: false });
-    dumanAgi = new THREE.InstancedMesh(dumanGeo, dumanMal, ins.dumanlar.length * 7);
+    dumanAgi = new THREE.InstancedMesh(dumanGeo, dumanMal, ins.dumanlar.length * DUMAN_BULUTU);
     let k = 0;
     for (const [x, y, z] of ins.dumanlar) {
-      for (let i = 0; i < 7; i++) {
-        const p = (i + 0.5) / 7;
-        _m.compose(_p.set(x + p * 7, y + p * 11, z - p * 3), _q.identity(), _s.setScalar(0.35 + p * 1.7));
+      for (let i = 0; i < DUMAN_BULUTU; i++) {
+        const c = dumanBulutu((i + 0.5) / DUMAN_BULUTU);
+        _m.compose(_p.set(x + c.dx, y + c.dy, z + c.dz), _q.identity(), _s.setScalar(c.olcek));
         dumanAgi.setMatrixAt(k++, _m);
       }
     }
-    dumanAgi.computeBoundingSphere();
+    // Canlandırmada bulutlar baca ağzından iz ucuna kadar gezer; küçük bir küme için
+    // görüş alanı denetimine gerek yok
+    dumanAgi.frustumCulled = false;
   }
 
   ins.sablonlariBirak();
@@ -918,6 +925,7 @@ export function sehirKur(binalar: SehirBinasi[], binaMalzemesi: THREE.Material, 
     zeminAgi,
     pencereAgi,
     dumanAgi,
+    dumanKaynaklari: ins.dumanlar,
     tabelalar: ins.tabelalar,
     pencereler,
     birimPencereleri,

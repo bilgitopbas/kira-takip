@@ -195,3 +195,23 @@ export function izgaraYerlesimi(n: number): { gx: number; gz: number; hucreler: 
 export function gecikmeVar(b: SehirBinasi) {
   return b.birimler.some((u) => u.durum === "gecikmis");
 }
+
+/** Fabrika bacası tütüyor mu: içinde en az bir dolu birim varsa (önizleme v6 kuralı) */
+export function bacaTutuyor(b: SehirBinasi) {
+  return b.birimler.some((u) => u.durum !== "bos");
+}
+
+/** Duman bulutu yerleşimi: p = 0 baca ağzı, p = 1 izin ucu (yukarı ve rüzgâr yönüne açılır) */
+export function dumanBulutu(p: number): { dx: number; dy: number; dz: number; olcek: number } {
+  return { dx: p * 7, dy: p * 11, dz: -p * 3, olcek: 0.35 + p * 1.7 };
+}
+
+/** Sürekli çizimde i. bulutun t (ms) anındaki konumu; her bulut ~6,25 sn'de bir döner */
+export function dumanEvresi(t: number, i: number, n = 7) {
+  return (((t * 0.00016 + i / n) % 1) + 1) % 1;
+}
+
+/** Seçili birim pencere parlaması: sürekli çizimde 0,25–0,60 arası nabız; sabitte 0,45 */
+export function parlamaKatsayisi(t: number | null) {
+  return t === null ? 0.45 : 0.25 + 0.35 * (0.5 + 0.5 * Math.sin(t * 0.006));
+}

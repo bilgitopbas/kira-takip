@@ -39,3 +39,16 @@ export function grafikSeviyesi(): GrafikSeviyesi {
   const c = cihazDurumu();
   return c.webgl && !c.zayif ? "tam" : "hafif";
 }
+
+/**
+ * Sahnedeki küçük canlılık öğeleri (baca dumanı, seçili birimin pencere
+ * parlaması) yalnız güçlü masaüstünde ve hareketi azalt kapalıyken sürekli
+ * çizilir. Telefon/tablet (kaba işaretçi), zayıf cihaz ya da çekirdek sayısı
+ * bilinmeyen tarayıcıda öğeler sabit kalır ve sahne boştayken hiç çizmez.
+ */
+export function canliSahneUygun(o: { dokunmatik: boolean; azHareket: boolean; cekirdek?: number; bellek?: number }): boolean {
+  if (o.dokunmatik || o.azHareket) return false;
+  if (typeof o.cekirdek !== "number" || o.cekirdek < 4) return false;
+  if (typeof o.bellek === "number" && o.bellek < 2) return false;
+  return true;
+}
