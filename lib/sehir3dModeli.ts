@@ -8,6 +8,7 @@
 //  - Ofis: 1 birim küçük ofis, 2–20 birim iş hanı
 //  - Konut (ve tipi girilmemiş): 1 birim villa/müstakil, 2–24 birim apartman
 import type { Bina } from "@/lib/yeniPanelBina";
+import { ILLER, plakaKodu, type Il } from "@/lib/iller";
 import type { BirimDurumu, PanelBirimi } from "@/lib/yeniPanelTipleri";
 
 export type Aile = "plaza" | "han" | "kucukofis" | "apt" | "villa" | "mustakil" | "avm" | "fabrika" | "arsa";
@@ -44,6 +45,8 @@ export type SehirBinasi = {
   renk: { duvar: string; susleme: string; taban: string; korkuluk: string };
   /** 0..1 tohum (çeşitlilik için, anahtardan) */
   tohum: number;
+  /** İl plaka kodu ("06"); il bilinmiyorsa null — "Tüm iller"de etikette gösterilir */
+  plaka: string | null;
 };
 
 const DUVARLAR = ["#d9c9a8", "#b9785a", "#cfd4cf", "#e2d2b4", "#e4d5b7", "#b26a4e"];
@@ -123,6 +126,7 @@ export function sehirBinasi(bina: Bina): SehirBinasi {
       korkuluk: KORKULUK[Math.floor(t * 97) % KORKULUK.length],
     },
     tohum: t,
+    plaka: bina.il && (ILLER as readonly string[]).includes(bina.il) ? String(plakaKodu(bina.il as Il)).padStart(2, "0") : null,
   };
 
   switch (aile) {

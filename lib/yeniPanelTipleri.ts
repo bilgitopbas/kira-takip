@@ -99,6 +99,12 @@ export type PanelOzeti = {
   buYilTahsilat: number;
   /** Bu ayın borcuna göre tahsilat yüzdesi; bu ay borç yoksa null */
   tahsilatOrani: number | null;
+  /** Bu ay vadesi gelen borçların toplamı (tahsilat hedefi) */
+  buAyBeklenen: number;
+  /** Bu yıl eklenen mülk sayısı */
+  mulkBuYil: number;
+  /** KPI eğrileri: mülk/kiracı son 8 ay birikimli, tahsilat son 8 ay aylık, gelir yıl içi birikimli */
+  seriler: { mulk: number[]; kiraci: number[]; tahsilat: number[]; gelir: number[] };
   gecikmisSayisi: number;
   gecikmisTutar: number;
   gecikenler: GecikenBorc[];

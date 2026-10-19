@@ -83,8 +83,16 @@ export function TipRozeti({ tip }: { tip: string | null }) {
 
 export function BasHarf({ ad }: { ad: string }) {
   return (
-    <span className="w-9 h-9 rounded-full bg-[#17B6AE]/10 flex items-center justify-center flex-shrink-0" aria-hidden="true">
-      <span className="text-[#17B6AE] text-sm font-bold">{ad.trim().charAt(0).toLocaleUpperCase("tr-TR") || "?"}</span>
+    <span className="w-9 h-9 rounded-full bg-[#f5f2ea] border border-[#dbe3df] flex items-center justify-center flex-shrink-0" aria-hidden="true">
+      <span className="text-slate-600 text-[11px] font-bold">
+        {ad
+          .trim()
+          .split(/\s+/)
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((p) => p.charAt(0).toLocaleUpperCase("tr-TR"))
+          .join("") || "?"}
+      </span>
     </span>
   );
 }

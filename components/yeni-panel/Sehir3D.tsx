@@ -36,6 +36,8 @@ type Motor = {
   sehriKur: (binalar: SehirBinasi[]) => void;
   sec: (s: Sehir3DSecim) => void;
   yalnizGecikmis: (v: boolean) => void;
+  /** "Tüm iller" görünümünde etiketlerde il plaka kodu gösterilir */
+  plakalar: (v: boolean) => void;
   yakinlas: (f: number) => void;
   dondur: (a: number) => void;
   kusBakisi: () => void;
@@ -71,7 +73,10 @@ function motorKur(
   R.outputColorSpace = THREE.SRGBColorSpace;
   R.toneMapping = THREE.ACESFilmicToneMapping;
   R.toneMappingExposure = 1.05;
-  R.shadowMap.enabled = false;
+  // Gölge: masaüstünde açık (önizleme v6 ile aynı), telefonda kapalı
+  const golge = !dokunmatik;
+  R.shadowMap.enabled = golge;
+  R.shadowMap.type = THREE.PCFSoftShadowMap;
   R.domElement.style.width = "100%";
   R.domElement.style.height = "100%";
   R.domElement.style.display = "block";
@@ -103,7 +108,11 @@ function motorKur(
   const yari = new THREE.HemisphereLight("#e6f0f3", "#a89a7c", 1.25);
   const gunes = new THREE.DirectionalLight("#fff2dc", 2.7);
   gunes.position.set(95, 150, 80);
-  sahne.add(yari, gunes);
+  gunes.castShadow = golge;
+  gunes.shadow.mapSize.set(2048, 2048);
+  gunes.shadow.bias = -0.0004;
+  gunes.shadow.normalBias = 0.04;
+  sahne.add(yari, gunes, gunes.target);
 
   // Soluklaştırma: bina sırası köşe özniteliğinde, düzey bir veri dokusunda
   // (bina sayısından bağımsız; tek çizim çağrısı kalır).
@@ -143,6 +152,7 @@ function motorKur(
   let etiketler = new Map<string, { el: HTMLButtonElement; yakin: boolean; sinif: string }>();
   let secim: Sehir3DSecim = { bina: null, blok: null, birim: null };
   let gecikmisFiltre = false;
+  let plakaGoster = true;
   const solukHedef: number[] = [];
   const solukSimdi: number[] = [];
   let solukAnim = false;
@@ -251,7 +261,7 @@ function motorKur(
   }
   function etiketSinifi(e: { el: HTMLButtonElement; yakin: boolean; sinif: string }, secili: boolean) {
     e.el.className = `absolute left-0 top-0 pointer-events-auto flex items-center gap-1.5 rounded-full bg-white border shadow-sm text-xs font-semibold text-slate-800 whitespace-nowrap py-[3px] pl-1.5 pr-1 hover:border-[#17B6AE] will-change-transform ${e.sinif}`;
-    const ad = e.el.children[1] as HTMLElement;
+    const ad = e.el.children[2] as HTMLElement;
     ad.style.display = e.yakin || secili ? "inline" : "none";
   }
 
@@ -452,6 +462,14 @@ function motorKur(
       sehir = sehirKur(binalar, binaMal, zeminMal, pencereMal);
       solukU.value = sehir.solukDoku;
       sayiU.value = Math.max(1, binalar.length);
+      sehir.binaAgi.castShadow = sehir.binaAgi.receiveShadow = golge;
+      sehir.zeminAgi.receiveShadow = golge;
+      sehir.pencereAgi.receiveShadow = golge;
+      // Gölge kamerası şehrin boyutuna göre
+      const sb = Math.max(sehir.sinirX, sehir.sinirZ) + 31;
+      Object.assign(gunes.shadow.camera, { left: -sb, right: sb, top: sb, bottom: -sb, near: 20, far: 420 * sehir.olcek });
+      gunes.shadow.camera.updateProjectionMatrix();
+      gunes.position.set(95, 150, 80).multiplyScalar(Math.max(1, sehir.olcek));
       sahne.add(sehir.binaAgi, sehir.zeminAgi, sehir.pencereAgi);
       for (const t of sehir.tabelalar) sahne.add(t.mesh);
       sahne.fog = new THREE.Fog("#dfe6e1", 300 * sehir.olcek, 760 * sehir.olcek);
@@ -472,9 +490,14 @@ function motorKur(
         el.type = "button";
         const nokta = document.createElement("span");
         nokta.className = "w-2 h-2 rounded-full flex-none";
+        const plaka = document.createElement("span");
+        plaka.className = "text-[10px] font-extrabold px-1.5 rounded-lg bg-[#f5f2ea] text-slate-500 border border-[#dbe3df] tracking-wide";
+        plaka.textContent = b.plaka ?? "";
+        plaka.title = "İl plaka kodu";
         const ad = document.createElement("span");
         ad.textContent = b.kuleler.length > 1 ? `${b.ad} · ${b.kuleler.map((k) => `${k.ad} ${k.izgara.flat().filter(Boolean).length}`).join(" / ")}` : b.ad;
-        el.append(nokta, ad);
+        plaka.hidden = !plakaGoster || !b.plaka;
+        el.append(nokta, plaka, ad);
         if (b.birimler.length > 1) {
           const c = document.createElement("span");
           c.className = "text-[10.5px] font-bold px-1.5 rounded-full bg-[#06211f] text-white";
@@ -517,6 +540,13 @@ function motorKur(
     yalnizGecikmis(v) {
       gecikmisFiltre = v;
       soluklariGuncelle(false);
+    },
+    plakalar(v) {
+      plakaGoster = v;
+      etiketler.forEach((e, anahtar) => {
+        const p = e.el.children[1] as HTMLElement;
+        p.hidden = !v || !modeller.find((m) => m.anahtar === anahtar)?.plaka;
+      });
     },
     yakinlas(f) {
       const off = kamera.position.clone().sub(kontrol.target);
@@ -567,11 +597,13 @@ export default function Sehir3D({
   binalar,
   secim,
   yalnizGecikmis,
+  tumIller,
   onSec,
 }: {
   binalar: Bina[];
   secim: Sehir3DSecim;
   yalnizGecikmis: boolean;
+  tumIller: boolean;
   onSec: (bina: string | null, birim: string | null, blok: string | null) => void;
 }) {
   const kapRef = useRef<HTMLDivElement>(null);
@@ -614,6 +646,10 @@ export default function Sehir3D({
   useEffect(() => {
     motorRef.current?.yalnizGecikmis(yalnizGecikmis);
   }, [yalnizGecikmis]);
+
+  useEffect(() => {
+    motorRef.current?.plakalar(tumIller);
+  }, [tumIller, imza]);
 
   const seciliAd = secim.bina ? modeller.find((b) => b.anahtar === secim.bina)?.ad : null;
   const dugme = "w-9 h-9 rounded-xl border border-gray-200 bg-white shadow-sm grid place-items-center text-lg font-semibold text-slate-700 hover:bg-gray-50";

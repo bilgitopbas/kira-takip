@@ -17,6 +17,7 @@ import OverdueDebtsBanner from "@/components/OverdueDebtsBanner";
 import OccupancyChart from "@/components/OccupancyChart";
 import PropertyTypeChart from "@/components/PropertyTypeChart";
 import IlSecici from "@/components/yeni-panel/IlSecici";
+import Egri from "@/components/yeni-panel/Egri";
 import SahneAlani, { type SahneSekmesi } from "@/components/yeni-panel/SahneAlani";
 import BugunSekmesi from "@/components/yeni-panel/BugunSekmesi";
 import BinalarSekmesi from "@/components/yeni-panel/BinalarSekmesi";
@@ -60,6 +61,7 @@ export default function YeniPanel({
   // Seçili ildeki birimler ve binalar (Mülk Şehrim ızgarası = bina sayısı)
   const ilBirimleri = useMemo(() => (il ? birimler.filter((b) => b.il === il) : birimler), [birimler, il]);
   const binalar = useMemo(() => binalariKur(ilBirimleri), [ilBirimleri]);
+  const tumBinaSayisi = useMemo(() => new Set(birimler.map((b) => b.bina.anahtar)).size, [birimler]);
 
   const router = useRouter();
   const [secim, setSecim] = useState<Secim>(null);
@@ -154,11 +156,38 @@ export default function YeniPanel({
   const birincil = "inline-flex bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm";
   const ikincil = "inline-flex bg-white hover:bg-gray-50 text-slate-700 font-semibold px-4 py-2.5 rounded-xl transition text-sm border border-gray-200";
 
-  const kpiler = [
-    { etiket: "Toplam Mülk", deger: `${ozet.mulkSayisi}`, alt: `${ozet.doluSayisi} dolu · ${ozet.bosSayisi} boş` },
-    { etiket: "Toplam Kiracı", deger: `${ozet.kiraciSayisi}`, alt: ozet.mulkSayisi ? `Doluluk %${Math.round((ozet.doluSayisi / ozet.mulkSayisi) * 100)}` : "—" },
-    { etiket: "Bu Ay Tahsilat", deger: tl(ozet.buAyTahsilat), alt: ozet.tahsilatOrani === null ? "Bu ay borç yok" : `%${ozet.tahsilatOrani} tahsilat`, oran: ozet.tahsilatOrani },
-    { etiket: "Bu Yıl Kira Geliri", deger: tl(ozet.buYilTahsilat), alt: "Ocak'tan bugüne" },
+  const AYLAR = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+  const buAy = new Date().getMonth();
+  const kisa = (n: number) =>
+    n >= 1_000_000
+      ? `${(n / 1_000_000).toLocaleString("tr-TR", { maximumFractionDigits: 2 })} Mn`
+      : n >= 10_000
+        ? `${Math.round(n / 1000).toLocaleString("tr-TR")} B`
+        : n.toLocaleString("tr-TR");
+  const kpiler: { etiket: string; deger: string; alt: string; seri: number[]; renk: string; oran?: number | null }[] = [
+    { etiket: "Toplam Mülk", deger: `${ozet.mulkSayisi}`, alt: `${tumBinaSayisi} binada · bu yıl +${ozet.mulkBuYil}`, seri: ozet.seriler.mulk, renk: "#17B6AE" },
+    {
+      etiket: "Toplam Kiracı",
+      deger: `${ozet.kiraciSayisi}`,
+      alt: ozet.mulkSayisi ? `Doluluk %${Math.round((ozet.doluSayisi / ozet.mulkSayisi) * 100)}` : "—",
+      seri: ozet.seriler.kiraci,
+      renk: "#17B6AE",
+    },
+    {
+      etiket: "Bu Ay Tahsilat",
+      deger: tl(ozet.buAyTahsilat),
+      alt: ozet.buAyBeklenen > 0 ? `hedef ${kisa(ozet.buAyBeklenen)} ₺` : "Bu ay borç yok",
+      oran: ozet.tahsilatOrani,
+      seri: ozet.seriler.tahsilat,
+      renk: ozet.tahsilatOrani !== null && ozet.tahsilatOrani < 50 ? "#cf900b" : "#17B6AE",
+    },
+    {
+      etiket: "Bu Yıl Kira Geliri",
+      deger: tl(ozet.buYilTahsilat),
+      alt: `Ocak–${AYLAR[buAy]} · aylık ort. ${kisa(Math.round(ozet.buYilTahsilat / (buAy + 1)))}`,
+      seri: ozet.seriler.gelir,
+      renk: "#17B6AE",
+    },
   ];
 
   return (
@@ -184,15 +213,29 @@ export default function YeniPanel({
 
       <section aria-label="Özet" className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5">
         {kpiler.map((k) => (
-          <div key={k.etiket} className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 shadow-sm">
-            <p className="text-xs font-medium text-slate-500 mb-1">{k.etiket}</p>
-            <p className="text-lg sm:text-2xl font-bold text-slate-900 tabular-nums">{k.deger}</p>
-            <p className="text-[11px] text-slate-400 mt-1">{k.alt}</p>
-            {k.oran !== undefined && k.oran !== null && (
-              <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-[#17B6AE] rounded-full" style={{ width: `${k.oran}%` }} />
+          <div key={k.etiket} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+            <p className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">{k.etiket}</p>
+            <div className="flex items-end justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-lg min-[1500px]:text-[22px] leading-tight font-bold text-slate-900 tabular-nums flex items-center gap-1.5 flex-wrap">
+                  <span className="whitespace-nowrap">{k.deger}</span>
+                  {k.oran !== undefined && k.oran !== null && (
+                    <span className={`text-[10.5px] font-bold px-1.5 py-0.5 rounded-md ${k.oran < 50 ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>
+                      %{k.oran}
+                    </span>
+                  )}
+                </p>
+                <p className="text-[11px] text-slate-500 mt-1">{k.alt}</p>
+                {k.oran !== undefined && k.oran !== null && (
+                  <div className="mt-1.5 h-1 w-28 max-w-full bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: `${k.oran}%`, background: k.renk }} />
+                  </div>
+                )}
               </div>
-            )}
+              <span className="hidden sm:block">
+                <Egri degerler={k.seri} renk={k.renk} />
+              </span>
+            </div>
           </div>
         ))}
       </section>
@@ -211,7 +254,7 @@ export default function YeniPanel({
       )}
 
       <div className="flex flex-col lg:flex-row lg:items-center gap-3 mb-3">
-        <div role="tablist" aria-label="Görünüm" className="inline-flex bg-white border border-gray-200 rounded-xl p-1 self-start">
+        <div role="tablist" aria-label="Görünüm" className="inline-flex bg-white border border-gray-200 rounded-2xl p-1 self-start shadow-sm">
           {(
             [
               ["sehir", "Mülk Şehrim", "3D"],
@@ -224,12 +267,25 @@ export default function YeniPanel({
               role="tab"
               aria-selected={sahne === deger}
               onClick={() => setSahne(deger)}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
-                sahne === deger ? "bg-[#17B6AE] text-white" : "text-slate-600 hover:bg-gray-50"
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition ${
+                sahne === deger ? "bg-[#06211f] text-white" : "text-slate-600 hover:bg-gray-50"
               }`}
             >
+              {deger === "sehir" ? (
+                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current stroke-2" aria-hidden="true">
+                  <path d="M3 20h18M5 20V9l4-2v13M9 20V4l5 2.5V20M14 20v-8l5 2v6" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current stroke-2" aria-hidden="true">
+                  <path d="M9 4 3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5zM9 4v13.5M15 6.5V20" />
+                </svg>
+              )}
               {etiket}
-              {rozet && <span className={`ml-1.5 text-[10px] font-bold ${sahne === deger ? "text-white/80" : "text-[#0a7c76]"}`}>{rozet}</span>}
+              {rozet && (
+                <span className={`text-[10px] font-extrabold px-1.5 rounded ${sahne === deger ? "bg-[#17B6AE] text-[#032220]" : "bg-[#dcf3f1] text-[#0a7c76]"}`}>
+                  {rozet}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -249,16 +305,20 @@ export default function YeniPanel({
       <div className="grid grid-cols-1 min-[1241px]:grid-cols-[minmax(0,1fr)_380px] gap-4 items-start">
         <section ref={sahneRef} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden scroll-mt-4">
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 px-5 pt-4 pb-3 border-b border-gray-100">
-            <h2 className="text-sm font-bold text-slate-800">
-              {sahne === "sehir" ? "Mülk Şehrim" : "Portföy Haritası"} · {il || "Tüm iller"}
-            </h2>
+            <h2 className="text-sm font-bold text-slate-800">{sahne === "sehir" ? "Mülk Şehrim" : `Portföy Haritası · ${il || "Tüm iller"}`}</h2>
+            <span className="text-xs text-slate-500 tabular-nums sm:ml-auto">
+              <b className="text-slate-800">{binalar.length}</b> bina · <b className="text-slate-800">{ilBirimleri.length}</b> birim
+              <span className="mx-2 text-slate-300">|</span>Doluluk{" "}
+              <b className="text-slate-800">%{ilBirimleri.length ? Math.round((ilBirimleri.filter((b) => b.kiraci).length / ilBirimleri.length) * 100) : 0}</b>
+              <span className="mx-2 text-slate-300">|</span>Gecikmiş <b className="text-red-600">{ilBirimleri.filter((b) => b.durum === "gecikmis").length}</b>
+            </span>
             {sahne === "sehir" && (
               <button
                 type="button"
                 aria-pressed={yalnizGecikmis}
                 onClick={() => setYalnizGecikmis((v) => !v)}
                 title="Gecikmiş birimi olmayan binaları soluklaştır"
-                className={`ml-auto inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold transition ${
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold transition ${
                   yalnizGecikmis ? "bg-red-600 border-red-600 text-white" : "bg-white border-gray-200 text-slate-600 hover:border-red-300"
                 }`}
               >

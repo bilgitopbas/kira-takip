@@ -8,6 +8,15 @@ import { BasHarf, isoTr, kisaTl, tl } from "@/components/yeni-panel/ortak";
 
 const LISTE_SINIRI = 4;
 
+const AY_KISA = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
+
+/** Vade: bugünse "Bugün", değilse "25 Eki" (önizleme v6 biçimi) */
+function vadeMetni(iso: string) {
+  if (gunFarki(iso) === 0) return "Bugün";
+  const [, a, g] = iso.split("-").map(Number);
+  return `${g} ${AY_KISA[a - 1]}`;
+}
+
 function gunFarki(iso: string) {
   const [y, a, g] = iso.split("-").map(Number);
   const hedef = new Date(y, a - 1, g).getTime();
@@ -53,6 +62,7 @@ function Satir({
   sag,
   sagAlt,
   sagAltKirmizi,
+  sagAltSari,
   onClick,
 }: {
   ad: string;
@@ -60,6 +70,7 @@ function Satir({
   sag: string;
   sagAlt: string;
   sagAltKirmizi?: boolean;
+  sagAltSari?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -72,7 +83,7 @@ function Satir({
         </span>
         <span className="text-right flex-shrink-0">
           <span className="block text-sm font-semibold tabular-nums text-slate-800">{sag}</span>
-          <small className={`block text-[11px] ${sagAltKirmizi ? "text-red-600 font-semibold" : "text-slate-500"}`}>{sagAlt}</small>
+          <small className={`block text-[11px] ${sagAltKirmizi ? "text-red-600 font-semibold" : sagAltSari ? "text-amber-600 font-semibold" : "text-slate-500"}`}>{sagAlt}</small>
         </span>
       </button>
     </li>
@@ -115,7 +126,10 @@ export default function BugunSekmesi({
 
       <Bolum baslik="Vadesi gelenler" sayi={vade.length} tumuHref="/dashboard/tahsilat-defteri" bosMetin="Önümüzdeki 14 günde vadesi gelen ödeme yok.">
         {vade.slice(0, LISTE_SINIRI).map((s) => (
-          <Satir key={`${s.tenantId}-${s.tarih}`} ad={s.tenantName} alt={s.propertyTitle} sag={tl(s.tutar ?? 0)} sagAlt={isoTr(s.tarih)} onClick={() => onBirim(s.birimId)} />
+          <Satir key={`${s.tenantId}-${s.tarih}`} ad={s.tenantName} alt={s.propertyTitle} sag={tl(s.tutar ?? 0)} sagAlt={vadeMetni(s.tarih)}
+            sagAltSari={gunFarki(s.tarih) <= 1}
+            onClick={() => onBirim(s.birimId)}
+          />
         ))}
       </Bolum>
 
