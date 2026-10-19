@@ -438,6 +438,7 @@ function motorKur(
   function sehriSok() {
     if (!sehir) return;
     sahne.remove(sehir.binaAgi, sehir.zeminAgi, sehir.pencereAgi);
+    if (sehir.dumanAgi) sahne.remove(sehir.dumanAgi);
     for (const t of sehir.tabelalar) sahne.remove(t.mesh);
     sehir.temizle();
     sehir = null;
@@ -471,6 +472,7 @@ function motorKur(
       gunes.shadow.camera.updateProjectionMatrix();
       gunes.position.set(95, 150, 80).multiplyScalar(Math.max(1, sehir.olcek));
       sahne.add(sehir.binaAgi, sehir.zeminAgi, sehir.pencereAgi);
+      if (sehir.dumanAgi) sahne.add(sehir.dumanAgi);
       for (const t of sehir.tabelalar) sahne.add(t.mesh);
       sahne.fog = new THREE.Fog("#dfe6e1", 300 * sehir.olcek, 760 * sehir.olcek);
       kontrol.maxDistance = 380 * sehir.olcek;
@@ -526,6 +528,8 @@ function motorKur(
       const k = s.bina ? kutuOf(s.bina, s.blok) : null;
       if (!k) {
         seciliKenar.visible = plaka.visible = false;
+        // Odaktan çıkınca (panel kapatıldı) tüm şehre geri uç
+        if (onceki.bina && !s.bina) kusBakisi(false);
         iste();
         return;
       }

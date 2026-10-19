@@ -23,10 +23,16 @@ export default function OverdueDebtsBanner({
   count,
   amount,
   list,
+  gorunum = "klasik",
+  birimSayisi,
 }: {
   count: number;
   amount: number;
   list: OverdueDebt[];
+  /** "v6": yeni paneldeki kırmızı uyarı bandı (klasik panel değişmez) */
+  gorunum?: "klasik" | "v6";
+  /** v6 görünümünde gösterilecek gecikmiş birim sayısı */
+  birimSayisi?: number;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -34,6 +40,20 @@ export default function OverdueDebtsBanner({
 
   return (
     <>
+      {gorunum === "v6" ? (
+        <div role="status" className="w-full flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-[#f2c6c6] bg-[#fdecec] px-4 py-2.5 mb-4 text-sm text-[#8a2a2a]">
+          <svg viewBox="0 0 24 24" className="w-5 h-5 flex-none fill-none stroke-current stroke-2" aria-hidden="true">
+            <path d="M12 3 2 20h20zM12 10v4.5M12 17.2v.1" />
+          </svg>
+          <span>
+            Toplam Gecikmiş <b className="tabular-nums">{amount.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</b> ({birimSayisi ?? count} birim)
+          </span>
+          <span aria-hidden="true">·</span>
+          <button type="button" onClick={() => setOpen(true)} className="font-bold underline underline-offset-2 hover:no-underline">
+            Detayları Gör
+          </button>
+        </div>
+      ) : (
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -44,6 +64,7 @@ export default function OverdueDebtsBanner({
         <span className="text-xs text-slate-400">({count} kayıt)</span>
         <span className="ml-auto text-xs font-semibold text-[#17B6AE]">Detayları Gör →</span>
       </button>
+      )}
 
       {open && (
         <Modal onClose={() => setOpen(false)} title="Gecikmiş Ödemeler" maxWidthClassName="max-w-lg">

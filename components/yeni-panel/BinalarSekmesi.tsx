@@ -4,7 +4,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { binaEslesir, ozetle, type Bina } from "@/lib/yeniPanelBina";
-import { DURUM_ZEMIN, DagilimCubugu, kisaTl } from "@/components/yeni-panel/ortak";
+import { DagilimCubugu, TipIkonu, kisaTl } from "@/components/yeni-panel/ortak";
 
 type Siralama = "gec" | "birim" | "ad";
 
@@ -33,8 +33,8 @@ export default function BinalarSekmesi({
 
   return (
     <div className="p-4 sm:p-5">
-      <header className="flex items-baseline justify-between mb-3">
-        <h2 className="text-base font-bold text-slate-900">Binalar</h2>
+      <header className="flex items-baseline gap-2 mb-3">
+        <h2 className="text-lg font-bold text-slate-900">Binalar</h2>
         <span className="text-xs text-slate-500 tabular-nums">
           {satirlar.length < binalar.length ? `${satirlar.length}/` : ""}
           {binalar.length} bina · {birimSayisi} birim{il ? ` · ${il}` : ""}
@@ -81,19 +81,31 @@ export default function BinalarSekmesi({
                 onClick={() => onSec(b.anahtar)}
                 className="w-full text-left rounded-xl border border-gray-100 bg-white px-3 py-2.5 hover:border-[#17B6AE]/40 hover:shadow-sm transition"
               >
-                <span className="flex items-center gap-2">
-                  <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${DURUM_ZEMIN[o.enKotu]}`} aria-hidden="true" />
-                  <b className="flex-1 min-w-0 truncate text-sm text-slate-800">{b.ad}</b>
-                  <span className={`text-[11px] font-semibold tabular-nums ${o.sayac.gecikmis ? "text-red-600" : "text-slate-400"}`}>
-                    {o.sayac.gecikmis ? `${o.sayac.gecikmis} gecikmiş` : "gecikme yok"}
+                <span className="grid grid-cols-[34px_minmax(0,1fr)] gap-x-2.5 items-center">
+                  <span className="row-span-2">
+                    <TipIkonu tip={b.tip} durum={o.enKotu} />
                   </span>
+                  <span className="flex items-center gap-2 min-w-0">
+                    <b className="flex-1 min-w-0 truncate text-sm text-slate-800">{b.ad}</b>
+                    <span
+                      className={`text-[10.5px] font-bold px-1.5 py-0.5 rounded-md tabular-nums whitespace-nowrap ${
+                        o.sayac.gecikmis ? "bg-[#fbe6e6] text-[#d23f3f]" : "bg-[#e5f4ec] text-[#1d9a60]"
+                      }`}
+                    >
+                      {o.sayac.gecikmis ? `${o.sayac.gecikmis} gecikmiş` : "gecikme yok"}
+                    </span>
+                  </span>
+                  <small className="block text-[11px] text-slate-500 tabular-nums truncate">
+                    {b.bloklar.length ? (
+                      <b className="text-slate-700">{b.bloklar.map((x) => `${x.ad} Blok ${x.birimler.length}`).join(" / ")}</b>
+                    ) : (
+                      `${o.n} birim`
+                    )}{" "}
+                    · %{o.n ? Math.round((o.dolu / o.n) * 100) : 0} dolu · {kisaTl(o.aylikKira)}/ay
+                  </small>
                 </span>
-                <small className="block text-[11px] text-slate-500 mt-0.5 pl-[18px] tabular-nums">
-                  {b.bloklar.length ? b.bloklar.map((x) => `${x.ad} ${x.birimler.length}`).join(" / ") : `${o.n} birim`} · %
-                  {o.n ? Math.round((o.dolu / o.n) * 100) : 0} dolu · {kisaTl(o.aylikKira)}/ay
-                </small>
-                <span className="block mt-1.5 pl-[18px]">
-                  <DagilimCubugu ozet={o} />
+                <span className="block mt-1.5">
+                  <DagilimCubugu ozet={o} className="h-1" />
                 </span>
               </button>
             </li>

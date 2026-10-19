@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ILLER } from "@/lib/iller";
+import { ILLER, plakaKodu } from "@/lib/iller";
 
 const PROPERTY_TYPES = [
   { value: "ARSA", label: "Arsa" },
@@ -202,11 +202,13 @@ export default function MulkForm({
           >
             <option value="">İl seçin</option>
             {city && !(ILLER as readonly string[]).includes(city) && <option value={city}>{city} (kayıtlı)</option>}
-            {ILLER.map((il) => (
-              <option key={il} value={il}>
-                {il}
-              </option>
-            ))}
+            {[...ILLER]
+              .sort((x, y) => x.localeCompare(y, "tr"))
+              .map((il) => (
+                <option key={il} value={il}>
+                  {il} ({String(plakaKodu(il)).padStart(2, "0")})
+                </option>
+              ))}
           </select>
         </div>
         <div>

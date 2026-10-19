@@ -14,10 +14,9 @@ import MulkEkleButton from "@/components/MulkEkleButton";
 import KiraciEkleButton from "@/components/KiraciEkleButton";
 import TahsilatEkleButton from "@/components/TahsilatEkleButton";
 import OverdueDebtsBanner from "@/components/OverdueDebtsBanner";
-import OccupancyChart from "@/components/OccupancyChart";
-import PropertyTypeChart from "@/components/PropertyTypeChart";
 import IlSecici from "@/components/yeni-panel/IlSecici";
 import Egri from "@/components/yeni-panel/Egri";
+import DolulukTipKartlari from "@/components/yeni-panel/DolulukTipKartlari";
 import SahneAlani, { type SahneSekmesi } from "@/components/yeni-panel/SahneAlani";
 import BugunSekmesi from "@/components/yeni-panel/BugunSekmesi";
 import BinalarSekmesi from "@/components/yeni-panel/BinalarSekmesi";
@@ -209,13 +208,19 @@ export default function YeniPanel({
         </div>
       </div>
 
-      <OverdueDebtsBanner count={ozet.gecikmisSayisi} amount={ozet.gecikmisTutar} list={ozet.gecikenler} />
+      <OverdueDebtsBanner
+        count={ozet.gecikmisSayisi}
+        amount={ozet.gecikmisTutar}
+        list={ozet.gecikenler}
+        gorunum="v6"
+        birimSayisi={birimler.filter((b) => b.durum === "gecikmis").length}
+      />
 
       <section aria-label="Özet" className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5">
         {kpiler.map((k) => (
           <div key={k.etiket} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
             <p className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">{k.etiket}</p>
-            <div className="flex items-end justify-between gap-2">
+            <div className="flex flex-wrap items-end justify-between gap-x-2 gap-y-1">
               <div className="min-w-0">
                 <p className="text-lg min-[1500px]:text-[22px] leading-tight font-bold text-slate-900 tabular-nums flex items-center gap-1.5 flex-wrap">
                   <span className="whitespace-nowrap">{k.deger}</span>
@@ -232,7 +237,7 @@ export default function YeniPanel({
                   </div>
                 )}
               </div>
-              <span className="hidden sm:block">
+              <span className="block flex-none ml-auto">
                 <Egri degerler={k.seri} renk={k.renk} />
               </span>
             </div>
@@ -240,18 +245,7 @@ export default function YeniPanel({
         ))}
       </section>
 
-      {ozet.mulkSayisi > 0 && (
-        <section aria-label="Doluluk ve mülk tipi dağılımı" className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <h2 className="text-sm font-bold text-slate-800 mb-3">Mülk Doluluk Oranı</h2>
-            <OccupancyChart occupied={ozet.doluSayisi} vacant={ozet.bosSayisi} />
-          </div>
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <h2 className="text-sm font-bold text-slate-800 mb-3">Mülk Tipi Dağılımı</h2>
-            <PropertyTypeChart data={ozet.mulkTipleri} />
-          </div>
-        </section>
-      )}
+      {ozet.mulkSayisi > 0 && <DolulukTipKartlari birimler={ilBirimleri} binaSayisi={binalar.length} ilEtiketi={il || "Tüm iller"} />}
 
       <div className="flex flex-col lg:flex-row lg:items-center gap-3 mb-3">
         <div role="tablist" aria-label="Görünüm" className="inline-flex bg-white border border-gray-200 rounded-2xl p-1 self-start shadow-sm">
@@ -289,7 +283,7 @@ export default function YeniPanel({
             </button>
           ))}
         </div>
-        <div className="min-w-0 lg:ml-auto">
+        <div className="min-w-0">
           <IlSecici
             iller={ozet.iller}
             toplam={ozet.mulkSayisi}
@@ -404,7 +398,24 @@ export default function YeniPanel({
               <Lejant renk="bg-emerald-600" etiket="Ödendi" />
               <Lejant renk="bg-amber-500" etiket="Bekliyor" />
               <Lejant renk="bg-red-500" etiket="Gecikmiş" />
+              <Lejant renk="bg-slate-400" etiket="Boş (sönük)" />
+              <span className="basis-full sm:basis-auto">· Kat ve pencere sayısı birim sayısından, biçim mülk tipinden</span>
+            </div>
+          )}
+          {sahne === "konum" && (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 border-t border-gray-100 text-[11px] text-slate-500">
+              <Lejant renk="bg-emerald-600" etiket="Ödendi" />
+              <Lejant renk="bg-amber-500" etiket="Bekliyor" />
+              <Lejant renk="bg-red-500" etiket="Gecikmiş" />
               <Lejant renk="bg-slate-400" etiket="Boş" />
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-4 h-4 rounded-full bg-[#06211f] text-white text-[9px] font-bold grid place-items-center">12</span>
+                birim sayısı
+              </span>
+              <span className="sm:ml-auto font-semibold text-slate-700 tabular-nums">
+                Haritada {haritaBinalari.length} bina · {haritaBinalari.reduce((t, b) => t + b.birimler.length, 0)} birim ·{" "}
+                <span className="text-red-600">{haritaBinalari.reduce((t, b) => t + b.birimler.filter((u) => u.durum === "gecikmis").length, 0)} gecikmiş</span>
+              </span>
             </div>
           )}
         </section>
@@ -435,7 +446,7 @@ export default function YeniPanel({
             />
           ) : (
             <>
-              <div role="tablist" aria-label="Sağ panel" className="flex border-b border-gray-100">
+              <div role="tablist" aria-label="Sağ panel" className="m-3 mb-0 flex rounded-xl bg-[#f5f2ea] border border-[#dbe3df] p-1">
                 {(
                   [
                     ["bugun", "Bugün", null],
@@ -448,12 +459,12 @@ export default function YeniPanel({
                     role="tab"
                     aria-selected={sagSekme === deger}
                     onClick={() => setSagSekme(deger)}
-                    className={`flex-1 py-3 text-sm font-semibold border-b-2 transition ${
-                      sagSekme === deger ? "border-[#17B6AE] text-slate-900" : "border-transparent text-slate-500 hover:text-slate-700"
+                    className={`flex-1 py-2 rounded-lg text-sm font-semibold transition ${
+                      sagSekme === deger ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
                     }`}
                   >
                     {etiket}
-                    {sayi !== null && <span className="ml-1.5 text-[11px] font-bold text-slate-400 tabular-nums">{sayi}</span>}
+                    {sayi !== null && <span className="ml-1.5 text-[10.5px] font-bold px-1.5 rounded-md bg-[#06211f] text-white tabular-nums">{sayi}</span>}
                   </button>
                 ))}
               </div>

@@ -42,7 +42,7 @@ function Bolum({
 }) {
   return (
     <section className="py-3 first:pt-0 border-b border-gray-100 last:border-b-0">
-      <h3 className="flex items-center gap-2 text-sm font-bold text-slate-800 mb-2">
+      <h3 className="flex items-center gap-2 text-[11.5px] font-bold uppercase tracking-[.5px] text-slate-500 mb-2">
         {baslik}
         <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-md tabular-nums ${kirmizi && sayi ? "bg-red-50 text-red-600" : "bg-gray-100 text-slate-500"}`}>{sayi}</span>
       </h3>
@@ -113,8 +113,8 @@ export default function BugunSekmesi({
 
   return (
     <div className="p-4 sm:p-5">
-      <header className="flex items-baseline justify-between mb-3">
-        <h2 className="text-base font-bold text-slate-900">Bugün</h2>
+      <header className="flex items-baseline gap-2 mb-3">
+        <h2 className="text-lg font-bold text-slate-900">Bugün</h2>
         <span className="text-xs text-slate-500">{tarihMetni}</span>
       </header>
 

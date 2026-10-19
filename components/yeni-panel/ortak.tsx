@@ -96,3 +96,66 @@ export function BasHarf({ ad }: { ad: string }) {
     </span>
   );
 }
+
+const DURUM_KOYU: Record<BirimDurumu, string> = { odendi: "#1d9a60", bekliyor: "#cf900b", gecikmis: "#d23f3f", bos: "#8c9a97" };
+
+/** Önizleme v6'daki izometrik tip ikonu (ofis/konut/fabrika/avm), durum renkli kare zeminde */
+export function TipIkonu({ tip, durum, boyut = 34 }: { tip: string | null; durum: BirimDurumu; boyut?: number }) {
+  const aile = tip === "OFIS" ? "ofis" : tip === "FABRIKA" || tip === "DEPO" ? "fabrika" : tip === "AVM" ? "avm" : "konut";
+  return (
+    <span
+      className="grid place-items-center rounded-[10px] flex-none"
+      style={{ width: boyut, height: boyut, background: DURUM_KOYU[durum] }}
+      aria-hidden="true"
+    >
+      <svg viewBox="0 0 24 24" style={{ width: boyut * 0.76, height: boyut * 0.76 }}>
+        {aile === "ofis" && (
+          <>
+            <polygon fill="#fff" fillOpacity={0.82} points="7,5.5 12,8 12,22 7,19.5" />
+            <polygon fill="#fff" fillOpacity={0.6} points="12,8 17,5.5 17,19.5 12,22" />
+            <polygon fill="#fff" points="7,5.5 12,3 17,5.5 12,8" />
+            <path d="M12 11.5 17 9M12 15 17 12.5M12 18.5 17 16" fill="none" stroke={DURUM_KOYU[durum]} strokeWidth={1.1} strokeLinecap="round" />
+          </>
+        )}
+        {aile === "konut" && (
+          <>
+            <polygon fill="#fff" fillOpacity={0.82} points="6,19 6,12 9,8.5 12,15 12,22" />
+            <polygon fill="#fff" fillOpacity={0.6} points="12,15 18,12 18,19 12,22" />
+            <polygon fill="#fff" points="12,15 9,8.5 15,5.5 18,12" />
+            <path d="M14.2 20.9v-3.4l1.8-.9v3.4" fill="none" stroke={DURUM_KOYU[durum]} strokeWidth={1.1} strokeLinecap="round" />
+          </>
+        )}
+        {aile === "fabrika" && (
+          <>
+            <polygon fill="#fff" points="4,13 14,8 20,11 10,16" />
+            <polygon fill="#fff" fillOpacity={0.82} points="5.4,4.2 7.4,5.2 7.4,13.4 5.4,12.4" />
+            <polygon fill="#fff" fillOpacity={0.82} points="4,13 10,16 10,22 4,19" />
+            <polygon fill="#fff" fillOpacity={0.6} points="10,22 10,13 13.3,14.4 13.3,11.4 16.7,12.7 16.7,9.7 20,11 20,17" />
+          </>
+        )}
+        {aile === "avm" && (
+          <>
+            <polygon fill="#fff" points="2,12.5 13,7 22,11.5 11,17" />
+            <polygon fill="#fff" fillOpacity={0.82} points="2,12.5 11,17 11,22 2,17.5" />
+            <polygon fill="#fff" fillOpacity={0.6} points="11,17 22,11.5 22,16.5 11,22" />
+            <path d="M2 14.3 11 18.8 22 13.3M15.5 20v-2.4l2.6-1.3v2.4" fill="none" stroke={DURUM_KOYU[durum]} strokeWidth={1.1} strokeLinecap="round" />
+          </>
+        )}
+      </svg>
+    </span>
+  );
+}
+
+/** Birim satırı zemin renkleri (v6: durum tonlu zemin) */
+export const DURUM_ZEMIN_ACIK: Record<BirimDurumu, string> = {
+  odendi: "bg-[#e5f4ec]",
+  bekliyor: "bg-[#fbf1dc]",
+  gecikmis: "bg-[#fbe6e6]",
+  bos: "bg-[#eef1f0]",
+};
+export const DURUM_YAZI: Record<BirimDurumu, string> = {
+  odendi: "text-[#1d9a60]",
+  bekliyor: "text-[#b07a06]",
+  gecikmis: "text-[#d23f3f]",
+  bos: "text-slate-500",
+};

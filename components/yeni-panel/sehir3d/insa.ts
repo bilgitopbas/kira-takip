@@ -25,6 +25,8 @@ export type Sehir = {
   binaAgi: THREE.Mesh;
   zeminAgi: THREE.Mesh;
   pencereAgi: THREE.InstancedMesh;
+  /** Fabrika bacası dumanı (sabit bulutlar; sürekli animasyon yok) */
+  dumanAgi: THREE.InstancedMesh | null;
   tabelalar: Tabela[];
   pencereler: PencereBilgisi[];
   birimPencereleri: Map<string, number[]>;
@@ -183,6 +185,8 @@ class Insaatci {
   tabelalar: Tabela[] = [];
   agaclar: [number, number, number, number, number][] = [];
   lambalar: [number, number, number][] = [];
+  /** Fabrika bacası ağzı (duman bulutları için) */
+  dumanlar: [number, number, number][] = [];
   binalar = new Map<string, BinaBilgisi>();
 
   // Şu an inşa edilen bina bağlamı
@@ -315,6 +319,13 @@ class Insaatci {
     this.bx(4.2, 0, PD / 2 + 4.1, 0.3, LH - 0.25, 0.3, "#c8cfd2");
     this.bx(0, 0, PD / 2 + 2.2, 9.6, 0.12, 4.8, "#bfb8a8");
     this.tabela(this.UST, 0, LH + 0.55, PD / 2 + 4.35, 8.6, 0.8, "#06211f", "#e9fbf9");
+    // podyum çatı terası: kuleler arası saksılar
+    if (b.kuleler.length === 2) {
+      for (let i = 0; i < 3; i++) {
+        this.bx(0, LH + 0.2, -PD / 2 + 3 + i * 5, 1.6, 0.6, 1.6, "#9b9488");
+        this.ham(this.T_ICO, this.OX, GY + LH + 1.3, this.OZ - PD / 2 + 3 + i * 5, 0.8, 0.8, 0.8, "#5e8f4e");
+      }
+    }
     this.vurus(0, 0, 0, PW + 0.3, LH + 0.2, PD + 0.3, null);
 
     const bilgi = this.binalar.get(this.CK)!;
@@ -352,6 +363,12 @@ class Insaatci {
       this.bx(0, H, 0, TW + 0.3, 1.2, TD + 0.3, "#dde2e4");
       if (kule.ad) this.tabela(`${kule.ad} BLOK`, 0, H + 0.6, TD / 2 + 0.17, Math.min(4.4, TW - 1), 0.95, "#06211f", "#e9fbf9");
       this.bx(1, H + 1.2, -1.5, Math.min(6, TW - 2), 2.6, 5, "#bcc4c7");
+      this.bx(1, H + 3.8, -1.5, Math.min(6.3, TW - 1.7), 0.25, 5.3, "#a8b1b4");
+      for (let i = 0; i < Math.min(3, PER - 1); i++) {
+        const rx = -TW / 2 + 2.1 + i * 2.4;
+        this.bx(rx, H + 1.2, 4, 1.8, 1.1, 1.8, "#9ea8ac");
+        this.silindir(rx, H + 2.3, 4, 0.6, 0.15, "#5d666a");
+      }
       if (ti === 0) this.silindir(-TW / 2 + 1.2, H + 1.2, -4.2, 0.13, 8, "#8a9296", this.T_CYL6);
       this.vurus(0, LH, 0, TW + 0.4, H + 1.2 - LH, TD + 0.4, this.CBLK);
       if (kule.ad) bilgi.bloklar[kule.ad] = { x: this.OX, z: this.OZ, w: TW, d: TD, ust: H + 1.2 };
@@ -645,6 +662,8 @@ class Insaatci {
     const chx = w / 2 - 2.6, chz = -d / 2 + 2.6;
     this.ham(this.T_CONE, this.OX + chx, GY, this.OZ + chz, 1.1, 24, 1.1, "#a35a43");
     this.ham(this.T_CYL, this.OX + chx, GY + 19, this.OZ + chz, 0.78, 0.9, 0.78, "#efebe2");
+    this.ham(this.T_CYL, this.OX + chx, GY + 21.4, this.OZ + chz, 0.7, 0.9, 0.7, "#efebe2");
+    this.dumanlar.push([this.OX + chx, GY + 24.2, this.OZ + chz]);
     this.vurus(chx, 0, chz, 2.3, 24, 2.3);
     return H + 2.8;
   }
@@ -668,6 +687,16 @@ class Insaatci {
     this.tabela(this.UST, 0, 3.95, d / 2 - 1.98, 4.6, 0.55, "#06211f", "#e9fbf9");
     this.vurus(0, 0, 0, w, 4.4, d);
     return 4.4;
+  }
+
+  /** Villa/müstakil: parsel çevresinde alçak bahçe duvarı, önde kapı boşluğu */
+  bahceDuvari(bxc: number, bzc: number, kapiX: number) {
+    const c = "#ded5c2", h = 1.3, g0 = kapiX - 1.6, g1 = kapiX + 1.6;
+    this.gx(bxc, GY, bzc - 16.9, 34, h, 0.25, c);
+    this.gx(bxc - 16.9, GY, bzc, 0.25, h, 34, c);
+    this.gx(bxc + 16.9, GY, bzc, 0.25, h, 34, c);
+    this.gx(bxc + (-17 + g0) / 2, GY, bzc + 16.9, g0 + 17, h, 0.25, c);
+    this.gx(bxc + (g1 + 17) / 2, GY, bzc + 16.9, 17 - g1, h, 0.25, c);
   }
 
   agac(x: number, z: number, s = 1, yukari = 0, idx = -1) {
@@ -751,7 +780,9 @@ class Insaatci {
       this.binalar.get(b.anahtar)!.ust = ust;
       if (this.vuruslar.length === once) this.vuruslar.push({ x: this.OX, y: GY, z: this.OZ, w: b.w, h: ust, d: b.d, bina: b.anahtar, blok: null });
       // bahçe ağaçları (binayla birlikte soluklaşır)
+      if (b.aile === "villa" || b.aile === "mustakil") this.bahceDuvari(bxc, bzc, b.aile === "villa" ? 2 : -5.4);
       if (b.aile === "villa") {
+        this.agac(bxc + 13, bzc - 12, 1.0, 0, idx);
         this.agac(bxc - 12, bzc + 10, 1.2, 0, idx);
         this.agac(bxc + 12, bzc + 11, 1.1, 0, idx);
         this.agac(bxc - 13, bzc - 12, 1.3, 0, idx);
@@ -759,6 +790,7 @@ class Insaatci {
         this.gx(bxc - 6.5, GY, bzc + 9, 6.2, 0.08, 2.8, "#4aa9c6");
       }
       if (b.aile === "mustakil") {
+        this.agac(bxc + 10, bzc - 9, 1.0, 0, idx);
         this.agac(bxc + 9, bzc + 9, 1.2, 0, idx);
         this.agac(bxc - 11, bzc + 10, 0.9, 0, idx);
       }
@@ -767,6 +799,13 @@ class Insaatci {
         this.agac(bxc + 13, bzc - 12, 1.1, 0, idx);
       }
       if (b.aile === "han" || b.aile === "kucukofis") this.agac(bxc + 13, bzc + 12, 0.9, 0, idx);
+      if (b.aile === "plaza") {
+        for (const x of [-12.5, 12.5]) {
+          this.gx(bxc + x, GY, bzc + 13.5, 3, 0.6, 3, "#9b9488");
+          this.agac(bxc + x, bzc + 13.5, 0.9, 0.6, idx);
+        }
+      }
+      if (b.aile === "apt" && b.cati === "kiremit") this.gx(bxc + b.off[0], 0, bzc + b.off[1] + b.d / 2 + 4, b.w + 6, 0.225, 8, "#cfc9bb");
       // kaldırım ağaçları + lambalar
       this.BID = -1;
       for (const t of [-10, 10]) {
@@ -853,12 +892,32 @@ export function sehirKur(binalar: SehirBinasi[], binaMalzemesi: THREE.Material, 
   const solukDoku = new THREE.DataTexture(new Uint8Array(N * 4), N, 1, THREE.RGBAFormat);
   solukDoku.needsUpdate = true;
 
+  // Duman: her bacada 7 yarı saydam bulut, yukarı ve rüzgâr yönüne açılan iz
+  let dumanAgi: THREE.InstancedMesh | null = null;
+  let dumanGeo: THREE.BufferGeometry | null = null;
+  let dumanMal: THREE.Material | null = null;
+  if (ins.dumanlar.length) {
+    dumanGeo = new THREE.IcosahedronGeometry(1, 0);
+    dumanMal = new THREE.MeshLambertMaterial({ color: "#dcdbd5", transparent: true, opacity: 0.32, depthWrite: false });
+    dumanAgi = new THREE.InstancedMesh(dumanGeo, dumanMal, ins.dumanlar.length * 7);
+    let k = 0;
+    for (const [x, y, z] of ins.dumanlar) {
+      for (let i = 0; i < 7; i++) {
+        const p = (i + 0.5) / 7;
+        _m.compose(_p.set(x + p * 7, y + p * 11, z - p * 3), _q.identity(), _s.setScalar(0.35 + p * 1.7));
+        dumanAgi.setMatrixAt(k++, _m);
+      }
+    }
+    dumanAgi.computeBoundingSphere();
+  }
+
   ins.sablonlariBirak();
 
   return {
     binaAgi,
     zeminAgi,
     pencereAgi,
+    dumanAgi,
     tabelalar: ins.tabelalar,
     pencereler,
     birimPencereleri,
@@ -872,6 +931,9 @@ export function sehirKur(binalar: SehirBinasi[], binaMalzemesi: THREE.Material, 
       zeminAgi.geometry.dispose();
       pencereGeo.dispose();
       pencereAgi.dispose();
+      dumanGeo?.dispose();
+      dumanMal?.dispose();
+      dumanAgi?.dispose();
       for (const t of ins.tabelalar) {
         t.mesh.geometry.dispose();
         const m = t.mesh.material as THREE.MeshBasicMaterial;
