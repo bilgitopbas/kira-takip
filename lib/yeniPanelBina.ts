@@ -58,6 +58,10 @@ export type Bina = {
   bloksuz: PanelBirimi[];
   birimler: PanelBirimi[];
   kontrolGerekli: boolean;
+  /** Binalarım'da kaydedilmiş bina kimliği; öneriyse null */
+  binaId: string | null;
+  /** Kayıtlı konum (varsa) */
+  konum: { lat: number; lng: number; dogrulandi: boolean } | null;
   /** Mülk kendi başına (eşleşmedi ya da tek birim) */
   tekBirim: boolean;
 };
@@ -111,6 +115,8 @@ export function binalariKur(birimler: PanelBirimi[]): Bina[] {
       bloksuz,
       birimler: sirali,
       kontrolGerekli: sirali.some((b) => b.bina.guven === "dusuk"),
+      binaId: ilk.bina.binaId ?? null,
+      konum: sirali.find((b) => b.bina.konum)?.bina.konum ?? null,
       tekBirim: sirali.length === 1,
     });
   }

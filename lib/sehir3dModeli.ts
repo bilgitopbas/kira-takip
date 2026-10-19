@@ -3,14 +3,14 @@
 // yerleşimi. three.js içe aktarmaz; test edilebilir.
 //
 // Aile seçimi (önizleme v6 aileleri, gerçek veriden):
-//  - AVM → avm · FABRIKA/DEPO → fabrika
+//  - AVM → avm · FABRIKA/DEPO → fabrika · ARSA → arsa (çevrili boş parsel)
 //  - 2+ blok ya da çok birimli bina → plaza (blok başına bir kule, en çok 4)
 //  - Ofis: 1 birim küçük ofis, 2–20 birim iş hanı
 //  - Konut (ve tipi girilmemiş): 1 birim villa/müstakil, 2–24 birim apartman
 import type { Bina } from "@/lib/yeniPanelBina";
 import type { BirimDurumu, PanelBirimi } from "@/lib/yeniPanelTipleri";
 
-export type Aile = "plaza" | "han" | "kucukofis" | "apt" | "villa" | "mustakil" | "avm" | "fabrika";
+export type Aile = "plaza" | "han" | "kucukofis" | "apt" | "villa" | "mustakil" | "avm" | "fabrika" | "arsa";
 
 export type Hucre = { id: string; durum: BirimDurumu } | null;
 
@@ -96,6 +96,8 @@ export function aileSec(bina: Bina): Aile {
   const tip = bina.tip;
   if (tip === "AVM") return "avm";
   if (tip === "FABRIKA" || tip === "DEPO") return "fabrika";
+  // Arsa: bina yok; çevrili boş parsel + küçük tabela
+  if (tip === "ARSA") return "arsa";
   if (bina.bloklar.length >= 2) return "plaza";
   if (tip === "OFIS") {
     if (n <= 1) return "kucukofis";
@@ -165,6 +167,8 @@ export function sehirBinasi(bina: Bina): SehirBinasi {
       return { ...temel, aile, w: 11, d: 10, off: [0, -2], katlar: 3, kat_basi: 1, kuleler: [], izgara: [] };
     case "villa":
       return { ...temel, aile, w: 12, d: 10, off: [2, -5], katlar: 2, kat_basi: 1, kuleler: [], izgara: [] };
+    case "arsa":
+      return { ...temel, aile, w: 26, d: 22, off: [0, 0], katlar: 0, kat_basi: 1, kuleler: [], izgara: [] };
     case "mustakil":
       return { ...temel, aile, w: 9, d: 8, off: [-3, -3], katlar: 2, kat_basi: 1, kuleler: [], izgara: [] };
   }

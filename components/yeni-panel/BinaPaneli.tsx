@@ -4,6 +4,7 @@
 // dağılımı ve daire no + kiracı + aylık kira düz listesi (arama + sıralama).
 // Seçili birimin satırı genişleyip birim kartını gösterir.
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import BirimKarti from "@/components/yeni-panel/BirimKarti";
 import {
   birimEslesir,
@@ -263,7 +264,10 @@ export default function BinaPaneli({
         </div>
       )}
 
-      <div className="mt-4 flex justify-end">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+        <Link href="/dashboard/binalarim" className="text-xs font-semibold text-[#0a7c76] hover:underline">
+          Eşlemeyi düzenle (Binalarım)
+        </Link>
         <button type="button" onClick={onSahneDegistir} className="text-xs font-semibold px-3 py-2 rounded-lg border border-gray-200 text-slate-600 hover:bg-gray-50">
           {sahne === "konum" ? "Mülk Şehrim'de göster" : "Konumda göster"}
         </button>

@@ -2,6 +2,7 @@
 
 // Sağ panel "Binalar" sekmesi: aranabilir, sıralanabilir bina listesi.
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { binaEslesir, ozetle, type Bina } from "@/lib/yeniPanelBina";
 import { DURUM_ZEMIN, DagilimCubugu, kisaTl } from "@/components/yeni-panel/ortak";
 
@@ -39,6 +40,13 @@ export default function BinalarSekmesi({
           {binalar.length} bina · {birimSayisi} birim{il ? ` · ${il}` : ""}
         </span>
       </header>
+      <Link
+        href="/dashboard/binalarim"
+        className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-dashed border-[#17B6AE]/40 bg-[#17B6AE]/5 px-3 py-2 text-xs font-semibold text-[#0a7c76] hover:bg-[#17B6AE]/10"
+      >
+        <span>Bina eşlemesini kontrol et ve düzelt (Binalarım)</span>
+        <span aria-hidden="true">→</span>
+      </Link>
       <div className="flex gap-2 mb-3">
         <input
           type="search"

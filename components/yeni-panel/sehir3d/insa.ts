@@ -649,6 +649,27 @@ class Insaatci {
     return H + 2.8;
   }
 
+  /** Arsa: alçak çevre duvarı + direkler, toprak zemin, iki ayaklı küçük tabela.
+   *  Tabelanın renkli yüzü birimin "penceresi"dir (durum rengi). */
+  arsa(): number {
+    const b = this.b;
+    const w = b.w, d = b.d, h = 0.9, duvar = "#cfc6b0", direk = "#a89f88";
+    this.bx(0, 0, 0, w - 1, 0.06, d - 1, "#b9a77f");
+    this.bx(0, 0, d / 2, w, h, 0.25, duvar);
+    this.bx(0, 0, -d / 2, w, h, 0.25, duvar);
+    this.bx(-w / 2, 0, 0, 0.25, h, d, duvar);
+    this.bx(w / 2, 0, 0, 0.25, h, d, duvar);
+    for (const [x, z] of [[-w / 2, -d / 2], [w / 2, -d / 2], [-w / 2, d / 2], [w / 2, d / 2]]) this.bx(x, 0, z, 0.5, h + 0.4, 0.5, direk);
+    // tabela ayakları + pano
+    this.bx(-1.6, 0, d / 2 - 2, 0.2, 2.6, 0.2, "#5d666a");
+    this.bx(1.6, 0, d / 2 - 2, 0.2, 2.6, 0.2, "#5d666a");
+    this.bx(0, 2.2, d / 2 - 2.05, 3.8, 1.4, 0.12, "#f4f1ea");
+    this.Wham(0, 2.9, d / 2 - 1.97, 3.5, 1.15, 0, this.dagit());
+    this.tabela(this.UST, 0, 3.95, d / 2 - 1.98, 4.6, 0.55, "#06211f", "#e9fbf9");
+    this.vurus(0, 0, 0, w, 4.4, d);
+    return 4.4;
+  }
+
   agac(x: number, z: number, s = 1, yukari = 0, idx = -1) {
     this.agaclar.push([x, z, s, yukari, idx]);
   }
@@ -708,7 +729,7 @@ class Insaatci {
       }
     }
 
-    const PARSEL_RENGI: Record<string, string> = { plaza: "#d2ccbe", han: "#cfc8b8", kucukofis: "#cfc9bb", apt: "#9fb27c", villa: "#93b06c", mustakil: "#9cb175", avm: "#55595c", fabrika: "#b9b4a8" };
+    const PARSEL_RENGI: Record<string, string> = { arsa: "#c2b68f", plaza: "#d2ccbe", han: "#cfc8b8", kucukofis: "#cfc9bb", apt: "#9fb27c", villa: "#93b06c", mustakil: "#9cb175", avm: "#55595c", fabrika: "#b9b4a8" };
     binalar.forEach((b, idx) => {
       const [ci, cj] = hucreler[idx];
       const bxc = cxx(ci), bzc = czz(cj);

@@ -14,7 +14,7 @@ export type BinaKonumu = {
   anahtar: string;
   nokta: Nokta;
   /** Konum nereden geldi */
-  kaynak: "ilce" | "il" | "duzeltildi";
+  kaynak: "ilce" | "il" | "duzeltildi" | "kayit";
   /** Kayıtlı/doğrulanmış koordinat yok (D aşamasında her zaman true) */
   dogrulanmadi: boolean;
   il: string;
@@ -68,6 +68,10 @@ export function binaKonumlari(
     const elle = duzeltmeler[b.anahtar];
     if (elle) {
       konumlar.push({ anahtar: b.anahtar, nokta: elle, kaynak: "duzeltildi", dogrulanmadi: true, il: b.il, ilce: b.ilce, ozet });
+      continue;
+    }
+    if (b.konum) {
+      konumlar.push({ anahtar: b.anahtar, nokta: [b.konum.lng, b.konum.lat], kaynak: "kayit", dogrulanmadi: !b.konum.dogrulandi, il: b.il, ilce: b.ilce, ozet });
       continue;
     }
     const bas = baslangicKonumu(b.il, b.ilce);

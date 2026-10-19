@@ -46,6 +46,7 @@ export default function SahneAlani({
   onSec,
   onSec3d,
   onKonumDuzelt,
+  onKonumKaydet,
 }: {
   sekme: SahneSekmesi;
   /** Seçili ildeki binalar */
@@ -60,6 +61,7 @@ export default function SahneAlani({
   yalnizGecikmis: boolean;
   onSec3d: (bina: string | null, birim: string | null, blok: string | null) => void;
   onKonumDuzelt: (anahtar: string, nokta: Nokta) => void;
+  onKonumKaydet: (anahtar: string) => Promise<string | null>;
 }) {
   const seviye = useSyncExternalStore(abone, seviyeAl, () => "hafif" as GrafikSeviyesi);
   const istemcide = useSyncExternalStore(abone, () => true, () => false);
@@ -80,6 +82,6 @@ export default function SahneAlani({
   return sekme === "sehir" ? (
     <Sehir3D binalar={binalar} secim={secim3d} yalnizGecikmis={yalnizGecikmis} onSec={onSec3d} />
   ) : (
-    <Harita binalar={haritaBinalari} il={il} seciliAnahtar={seciliAnahtar} duzeltmeler={duzeltmeler} onSec={onSec} onKonumDuzelt={onKonumDuzelt} />
+    <Harita binalar={haritaBinalari} il={il} seciliAnahtar={seciliAnahtar} duzeltmeler={duzeltmeler} onSec={onSec} onKonumDuzelt={onKonumDuzelt} onKonumKaydet={onKonumKaydet} />
   );
 }

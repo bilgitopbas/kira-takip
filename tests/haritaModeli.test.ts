@@ -5,7 +5,7 @@ import { binaKonumlari, haritaSeviyesi, kumele, sinirKutusu } from "@/lib/harita
 import type { Bina } from "@/lib/yeniPanelBina";
 
 function bina(anahtar: string, il: string | null, ilce: string | null): Bina {
-  return { anahtar, ad: anahtar, il, ilce, adres: "", tip: "KONUT", bloklar: [], bloksuz: [], birimler: [], kontrolGerekli: false, tekBirim: true };
+  return { anahtar, ad: anahtar, il, ilce, adres: "", tip: "KONUT", bloklar: [], bloksuz: [], birimler: [], kontrolGerekli: false, tekBirim: true, binaId: null, konum: null };
 }
 
 test("haritaSeviyesi: <11 il, 11–13 ilçe, ≥13 pin", () => {

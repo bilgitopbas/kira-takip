@@ -53,7 +53,12 @@ export type PanelBirimi = {
     blok: string | null;
     birimNo: string | null;
     guven: "yuksek" | "dusuk";
-    kaynak: "baslik" | "adres" | "yok";
+    /** "kayit" = Binalarım ekranında mülk sahibince kaydedildi */
+    kaynak: "baslik" | "adres" | "yok" | "kayit";
+    /** Kayıtlı bina kimliği (Binalarım); öneriyse null */
+    binaId: string | null;
+    /** Kayıtlı konum; yoksa null (haritada ilçe/il merkezinden türetilir) */
+    konum: { lat: number; lng: number; dogrulandi: boolean } | null;
   };
   /** Oturan kiracı (birden fazlaysa ilki); yoksa null */
   kiraci: PanelKiracisi | null;

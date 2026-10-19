@@ -13,16 +13,12 @@
 // Seçili binanın pini sürüklenebilir; sonuç yalnız bu oturumda tutulur
 // (kalıcı kayıt F aşamasındaki şema ekiyle).
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { Map as HaritaGL, Marker, NavigationControl, AttributionControl, getVersion, setWorkerUrl } from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
+import { Map as HaritaGL, Marker, NavigationControl, AttributionControl } from "maplibre-gl";
+import { HARITA_STILI as STIL, HARITA_YERELI, dokunmatik, turkceEtiketler } from "@/components/yeni-panel/maplibreKurulum";
 import { binaKonumlari, haritaSeviyesi, kumele, sinirKutusu, type HaritaSeviyesi, type Nokta } from "@/lib/haritaModeli";
 import { tipAilesi, type Bina, type TipAilesi } from "@/lib/yeniPanelBina";
 import type { BirimDurumu } from "@/lib/yeniPanelTipleri";
 
-// İşçi dosyası build öncesi public/ altına kopyalanır (scripts/maplibre-worker-kopyala.mjs).
-setWorkerUrl(`/vendor/maplibre/maplibre-gl-worker-${getVersion()}.mjs`);
-
-const STIL = { acik: "https://tiles.openfreemap.org/styles/liberty", koyu: "https://tiles.openfreemap.org/styles/dark" };
 
 // Panel koyu temadaysa (<html class="dark">) haritanın koyu stili kullanılır
 function koyuTemaAbone(cb: () => void) {
@@ -63,15 +59,6 @@ function pinSvg(tip: string | null, birimSayisi: number, durum: BirimDurumu, dog
   return `<svg viewBox="-25 -53 50 56" width="50" height="56" aria-hidden="true" style="overflow:visible;transform:scale(${secili ? 1.18 : 1});transform-origin:50% 100%;transition:transform .16s"><ellipse cx="0" cy="1" rx="8" ry="3" fill="rgba(10,40,36,.17)"/><path d="${PIN_D}" fill="${DURUM_RENGI[durum]}" ${cizgi}${kesik}/><svg x="-11" y="-38" width="22" height="22" viewBox="0 0 24 24">${IKON[tipAilesi(tip)]}</svg>${rozet}</svg>`;
 }
 
-/** Harita etiketlerini Türkçe ada çevir (name:tr yoksa Latin adı, o da yoksa yerel ad) */
-function turkceEtiketler(harita: HaritaGL) {
-  for (const katman of harita.getStyle().layers ?? []) {
-    if (katman.type !== "symbol") continue;
-    if (!harita.getLayoutProperty(katman.id, "text-field")) continue;
-    harita.setLayoutProperty(katman.id, "text-field", ["coalesce", ["get", "name:tr"], ["get", "name:latin"], ["get", "name"]]);
-  }
-}
-
 type Durum = "yukleniyor" | "hazir" | "hata";
 
 export default function Harita({
@@ -81,6 +68,7 @@ export default function Harita({
   duzeltmeler,
   onSec,
   onKonumDuzelt,
+  onKonumKaydet,
 }: {
   binalar: Bina[];
   /** Seçili il ("" = tümü); değişince harita o ilin binalarına sığdırılır */
@@ -89,6 +77,8 @@ export default function Harita({
   duzeltmeler: Record<string, Nokta>;
   onSec: (anahtar: string) => void;
   onKonumDuzelt: (anahtar: string, nokta: Nokta) => void;
+  /** Kayıtlı binanın düzeltilmiş konumunu kaydet; sonuç metni döner */
+  onKonumKaydet: (anahtar: string) => Promise<string | null>;
 }) {
   const kapRef = useRef<HTMLDivElement>(null);
   const haritaRef = useRef<HaritaGL | null>(null);
@@ -128,6 +118,9 @@ export default function Harita({
       pitchWithRotate: false,
       touchPitch: false,
       renderWorldCopies: false,
+      // Telefonda tek parmak sayfayı kaydırır; harita iki parmakla oynar
+      cooperativeGestures: dokunmatik(),
+      locale: HARITA_YERELI,
     });
     haritaRef.current = harita;
     harita.touchZoomRotate.disableRotation();
@@ -281,6 +274,8 @@ export default function Harita({
   }, [durum, konumlar, seviye, seciliAnahtar, binaHaritasi]);
 
   const seciliKonum = seciliAnahtar ? konumlar.find((k) => k.anahtar === seciliAnahtar) : undefined;
+  const seciliBinaId = seciliAnahtar ? binaHaritasi.get(seciliAnahtar)?.binaId ?? null : null;
+  const [kayitDurumu, setKayitDurumu] = useState<string | null>(null);
 
   return (
     <div className="absolute inset-0" aria-label="Portföy haritası">
@@ -318,10 +313,29 @@ export default function Harita({
       {durum === "hazir" && (seciliKonum || konumsuz.length > 0) && (
         <div className="absolute left-2 top-2 right-14 flex flex-wrap gap-1.5 pointer-events-none">
           {seciliKonum && (
-            <span className="text-[11px] font-semibold px-2 py-1 rounded-lg bg-white/95 border border-amber-200 text-amber-800 shadow-sm">
+            <span className="pointer-events-auto inline-flex items-center gap-2 text-[11px] font-semibold px-2 py-1 rounded-lg bg-white/95 border border-amber-200 text-amber-800 shadow-sm">
               {seciliKonum.kaynak === "duzeltildi"
-                ? "Konum bu oturumda düzeltildi · kalıcı kayıt Binalarım'da"
-                : `Konum doğrulanmadı (${seciliKonum.kaynak === "ilce" ? "ilçe" : "il"} merkezi) · pini sürükleyerek düzeltin`}
+                ? seciliBinaId
+                  ? "Konum düzeltildi · henüz kaydedilmedi"
+                  : "Konum bu oturumda düzeltildi · kalıcı kayıt için binayı Binalarım'da onaylayın"
+                : seciliKonum.kaynak === "kayit"
+                  ? seciliKonum.dogrulanmadi
+                    ? "Kayıtlı konum doğrulanmadı · pini sürükleyerek düzeltin"
+                    : "Konum doğrulandı"
+                  : `Konum doğrulanmadı (${seciliKonum.kaynak === "ilce" ? "ilçe" : "il"} merkezi) · pini sürükleyerek düzeltin`}
+              {seciliKonum.kaynak === "duzeltildi" && seciliBinaId && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setKayitDurumu("Kaydediliyor…");
+                    setKayitDurumu(await onKonumKaydet(seciliKonum.anahtar));
+                  }}
+                  className="px-2 py-0.5 rounded-md bg-[#17B6AE] text-white"
+                >
+                  Konumu kaydet
+                </button>
+              )}
+              {kayitDurumu && <span className="text-slate-600">{kayitDurumu}</span>}
             </span>
           )}
           {konumsuz.length > 0 && (

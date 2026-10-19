@@ -12,7 +12,7 @@ function birim(title: string, tip: string): PanelBirimi {
   const c = binaCoz({ id, title, address: "", city: "Konya" });
   return {
     id, title, address: "", city: "Konya", district: null, propertyType: tip, isOccupied: true, il: c.il,
-    bina: { anahtar: c.binaAnahtari, ad: c.binaAdi, blok: c.blok, birimNo: c.birimNo, guven: c.guven, kaynak: c.kaynak },
+    bina: { anahtar: c.binaAnahtari, ad: c.binaAdi, blok: c.blok, birimNo: c.birimNo, guven: c.guven, kaynak: c.kaynak, binaId: null, konum: null },
     kiraci: null, oturanKiraciSayisi: 0, durum: "odendi", kiraGirilmemis: false, borcKaydiYok: false, gecikmisBorc: 0, gecikmeGun: 0, buAyVade: null,
   };
 }
@@ -66,4 +66,10 @@ test("izgaraYerlesimi: boş arsa yok, yalnız ilk N hücre", () => {
   assert.equal(y.hucreler.length, 5);
   assert.deepEqual(y.hucreler[4], [1, 1]);
   assert.equal(izgaraYerlesimi(10).gx, 4);
+});
+
+test("ARSA: bina yerine çevrili boş parsel ailesi", () => {
+  const b = sehirBinasi(binalariKur([birim("Organize Arsa", "ARSA")])[0]);
+  assert.equal(b.aile, "arsa");
+  assert.equal(b.katlar, 0);
 });

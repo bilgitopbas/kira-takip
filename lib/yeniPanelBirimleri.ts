@@ -9,6 +9,7 @@
 // tutarları alınır. TC kimlik/vergi no, telefon, e-posta, adres SEÇİLMEZ.
 import { prisma } from "@/lib/prisma";
 import { binaCoz } from "@/lib/binaEslestir";
+import { ilCoz } from "@/lib/iller";
 import { birimDurumuHesapla } from "@/lib/birimDurumu";
 import { getEffectiveDebtStatus } from "@/lib/debtStatus";
 import type { BugunListeleri, BugunSatiri, PanelBirimi } from "@/lib/yeniPanelTipleri";
@@ -77,6 +78,9 @@ export async function panelBirimleriGetir(
       district: true,
       propertyType: true,
       isOccupied: true,
+      block: true,
+      unitNo: true,
+      building: { select: { id: true, name: true, city: true, district: true, lat: true, lng: true, locationVerified: true } },
       tenants: {
         where: { occupancyStatus: "LIVING" },
         select: kiraciSecimi,
@@ -106,24 +110,44 @@ export async function panelBirimleriGetir(
     const durum = birimDurumuHesapla(kiracilar.map((t) => t.debts), bugun);
     const cozum = binaCoz(m);
     const ilk = kiracilar[0] ?? null;
+    // Binalarım ekranında kaydedilmiş bina önerinin yerine geçer
+    const kayitli = m.building;
+    const kayitliIl = kayitli ? ilCoz(kayitli.city) ?? cozum.il : cozum.il;
 
     birimler.push({
       id: m.id,
       title: m.title,
       address: m.address,
       city: m.city,
-      district: m.district,
       propertyType: m.propertyType,
       isOccupied: m.isOccupied,
-      il: cozum.il,
-      bina: {
-        anahtar: cozum.binaAnahtari,
-        ad: cozum.binaAdi,
-        blok: cozum.blok,
-        birimNo: cozum.birimNo,
-        guven: cozum.guven,
-        kaynak: cozum.kaynak,
-      },
+      // Kayıtlı binanın ilçesi, mülkün kendi ilçe metninin önüne geçer
+      district: kayitli?.district ?? m.district,
+      il: kayitliIl,
+      bina: kayitli
+        ? {
+            anahtar: `b:${kayitli.id}`,
+            ad: kayitli.name,
+            blok: m.block,
+            birimNo: m.unitNo,
+            guven: "yuksek",
+            kaynak: "kayit",
+            binaId: kayitli.id,
+            konum:
+              kayitli.lat !== null && kayitli.lng !== null
+                ? { lat: kayitli.lat, lng: kayitli.lng, dogrulandi: kayitli.locationVerified }
+                : null,
+          }
+        : {
+            anahtar: cozum.binaAnahtari,
+            ad: cozum.binaAdi,
+            blok: cozum.blok,
+            birimNo: cozum.birimNo,
+            guven: cozum.guven,
+            kaynak: cozum.kaynak,
+            binaId: null,
+            konum: null,
+          },
       kiraci: ilk
         ? {
             id: ilk.id,

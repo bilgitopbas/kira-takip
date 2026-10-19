@@ -35,7 +35,7 @@ function ornekBirimler(): PanelBirimi[] {
       propertyType: t.tip,
       isOccupied: !bos,
       il: c.il,
-      bina: { anahtar: c.binaAnahtari, ad: c.binaAdi, blok: c.blok, birimNo: c.birimNo, guven: c.guven, kaynak: c.kaynak },
+      bina: { anahtar: c.binaAnahtari, ad: c.binaAdi, blok: c.blok, birimNo: c.birimNo, guven: c.guven, kaynak: c.kaynak, binaId: null, konum: null },
       kiraci: bos ? null : { id: `k${i + 1}`, fullName: `Örnek Kiracı ${i + 1}`, monthlyRent: kira, contractStart: "2025-03-01", rating: i % 4 === 0 ? 4 : null },
       oturanKiraciSayisi: bos ? 0 : 1,
       durum,

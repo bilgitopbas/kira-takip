@@ -117,6 +117,7 @@ model User {
   accountMembers AccountMember[]
   announcements  Announcement[]  @relation("AnnouncementSender")
   paymentNotices PaymentNotice[]
+  buildings      Building[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -162,10 +163,19 @@ model Property {
   tenantLinks TenantProperty[]
   expenses    Expense[]
 
+  // Yeni panel "Binalarım": mülkün ait olduğu bina, blok ve daire no.
+  // Hepsi isteğe bağlı (nullable); boşken bina eşlemesi başlık/adresten önerilir.
+  // Bina silinirse mülk ve kiracı bağları ETKİLENMEZ (SetNull).
+  buildingId String?
+  building   Building? @relation(fields: [buildingId], references: [id], onDelete: SetNull)
+  block      String?
+  unitNo     String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([ownerId, createdAt])
+  @@index([buildingId])
   @@map("properties")
 }
 
@@ -492,4 +502,27 @@ model PaymentNotice {
   @@index([status, createdAt])
   @@index([userId, createdAt])
   @@map("payment_notices")
+}
+
+// Yeni panel "Binalarım": mülk sahibinin onayladığı bina kaydı. Konum
+// (lat/lng) haritada sürüklenerek verilir; locationVerified = sahip onayladı.
+model Building {
+  id      String @id @default(cuid())
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+
+  name             String
+  city             String?
+  district         String?
+  lat              Float?
+  lng              Float?
+  locationVerified Boolean @default(false)
+
+  properties Property[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  @@map("buildings")
 }

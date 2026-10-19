@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ILLER } from "@/lib/iller";
 
 const PROPERTY_TYPES = [
   { value: "ARSA", label: "Arsa" },
@@ -190,14 +191,23 @@ export default function MulkForm({
 
       <div className="grid grid-cols-3 gap-4">
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Şehir</label>
-          <input
-            type="text"
+          <label className="block text-xs font-semibold text-slate-600 mb-1.5">İl</label>
+          {/* 81 il listesi. Kayıttaki eski serbest metin listede birebir yoksa
+              ("KONYA ", "Konya/Selçuklu" gibi) seçili olarak korunur; kullanıcı
+              listeden seçmedikçe kayıt değişmez. */}
+          <select
             value={city}
             onChange={(e) => setCity(e.target.value)}
-            placeholder="İstanbul"
-            className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
-          />
+            className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30"
+          >
+            <option value="">İl seçin</option>
+            {city && !(ILLER as readonly string[]).includes(city) && <option value={city}>{city} (kayıtlı)</option>}
+            {ILLER.map((il) => (
+              <option key={il} value={il}>
+                {il}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="block text-xs font-semibold text-slate-600 mb-1.5">İlçe</label>

@@ -108,6 +108,29 @@ export default function YeniPanel({
     [birimler]
   );
 
+  // Kayıtlı binanın sürüklenen konumunu kaydet (Binalarım şeması gerekir)
+  const konumKaydet = useCallback(
+    async (anahtar: string): Promise<string | null> => {
+      const bina = binalar.find((b) => b.anahtar === anahtar);
+      const nokta = duzeltmeler[anahtar];
+      if (!bina?.binaId || !nokta) return "Önce binayı Binalarım ekranında kaydedin.";
+      const res = await fetch(`/api/dashboard/binalar/${bina.binaId}/konum`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lat: nokta[1], lng: nokta[0] }),
+      }).catch(() => null);
+      if (!res || !res.ok) return "Kaydedilemedi.";
+      setDuzeltmeler((d) => {
+        const kopya = { ...d };
+        delete kopya[anahtar];
+        return kopya;
+      });
+      tazele();
+      return "Kaydedildi.";
+    },
+    [binalar, duzeltmeler, tazele]
+  );
+
   const konumDuzelt = useCallback((anahtar: string, nokta: Nokta) => setDuzeltmeler((d) => ({ ...d, [anahtar]: nokta })), []);
   const altSayfa = !!seciliBina && darEkran;
 
@@ -295,6 +318,7 @@ export default function YeniPanel({
               onSec3d={sec3d}
               onSec={binaSec}
               onKonumDuzelt={konumDuzelt}
+              onKonumKaydet={konumKaydet}
             />
           </div>
           {sahne === "sehir" && (
