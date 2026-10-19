@@ -12,17 +12,25 @@
 // Seviyeler: zoom < 11 il kümeleri, 11–13 ilçe kümeleri, sonrası tek tek pin.
 // Seçili binanın pini sürüklenebilir; sonuç yalnız bu oturumda tutulur
 // (kalıcı kayıt F aşamasındaki şema ekiyle).
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Map as HaritaGL, Marker, NavigationControl, AttributionControl, getVersion, setWorkerUrl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { binaKonumlari, haritaSeviyesi, kumele, sinirKutusu, type HaritaSeviyesi, type Nokta } from "@/lib/haritaModeli";
-import type { Bina } from "@/lib/yeniPanelBina";
+import { tipAilesi, type Bina, type TipAilesi } from "@/lib/yeniPanelBina";
 import type { BirimDurumu } from "@/lib/yeniPanelTipleri";
 
 // İşçi dosyası build öncesi public/ altına kopyalanır (scripts/maplibre-worker-kopyala.mjs).
 setWorkerUrl(`/vendor/maplibre/maplibre-gl-worker-${getVersion()}.mjs`);
 
-const STIL = "https://tiles.openfreemap.org/styles/liberty";
+const STIL = { acik: "https://tiles.openfreemap.org/styles/liberty", koyu: "https://tiles.openfreemap.org/styles/dark" };
+
+// Panel koyu temadaysa (<html class="dark">) haritanın koyu stili kullanılır
+function koyuTemaAbone(cb: () => void) {
+  const gozlem = new MutationObserver(cb);
+  gozlem.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+  return () => gozlem.disconnect();
+}
+const koyuMu = () => document.documentElement.classList.contains("dark");
 const TURKIYE_MERKEZ: [number, number] = [35.2, 39.0];
 const YUKLEME_SURESI_MS = 12000;
 // Pin 56 px boyunda; üstte daha geniş pay bırak ki pin kesilmesin
@@ -38,18 +46,12 @@ const DURUM_RENGI: Record<BirimDurumu, string> = {
 // Önizleme v6'daki pin biçimi ve tip ikonları (yalnız sabit SVG; kullanıcı
 // metni içermez).
 const PIN_D = "M0 0C-4 -8 -15 -13 -15 -27A15 15 0 1 1 15 -27C15 -13 4 -8 0 0Z";
-const IKON: Record<string, string> = {
+const IKON: Record<TipAilesi, string> = {
   ofis: '<polygon fill="#fff" fill-opacity=".82" points="7,5.5 12,8 12,22 7,19.5"/><polygon fill="#fff" fill-opacity=".6" points="12,8 17,5.5 17,19.5 12,22"/><polygon fill="#fff" points="7,5.5 12,3 17,5.5 12,8"/>',
   konut: '<polygon fill="#fff" fill-opacity=".82" points="6,19 6,12 9,8.5 12,15 12,22"/><polygon fill="#fff" fill-opacity=".6" points="12,15 18,12 18,19 12,22"/><polygon fill="#fff" points="12,15 9,8.5 15,5.5 18,12"/>',
   fabrika: '<polygon fill="#fff" points="4,13 14,8 20,11 10,16"/><polygon fill="#fff" fill-opacity=".82" points="5.4,4.2 7.4,5.2 7.4,13.4 5.4,12.4"/><polygon fill="#fff" fill-opacity=".82" points="4,13 10,16 10,22 4,19"/><polygon fill="#fff" fill-opacity=".6" points="10,22 10,13 13.3,14.4 13.3,11.4 16.7,12.7 16.7,9.7 20,11 20,17"/>',
   avm: '<polygon fill="#fff" points="2,12.5 13,7 22,11.5 11,17"/><polygon fill="#fff" fill-opacity=".82" points="2,12.5 11,17 11,22 2,17.5"/><polygon fill="#fff" fill-opacity=".6" points="11,17 22,11.5 22,16.5 11,22"/>',
 };
-function ikonAdi(tip: string | null) {
-  if (tip === "OFIS") return "ofis";
-  if (tip === "FABRIKA" || tip === "DEPO") return "fabrika";
-  if (tip === "AVM") return "avm";
-  return "konut";
-}
 
 function pinSvg(tip: string | null, birimSayisi: number, durum: BirimDurumu, dogrulanmadi: boolean, secili: boolean) {
   const cizgi = secili ? 'stroke="#17B6AE" stroke-width="3"' : 'stroke="#fff" stroke-width="2"';
@@ -58,7 +60,7 @@ function pinSvg(tip: string | null, birimSayisi: number, durum: BirimDurumu, dog
     birimSayisi > 1
       ? `<circle cx="13" cy="-41" r="10" fill="#06211f" stroke="#fff" stroke-width="2"/><text x="13" y="-37.3" text-anchor="middle" fill="#fff" font-size="10.5" font-weight="700" font-family="system-ui,sans-serif">${Math.min(Math.trunc(birimSayisi), 999)}</text>`
       : "";
-  return `<svg viewBox="-25 -53 50 56" width="50" height="56" aria-hidden="true" style="overflow:visible;transform:scale(${secili ? 1.18 : 1});transform-origin:50% 100%;transition:transform .16s"><ellipse cx="0" cy="1" rx="8" ry="3" fill="rgba(10,40,36,.17)"/><path d="${PIN_D}" fill="${DURUM_RENGI[durum]}" ${cizgi}${kesik}/><svg x="-11" y="-38" width="22" height="22" viewBox="0 0 24 24">${IKON[ikonAdi(tip)]}</svg>${rozet}</svg>`;
+  return `<svg viewBox="-25 -53 50 56" width="50" height="56" aria-hidden="true" style="overflow:visible;transform:scale(${secili ? 1.18 : 1});transform-origin:50% 100%;transition:transform .16s"><ellipse cx="0" cy="1" rx="8" ry="3" fill="rgba(10,40,36,.17)"/><path d="${PIN_D}" fill="${DURUM_RENGI[durum]}" ${cizgi}${kesik}/><svg x="-11" y="-38" width="22" height="22" viewBox="0 0 24 24">${IKON[tipAilesi(tip)]}</svg>${rozet}</svg>`;
 }
 
 /** Harita etiketlerini Türkçe ada çevir (name:tr yoksa Latin adı, o da yoksa yerel ad) */
@@ -94,6 +96,8 @@ export default function Harita({
   const [durum, setDurum] = useState<Durum>("yukleniyor");
   const [seviye, setSeviye] = useState<HaritaSeviyesi>("il");
   const [deneme, setDeneme] = useState(0);
+  const koyu = useSyncExternalStore(koyuTemaAbone, koyuMu, () => false);
+  const ilkStil = useRef(koyu ? STIL.koyu : STIL.acik);
 
   // Geri çağrılar her çizimde değişebilir; işaretçi olaylarında güncelini kullan
   const onSecRef = useRef(onSec);
@@ -113,7 +117,7 @@ export default function Harita({
     let hazir = false;
     const harita = new HaritaGL({
       container: kap,
-      style: STIL,
+      style: ilkStil.current,
       center: TURKIYE_MERKEZ,
       zoom: 4.8,
       minZoom: 4,
@@ -135,10 +139,11 @@ export default function Harita({
       if (!hazir) setDurum("hata");
     }, YUKLEME_SURESI_MS);
 
+    // Stil her yüklendiğinde (ilk açılış ve tema değişimi) etiketleri Türkçeleştir
+    harita.on("style.load", () => turkceEtiketler(harita));
     harita.on("load", () => {
       hazir = true;
       clearTimeout(sure);
-      turkceEtiketler(harita);
       setSeviye(haritaSeviyesi(harita.getZoom()));
       setDurum("hazir");
     });
@@ -162,6 +167,15 @@ export default function Harita({
       harita.remove();
     };
   }, [deneme]);
+
+  // Tema değişince stili değiştir (işaretçiler DOM öğesi; etkilenmez)
+  useEffect(() => {
+    const harita = haritaRef.current;
+    const hedef = koyu ? STIL.koyu : STIL.acik;
+    if (durum !== "hazir" || !harita || ilkStil.current === hedef) return;
+    ilkStil.current = hedef;
+    harita.setStyle(hedef);
+  }, [durum, koyu]);
 
   // İl değişince (ve ilk yüklemede) binalara sığdır
   useEffect(() => {

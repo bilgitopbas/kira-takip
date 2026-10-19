@@ -163,3 +163,19 @@ export function durumMetni(b: PanelBirimi): string {
   if (b.borcKaydiYok) return "Bu ay borç kaydı yok";
   return b.buAyVade ? `Bekliyor · vade ${b.buAyVade.split("-").reverse().join(".")}` : "Bekliyor";
 }
+
+/** Harita/3D için mülk tipi ailesi (önizleme v6'daki dört ikon) */
+export type TipAilesi = "ofis" | "konut" | "fabrika" | "avm";
+export function tipAilesi(tip: string | null): TipAilesi {
+  if (tip === "OFIS") return "ofis";
+  if (tip === "FABRIKA" || tip === "DEPO") return "fabrika";
+  if (tip === "AVM") return "avm";
+  return "konut";
+}
+
+/** Konum kartı çipleri: durum (en az bir birimi o durumda) ve tip ailesi süzgeci */
+export function binaSuzgectenGecer(bina: Bina, durum: BirimDurumu | "", tipler: TipAilesi[]): boolean {
+  if (durum && !bina.birimler.some((b) => b.durum === durum)) return false;
+  if (tipler.length && !tipler.includes(tipAilesi(bina.tip))) return false;
+  return true;
+}

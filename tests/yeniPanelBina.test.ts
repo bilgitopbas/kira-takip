@@ -81,3 +81,14 @@ test("durumMetni", () => {
   assert.equal(durumMetni({ ...BIRIMLER[3], borcKaydiYok: true }), "Bu ay borç kaydı yok");
   assert.equal(durumMetni({ ...BIRIMLER[3], buAyVade: "2026-10-25" }), "Bekliyor · vade 25.10.2026");
 });
+
+test("binaSuzgectenGecer: durum (en az bir birim) ve tip ailesi", async () => {
+  const { binaSuzgectenGecer } = await import("@/lib/yeniPanelBina");
+  const b = binalariKur(BIRIMLER).find((x) => x.ad === "Beştepe")!;
+  assert.ok(binaSuzgectenGecer(b, "", []));
+  assert.ok(binaSuzgectenGecer(b, "gecikmis", []));
+  assert.ok(binaSuzgectenGecer(b, "", ["konut"]));
+  assert.ok(!binaSuzgectenGecer(b, "", ["ofis", "avm"]));
+  const tekOdenmis = binalariKur([birim("Merkez Dükkan", "odendi", 1000)])[0];
+  assert.ok(!binaSuzgectenGecer(tekOdenmis, "gecikmis", []));
+});

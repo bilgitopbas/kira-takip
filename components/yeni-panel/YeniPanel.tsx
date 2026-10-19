@@ -21,7 +21,8 @@ import SahneAlani, { type SahneSekmesi } from "@/components/yeni-panel/SahneAlan
 import BugunSekmesi from "@/components/yeni-panel/BugunSekmesi";
 import BinalarSekmesi from "@/components/yeni-panel/BinalarSekmesi";
 import BinaPaneli from "@/components/yeni-panel/BinaPaneli";
-import { binalariKur } from "@/lib/yeniPanelBina";
+import { binalariKur, binaSuzgectenGecer, type TipAilesi } from "@/lib/yeniPanelBina";
+import type { BirimDurumu } from "@/lib/yeniPanelTipleri";
 import type { Nokta } from "@/lib/haritaModeli";
 import { panelGecisAdresi } from "@/lib/panelTercihi";
 import type { BugunListeleri, PanelBirimi, PanelOzeti } from "@/lib/yeniPanelTipleri";
@@ -81,6 +82,14 @@ export default function YeniPanel({
   // Haritada sürüklenerek düzeltilen konumlar — YALNIZ bu oturumda tutulur;
   // kalıcı kayıt F aşamasındaki şema ekiyle (Binalarım) yapılacak.
   const [duzeltmeler, setDuzeltmeler] = useState<Record<string, Nokta>>({});
+  // Konum kartı çipleri: durum ve tip süzgeci (pin ve kümeleri süzer)
+  const [durumSuzgeci, setDurumSuzgeci] = useState<BirimDurumu | "">("");
+  const [tipSuzgeci, setTipSuzgeci] = useState<TipAilesi[]>([]);
+  const haritaBinalari = useMemo(
+    () => binalar.filter((b) => binaSuzgectenGecer(b, durumSuzgeci, tipSuzgeci)),
+    [binalar, durumSuzgeci, tipSuzgeci]
+  );
+
   const konumDuzelt = useCallback((anahtar: string, nokta: Nokta) => setDuzeltmeler((d) => ({ ...d, [anahtar]: nokta })), []);
   const altSayfa = !!seciliBina && darEkran;
 
@@ -185,11 +194,67 @@ export default function YeniPanel({
             <h2 className="text-sm font-bold text-slate-800">
               {sahne === "sehir" ? "Mülk Şehrim" : "Portföy Haritası"} · {il || "Tüm iller"}
             </h2>
+            {sahne === "konum" && (
+              <div role="group" aria-label="Harita süzgeçleri" className="w-full flex flex-wrap items-center gap-1.5 pt-2">
+                {(
+                  [
+                    ["", "Tümü", null],
+                    ["gecikmis", "Gecikmiş", "bg-red-500"],
+                    ["bekliyor", "Bekliyor", "bg-amber-500"],
+                    ["odendi", "Ödendi", "bg-emerald-600"],
+                    ["bos", "Boş", "bg-slate-400"],
+                  ] as const
+                ).map(([deger, etiket, renk]) => (
+                  <button
+                    key={deger || "_tumu"}
+                    type="button"
+                    aria-pressed={durumSuzgeci === deger}
+                    onClick={() => setDurumSuzgeci(deger)}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold transition ${
+                      durumSuzgeci === deger ? "bg-slate-800 border-slate-800 text-white" : "bg-white border-gray-200 text-slate-600 hover:border-slate-400"
+                    }`}
+                  >
+                    {renk && <span className={`w-2 h-2 rounded-full ${renk}`} aria-hidden="true" />}
+                    {etiket}
+                  </button>
+                ))}
+                <span className="w-px h-4 bg-gray-200 mx-1" aria-hidden="true" />
+                {(
+                  [
+                    ["ofis", "Ofis"],
+                    ["konut", "Konut"],
+                    ["fabrika", "Fabrika"],
+                    ["avm", "AVM"],
+                  ] as const
+                ).map(([deger, etiket]) => {
+                  const acik = tipSuzgeci.includes(deger);
+                  return (
+                    <button
+                      key={deger}
+                      type="button"
+                      aria-pressed={acik}
+                      onClick={() => setTipSuzgeci((t) => (acik ? t.filter((x) => x !== deger) : [...t, deger]))}
+                      className={`rounded-full border px-2.5 py-1 text-xs font-semibold transition ${
+                        acik ? "bg-[#17B6AE] border-[#17B6AE] text-white" : "bg-white border-gray-200 text-slate-600 hover:border-[#17B6AE]/50"
+                      }`}
+                    >
+                      {etiket}
+                    </button>
+                  );
+                })}
+                {haritaBinalari.length < binalar.length && (
+                  <span className="text-[11px] text-slate-500 ml-1 tabular-nums">
+                    {haritaBinalari.length}/{binalar.length} bina
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           <div className="relative h-[52vh] min-h-[320px] max-h-[640px] bg-[#eef1ea]">
             <SahneAlani
               sekme={sahne}
               binalar={binalar}
+              haritaBinalari={haritaBinalari}
               il={il}
               seciliAnahtar={seciliBina?.anahtar ?? null}
               duzeltmeler={duzeltmeler}

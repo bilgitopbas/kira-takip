@@ -36,6 +36,7 @@ const abone = () => () => {};
 export default function SahneAlani({
   sekme,
   binalar,
+  haritaBinalari,
   il,
   seciliAnahtar,
   duzeltmeler,
@@ -45,6 +46,8 @@ export default function SahneAlani({
   sekme: SahneSekmesi;
   /** Seçili ildeki binalar */
   binalar: Bina[];
+  /** Konum kartı çiplerinden geçen binalar */
+  haritaBinalari: Bina[];
   il: string;
   seciliAnahtar: string | null;
   duzeltmeler: Record<string, Nokta>;
@@ -70,6 +73,6 @@ export default function SahneAlani({
   return sekme === "sehir" ? (
     <Sehir3D binaSayisi={binalar.length} />
   ) : (
-    <Harita binalar={binalar} il={il} seciliAnahtar={seciliAnahtar} duzeltmeler={duzeltmeler} onSec={onSec} onKonumDuzelt={onKonumDuzelt} />
+    <Harita binalar={haritaBinalari} il={il} seciliAnahtar={seciliAnahtar} duzeltmeler={duzeltmeler} onSec={onSec} onKonumDuzelt={onKonumDuzelt} />
   );
 }
