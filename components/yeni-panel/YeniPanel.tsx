@@ -8,7 +8,7 @@
 // Sağ panel: Bugün | Binalar | bina paneli (C aşaması). Masaüstünde yapışkan
 // sütun; 1240 px ve altında bina seçilince ekranın altından açılan alt-sayfa.
 // Sahnelerin asıl içeriği (harita pinleri, 3D binalar) D ve E aşamalarında.
-import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import MulkEkleButton from "@/components/MulkEkleButton";
 import KiraciEkleButton from "@/components/KiraciEkleButton";
@@ -25,6 +25,7 @@ import { binalariKur, binaSuzgectenGecer, type TipAilesi } from "@/lib/yeniPanel
 import type { BirimDurumu } from "@/lib/yeniPanelTipleri";
 import type { Nokta } from "@/lib/haritaModeli";
 import { panelGecisAdresi } from "@/lib/panelTercihi";
+import { useNativeApp } from "@/lib/useNativeApp";
 import type { BugunListeleri, PanelBirimi, PanelOzeti } from "@/lib/yeniPanelTipleri";
 
 type SagSekme = "bugun" | "binalar";
@@ -67,15 +68,29 @@ export default function YeniPanel({
   // Seçili bina il değişince ya da kayıt silinince ortadan kalkabilir
   const seciliBina = secim ? binalar.find((b) => b.anahtar === secim.bina) ?? null : null;
 
-  const binaSec = useCallback((anahtar: string) => setSecim({ bina: anahtar, blok: "", birim: null }), []);
+  // Dar ekranda listeden seçilince sahne görünür olsun (alt-sayfa altta açılır)
+  const sahneRef = useRef<HTMLElement>(null);
+  const sahneyeKaydir = useCallback(() => {
+    if (window.matchMedia(DAR_EKRAN).matches) {
+      setTimeout(() => sahneRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+    }
+  }, []);
+  const binaSec = useCallback(
+    (anahtar: string) => {
+      setSecim({ bina: anahtar, blok: "", birim: null });
+      sahneyeKaydir();
+    },
+    [sahneyeKaydir]
+  );
   const birimSec = useCallback(
     (birimId: string) => {
       const b = birimler.find((x) => x.id === birimId);
       if (!b) return;
       if (il && b.il !== il) setIl("");
       setSecim({ bina: b.bina.anahtar, blok: b.bina.blok ?? "", birim: b.id });
+      sahneyeKaydir();
     },
-    [birimler, il]
+    [birimler, il, sahneyeKaydir]
   );
   const tazele = useCallback(() => router.refresh(), [router]);
 
@@ -133,6 +148,8 @@ export default function YeniPanel({
 
   const konumDuzelt = useCallback((anahtar: string, nokta: Nokta) => setDuzeltmeler((d) => ({ ...d, [anahtar]: nokta })), []);
   const altSayfa = !!seciliBina && darEkran;
+  // Mobil uygulamada alt sekme çubuğu (≈60 px + güvenli alan) alt-sayfanın altında kalmasın
+  const nativeApp = useNativeApp();
 
   const birincil = "inline-flex bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm";
   const ikincil = "inline-flex bg-white hover:bg-gray-50 text-slate-700 font-semibold px-4 py-2.5 rounded-xl transition text-sm border border-gray-200";
@@ -230,7 +247,7 @@ export default function YeniPanel({
       </div>
 
       <div className="grid grid-cols-1 min-[1241px]:grid-cols-[minmax(0,1fr)_380px] gap-4 items-start">
-        <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <section ref={sahneRef} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden scroll-mt-4">
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 px-5 pt-4 pb-3 border-b border-gray-100">
             <h2 className="text-sm font-bold text-slate-800">
               {sahne === "sehir" ? "Mülk Şehrim" : "Portföy Haritası"} · {il || "Tüm iller"}
@@ -334,6 +351,7 @@ export default function YeniPanel({
 
         <aside
           aria-label="Bugün, binalar ve bina paneli"
+          style={altSayfa && nativeApp ? { bottom: "calc(3.75rem + env(safe-area-inset-bottom))", maxHeight: "62vh" } : undefined}
           className={
             altSayfa
               ? "fixed inset-x-0 bottom-0 lg:left-64 z-30 max-h-[70vh] overflow-y-auto overscroll-contain bg-white rounded-t-2xl border border-gray-100 shadow-[0_-10px_34px_rgba(6,33,31,0.24)]"

@@ -1,7 +1,10 @@
-// WebGL yetenek testi: yeni paneldeki 3D sahne ve harita WebGL ister.
-// Desteklenmiyorsa ya da cihaz zayıfsa "hafif görünüm" gösterilir.
+// Cihaz grafik yeteneği: yeni paneldeki 3D sahne ve harita WebGL ister.
+//  - WebGL yok → hafif görünüm (bina listesi), harita da kapalı
+//  - WebGL var ama cihaz zayıf → 3D yerine bina listesi; harita açık
+//    (harita 3D'den çok daha hafiftir)
 
 export type GrafikSeviyesi = "tam" | "hafif";
+export type CihazDurumu = { webgl: boolean; zayif: boolean; dokunmatik: boolean };
 
 export function webglVarMi(): boolean {
   if (typeof document === "undefined") return false;
@@ -19,12 +22,20 @@ export function webglVarMi(): boolean {
 
 /**
  * Kaba cihaz değerlendirmesi. Yanlış pozitif zararsızdır (yalnız hafif
- * görünüm açılır); kullanıcı yine de tam görünüme geçebilir.
+ * görünüm açılır); kullanıcı "3D'yi yine de aç" diyebilir.
  */
+export function cihazDurumu(): CihazDurumu {
+  const webgl = webglVarMi();
+  const nav = (typeof navigator !== "undefined" ? navigator : {}) as Navigator & { deviceMemory?: number };
+  const zayif =
+    (typeof nav.deviceMemory === "number" && nav.deviceMemory < 2) ||
+    (typeof nav.hardwareConcurrency === "number" && nav.hardwareConcurrency < 4);
+  const dokunmatik = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+  return { webgl, zayif, dokunmatik };
+}
+
+/** Geriye uyum: tek seviyeli değerlendirme */
 export function grafikSeviyesi(): GrafikSeviyesi {
-  if (!webglVarMi()) return "hafif";
-  const nav = navigator as Navigator & { deviceMemory?: number };
-  if (typeof nav.deviceMemory === "number" && nav.deviceMemory < 2) return "hafif";
-  if (typeof nav.hardwareConcurrency === "number" && nav.hardwareConcurrency < 4) return "hafif";
-  return "tam";
+  const c = cihazDurumu();
+  return c.webgl && !c.zayif ? "tam" : "hafif";
 }

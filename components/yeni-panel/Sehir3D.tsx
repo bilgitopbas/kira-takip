@@ -64,8 +64,10 @@ function motorKur(
   geri: { onSec: (bina: string | null, birim: string | null, blok: string | null) => void }
 ): Motor {
   const azHareket = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const R = new THREE.WebGLRenderer({ antialias: true, powerPreference: "default" });
-  R.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  // Telefon/tablet: DPR 1 (pil ve ısı), tek parmak sayfayı kaydırır
+  const dokunmatik = window.matchMedia("(pointer: coarse)").matches;
+  const R = new THREE.WebGLRenderer({ antialias: !dokunmatik, powerPreference: "default" });
+  R.setPixelRatio(dokunmatik ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
   R.outputColorSpace = THREE.SRGBColorSpace;
   R.toneMapping = THREE.ACESFilmicToneMapping;
   R.toneMappingExposure = 1.05;
@@ -73,7 +75,6 @@ function motorKur(
   R.domElement.style.width = "100%";
   R.domElement.style.height = "100%";
   R.domElement.style.display = "block";
-  R.domElement.style.touchAction = "none";
   R.domElement.setAttribute("role", "img");
   R.domElement.setAttribute("aria-label", "3D portföy şehri: binalar ve birim pencereleri");
   kap.insertBefore(R.domElement, kap.firstChild);
@@ -83,6 +84,10 @@ function motorKur(
   sahne.background = gok;
   const kamera = new THREE.PerspectiveCamera(34, 1, 1, 1600);
   const kontrol = new OrbitControls(kamera, R.domElement);
+  // Dokunmatikte dikey tek parmak kaydırma tarayıcıya bırakılır (sayfa kayar);
+  // sahne iki parmakla kaydırılır/yakınlaştırılır, dokunma seçer. (OrbitControls
+  // kurulurken touch-action:none yazdığı için bu satır ondan SONRA gelmeli.)
+  R.domElement.style.touchAction = dokunmatik ? "pan-y" : "none";
   kontrol.enableDamping = false;
   kontrol.minDistance = 10;
   kontrol.maxPolarAngle = 1.25;
@@ -91,7 +96,9 @@ function motorKur(
   kontrol.panSpeed = 1.1;
   kontrol.screenSpacePanning = false;
   kontrol.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
-  kontrol.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
+  kontrol.touches = dokunmatik
+    ? { ONE: null, TWO: THREE.TOUCH.DOLLY_PAN }
+    : { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
 
   const yari = new THREE.HemisphereLight("#e6f0f3", "#a89a7c", 1.25);
   const gunes = new THREE.DirectionalLight("#fff2dc", 2.7);
@@ -658,8 +665,9 @@ export default function Sehir3D({
           </button>
         </div>
       ) : (
-        <div className="hidden sm:block absolute left-3 bottom-3 z-[3] max-w-[calc(100%-80px)] text-[11px] text-slate-500 bg-white/95 border border-gray-200 rounded-md px-2 py-1">
-          Sürükle: kaydır · Sağ tık: döndür · Tekerlek: yakınlaştır · Binaya dokun
+        <div className="absolute left-3 bottom-3 z-[3] max-w-[calc(100%-80px)] text-[11px] text-slate-500 bg-white/95 border border-gray-200 rounded-md px-2 py-1">
+          <span className="hidden [@media(pointer:fine)]:inline">Sürükle: kaydır · Sağ tık: döndür · Tekerlek: yakınlaştır · Binaya dokun</span>
+          <span className="[@media(pointer:fine)]:hidden">İki parmak: kaydır/yakınlaştır · Binaya dokun</span>
         </div>
       )}
     </div>

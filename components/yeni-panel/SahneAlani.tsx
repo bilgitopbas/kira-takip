@@ -4,8 +4,9 @@
 // Ağır kütüphaneler (three, maplibre-gl) yalnız ilgili sekme açıkken ve
 // tarayıcıda yüklenir; WebGL yoksa/zayıfsa hafif görünüm gösterilir.
 import dynamic from "next/dynamic";
-import { useSyncExternalStore } from "react";
-import { grafikSeviyesi, type GrafikSeviyesi } from "@/lib/webglDestek";
+import { useState, useSyncExternalStore } from "react";
+import { cihazDurumu, type CihazDurumu } from "@/lib/webglDestek";
+import HafifGorunum from "@/components/yeni-panel/HafifGorunum";
 import type { Bina } from "@/lib/yeniPanelBina";
 import type { Nokta } from "@/lib/haritaModeli";
 import type { Sehir3DSecim } from "@/components/yeni-panel/Sehir3D";
@@ -30,8 +31,9 @@ export type SahneSekmesi = "sehir" | "konum";
 
 // Cihaz yeteneği bir kez ölçülür; sunucuda "hafif" sayılır (sahne zaten
 // yalnız istemcide çizilir).
-let olculen: GrafikSeviyesi | null = null;
-const seviyeAl = () => (olculen ??= grafikSeviyesi());
+let olculen: CihazDurumu | null = null;
+const cihazAl = () => (olculen ??= cihazDurumu());
+const SUNUCU: CihazDurumu = { webgl: false, zayif: true, dokunmatik: false };
 const abone = () => () => {};
 
 export default function SahneAlani({
@@ -63,19 +65,33 @@ export default function SahneAlani({
   onKonumDuzelt: (anahtar: string, nokta: Nokta) => void;
   onKonumKaydet: (anahtar: string) => Promise<string | null>;
 }) {
-  const seviye = useSyncExternalStore(abone, seviyeAl, () => "hafif" as GrafikSeviyesi);
+  const cihaz = useSyncExternalStore(abone, cihazAl, () => SUNUCU);
   const istemcide = useSyncExternalStore(abone, () => true, () => false);
+  const [yineDeAc, setYineDeAc] = useState(false);
 
   if (!istemcide) return <Yukleniyor metin="Yükleniyor…" />;
 
-  if (seviye === "hafif") {
+  // WebGL yok: 3D de harita da açılamaz → bina listesi
+  if (!cihaz.webgl) {
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center">
-        <p className="text-sm font-semibold text-slate-700">Hafif görünüm</p>
-        <p className="text-xs text-slate-500 max-w-xs">
-          Bu cihazda 3D sahne ve harita kapalı. Binalar ve kiracılar sağdaki panelde listelenir.
-        </p>
-      </div>
+      <HafifGorunum
+        binalar={sekme === "konum" ? haritaBinalari : binalar}
+        seciliAnahtar={seciliAnahtar}
+        neden="Bu cihazda 3D sahne ve harita desteklenmiyor; binalar liste olarak gösteriliyor."
+        onSec={onSec}
+      />
+    );
+  }
+  // Zayıf cihaz: harita açık (hafif), 3D yerine liste (istenirse açılabilir)
+  if (sekme === "sehir" && cihaz.zayif && !yineDeAc) {
+    return (
+      <HafifGorunum
+        binalar={binalar}
+        seciliAnahtar={seciliAnahtar}
+        neden="Bu cihazda pil ve hız için 3D sahne yerine liste gösteriliyor."
+        onSec={onSec}
+        onYineDeAc={() => setYineDeAc(true)}
+      />
     );
   }
 
