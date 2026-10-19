@@ -150,3 +150,13 @@ test("il-ilce-merkezleri.json: 81 ilin hepsinin koordinatı Türkiye sınırlar�
     assert.ok(x > 25.5 && x < 45 && y > 35.8 && y < 42.2, `${il} sınır dışı`);
   }
 });
+
+test("Konya merkez ilçeleri (Selçuklu, Meram, Karatay) ilçe koordinatıyla ve il merkezine yakın", async () => {
+  const { baslangicKonumu } = await import("@/lib/konumMerkezi");
+  const merkez = baslangicKonumu("Konya", null)!.nokta;
+  for (const ilce of ["Selçuklu", "SELÇUKLU", "Meram", "Karatay"]) {
+    const k = baslangicKonumu("Konya", ilce);
+    assert.equal(k?.seviye, "ilce", ilce);
+    assert.ok(Math.hypot(k!.nokta[0] - merkez[0], k!.nokta[1] - merkez[1]) < 0.15, `${ilce} merkezden uzak`);
+  }
+});

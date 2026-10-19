@@ -78,19 +78,33 @@ function ilceAdiTemizle(ad) {
 const AZAMI_UZAKLIK = 2.5;
 const ilceler = {};
 const sayac = { etiketsiz: 0, koordsuz: 0, anlamAyrimi: 0, uzak: 0, cift: 0 };
-const gorulen = new Set();
+// Bilinen Wikidata etiket sapmaları → resmî ilçe adı ("il/etiket" anahtarıyla).
+// Her kayıt elle doğrulandı (gerekçe yanında).
+const ETIKET_DUZELTME = {
+  // Q14329111: Türkçe etiket "Selçuklular", İngilizce etiket "Selçuklu" (Konya merkez ilçesi)
+  "Konya/Selçuklular": "Selçuklu",
+};
+
+// Aynı ilçe öğesinde birden fazla koordinat olabiliyor (ör. ilçe merkezi +
+// alan ortası). Belirlenimci olmak için il merkezine en yakın olanı seçilir.
+const adaylar = new Map();
 for (const s of ilceSatirlari) {
-  if (gorulen.has(s.ilce.value)) continue;
-  gorulen.add(s.ilce.value);
   const il = s.ilLabel.value;
   if (!iller[il]) continue;
   const k = nokta(s.koord?.value);
-  if (!k) { sayac.koordsuz++; continue; }
-  if (/^Q\d+$/.test(s.ilceLabel.value)) { sayac.etiketsiz++; continue; }
-  if (/wikimedia|anlam ayrımı/i.test(s.ilceLabel.value)) { sayac.anlamAyrimi++; continue; }
-  const [x0, y0] = iller[il];
-  if (Math.hypot(k[0] - x0, k[1] - y0) > AZAMI_UZAKLIK) { sayac.uzak++; continue; }
-  const ad = ilceAdiTemizle(s.ilceLabel.value);
+  const kayit = adaylar.get(s.ilce.value) ?? { il, etiket: s.ilceLabel.value, noktalar: [] };
+  if (k) kayit.noktalar.push(k);
+  adaylar.set(s.ilce.value, kayit);
+}
+const uzaklik = (k, il) => Math.hypot(k[0] - iller[il][0], k[1] - iller[il][1]);
+for (const { il, etiket, noktalar } of adaylar.values()) {
+  if (noktalar.length === 0) { sayac.koordsuz++; continue; }
+  if (/^Q\d+$/.test(etiket)) { sayac.etiketsiz++; continue; }
+  if (/wikimedia|anlam ayrımı/i.test(etiket)) { sayac.anlamAyrimi++; continue; }
+  const k = [...noktalar].sort((a, b) => uzaklik(a, il) - uzaklik(b, il))[0];
+  if (uzaklik(k, il) > AZAMI_UZAKLIK) { sayac.uzak++; continue; }
+  const temiz = ilceAdiTemizle(etiket);
+  const ad = ETIKET_DUZELTME[`${il}/${temiz}`] ?? temiz;
   ilceler[il] ??= {};
   if (ilceler[il][ad]) { sayac.cift++; continue; }
   ilceler[il][ad] = k;
