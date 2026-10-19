@@ -6,6 +6,8 @@
 import dynamic from "next/dynamic";
 import { useSyncExternalStore } from "react";
 import { grafikSeviyesi, type GrafikSeviyesi } from "@/lib/webglDestek";
+import type { Bina } from "@/lib/yeniPanelBina";
+import type { Nokta } from "@/lib/haritaModeli";
 
 const Yukleniyor = ({ metin }: { metin: string }) => (
   <div className="absolute inset-0 flex items-center justify-center text-sm text-slate-400" role="status">
@@ -33,10 +35,21 @@ const abone = () => () => {};
 
 export default function SahneAlani({
   sekme,
-  binaSayisi,
+  binalar,
+  il,
+  seciliAnahtar,
+  duzeltmeler,
+  onSec,
+  onKonumDuzelt,
 }: {
   sekme: SahneSekmesi;
-  binaSayisi: number;
+  /** Seçili ildeki binalar */
+  binalar: Bina[];
+  il: string;
+  seciliAnahtar: string | null;
+  duzeltmeler: Record<string, Nokta>;
+  onSec: (anahtar: string) => void;
+  onKonumDuzelt: (anahtar: string, nokta: Nokta) => void;
 }) {
   const seviye = useSyncExternalStore(abone, seviyeAl, () => "hafif" as GrafikSeviyesi);
   const istemcide = useSyncExternalStore(abone, () => true, () => false);
@@ -54,5 +67,9 @@ export default function SahneAlani({
     );
   }
 
-  return sekme === "sehir" ? <Sehir3D binaSayisi={binaSayisi} /> : <Harita />;
+  return sekme === "sehir" ? (
+    <Sehir3D binaSayisi={binalar.length} />
+  ) : (
+    <Harita binalar={binalar} il={il} seciliAnahtar={seciliAnahtar} duzeltmeler={duzeltmeler} onSec={onSec} onKonumDuzelt={onKonumDuzelt} />
+  );
 }

@@ -28,6 +28,7 @@ export default function BinaPaneli({
   blok,
   seciliBirimId,
   sahne,
+  konumDurumu,
   onBlok,
   onBirim,
   onKapat,
@@ -39,6 +40,8 @@ export default function BinaPaneli({
   blok: string;
   seciliBirimId: string | null;
   sahne: "sehir" | "konum";
+  /** Haritadaki konumun durumu (kayıtlı koordinat F aşamasında gelecek) */
+  konumDurumu: "dogrulanmadi" | "duzeltildi" | "yok";
   onBlok: (blok: string) => void;
   onBirim: (id: string | null) => void;
   onKapat: () => void;
@@ -79,6 +82,18 @@ export default function BinaPaneli({
               {tip} · {bina.il ?? "İl girilmemiş"}
               {bina.ilce ? ` / ${bina.ilce}` : ""}
               {cokBlok ? ` · ${bina.bloklar.length} blok` : ""}
+            </span>
+            <span
+              className="normal-case tracking-normal text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700"
+              title={
+                konumDurumu === "yok"
+                  ? "İl girilmediği için haritada gösterilemiyor"
+                  : konumDurumu === "duzeltildi"
+                    ? "Konum bu oturumda haritada düzeltildi; kalıcı kayıt Binalarım ekranında"
+                    : "Konum ilçe/il merkezinden türetildi; haritada pini sürükleyerek düzeltin"
+              }
+            >
+              {konumDurumu === "yok" ? "konum yok" : konumDurumu === "duzeltildi" ? "konum düzeltildi · kaydedilmedi" : "konum doğrulanmadı"}
             </span>
             {bina.kontrolGerekli && (
               <span className="normal-case tracking-normal text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700" title="Blok, '2A' gibi bir yazımdan tahmin edildi; Binalarım ekranında kontrol edin">

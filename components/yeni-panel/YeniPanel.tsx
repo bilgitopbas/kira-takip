@@ -22,6 +22,7 @@ import BugunSekmesi from "@/components/yeni-panel/BugunSekmesi";
 import BinalarSekmesi from "@/components/yeni-panel/BinalarSekmesi";
 import BinaPaneli from "@/components/yeni-panel/BinaPaneli";
 import { binalariKur } from "@/lib/yeniPanelBina";
+import type { Nokta } from "@/lib/haritaModeli";
 import { panelGecisAdresi } from "@/lib/panelTercihi";
 import type { BugunListeleri, PanelBirimi, PanelOzeti } from "@/lib/yeniPanelTipleri";
 
@@ -57,7 +58,6 @@ export default function YeniPanel({
   // Seçili ildeki birimler ve binalar (Mülk Şehrim ızgarası = bina sayısı)
   const ilBirimleri = useMemo(() => (il ? birimler.filter((b) => b.il === il) : birimler), [birimler, il]);
   const binalar = useMemo(() => binalariKur(ilBirimleri), [ilBirimleri]);
-  const binaSayisi = binalar.length;
 
   const router = useRouter();
   const [secim, setSecim] = useState<Secim>(null);
@@ -77,6 +77,11 @@ export default function YeniPanel({
     [birimler, il]
   );
   const tazele = useCallback(() => router.refresh(), [router]);
+
+  // Haritada sürüklenerek düzeltilen konumlar — YALNIZ bu oturumda tutulur;
+  // kalıcı kayıt F aşamasındaki şema ekiyle (Binalarım) yapılacak.
+  const [duzeltmeler, setDuzeltmeler] = useState<Record<string, Nokta>>({});
+  const konumDuzelt = useCallback((anahtar: string, nokta: Nokta) => setDuzeltmeler((d) => ({ ...d, [anahtar]: nokta })), []);
   const altSayfa = !!seciliBina && darEkran;
 
   const birincil = "inline-flex bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm";
@@ -182,7 +187,15 @@ export default function YeniPanel({
             </h2>
           </div>
           <div className="relative h-[52vh] min-h-[320px] max-h-[640px] bg-[#eef1ea]">
-            <SahneAlani sekme={sahne} binaSayisi={binaSayisi} />
+            <SahneAlani
+              sekme={sahne}
+              binalar={binalar}
+              il={il}
+              seciliAnahtar={seciliBina?.anahtar ?? null}
+              duzeltmeler={duzeltmeler}
+              onSec={binaSec}
+              onKonumDuzelt={konumDuzelt}
+            />
           </div>
           {sahne === "sehir" && (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 border-t border-gray-100 text-[11px] text-slate-500">
@@ -211,6 +224,7 @@ export default function YeniPanel({
               blok={secim.blok}
               seciliBirimId={secim.birim}
               sahne={sahne}
+              konumDurumu={!seciliBina.il ? "yok" : duzeltmeler[seciliBina.anahtar] ? "duzeltildi" : "dogrulanmadi"}
               onBlok={(blok) => setSecim({ ...secim, blok, birim: null })}
               onBirim={(birim) => setSecim({ ...secim, birim })}
               onKapat={() => setSecim(null)}
