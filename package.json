@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/maplibre-worker-kopyala.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/maplibre-worker-kopyala.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -23,6 +25,7 @@
     "docxtemplater": "^3.69.3",
     "framer-motion": "^12.42.2",
     "jose": "^6.2.3",
+    "maplibre-gl": "6.15.0",
     "next": "^16.3.4",
     "nodemailer": "^9.1.1",
     "onesignal-cordova-plugin": "^5.5.1",
@@ -31,6 +34,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "recharts": "^3.9.2",
+    "three": "0.186.1",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
@@ -42,6 +46,7 @@
     "@types/nodemailer": "^8.0.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/three": "0.186.0",
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "^16.3.4",

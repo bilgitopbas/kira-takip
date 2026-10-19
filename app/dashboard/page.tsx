@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import MonthlyIncomeChart from "@/components/MonthlyIncomeChart";
@@ -14,6 +15,9 @@ import OverdueDebtsBanner from "@/components/OverdueDebtsBanner";
 import EmailVerificationBanner from "@/components/EmailVerificationBanner";
 import { getEffectiveDebtStatus } from "@/lib/debtStatus";
 import { getAccessStateForUser } from "@/lib/access";
+import { PANEL_CEREZI, panelGecisAdresi, panelTercihiCoz, yeniPanelIzinli } from "@/lib/panelTercihi";
+import { panelOzetiGetir } from "@/lib/yeniPanelVeri";
+import YeniPanel from "@/components/yeni-panel/YeniPanel";
 
 const MONTH_SHORT = [
   "Oca", "Sub", "Mar", "Nis", "May", "Haz",
@@ -211,10 +215,34 @@ const CARD_ICONS = {
   ),
 };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const session = await getSession();
   if (!session) {
     redirect("/login");
+  }
+
+  // Yeni panel geçişi (bkz. lib/panelTercihi.ts). Sunucu izni yoksa bu blok
+  // hiçbir şey yapmaz ve aşağıdaki klasik panel değişmeden çalışır.
+  const yeniPanelVar = yeniPanelIzinli();
+  if (yeniPanelVar) {
+    const istenen = panelTercihiCoz((await searchParams).panel);
+    if (istenen) redirect(panelGecisAdresi(istenen));
+    const cerezDeposu = await cookies();
+    if (cerezDeposu.get(PANEL_CEREZI)?.value === "yeni") {
+      const ozet = await panelOzetiGetir(session.userId);
+      const tarihMetni = new Date().toLocaleDateString("tr-TR", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        weekday: "long",
+        timeZone: "Europe/Istanbul",
+      });
+      return <YeniPanel ozet={ozet} tarihMetni={tarihMetni} />;
+    }
   }
 
   const {
@@ -256,7 +284,17 @@ export default async function DashboardPage() {
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Kontrol Paneli</h1>
-          <p className="text-sm text-slate-500 mt-1">Mülklerinizin genel durumu · Son güncelleme: Bugün {updatedAt}</p>
+          <p className="text-sm text-slate-500 mt-1">
+            Mülklerinizin genel durumu · Son güncelleme: Bugün {updatedAt}
+            {yeniPanelVar && (
+              <>
+                {" · "}
+                <a href={panelGecisAdresi("yeni")} className="font-semibold text-[#0a7c76] hover:underline">
+                  Yeni paneli dene
+                </a>
+              </>
+            )}
+          </p>
         </div>
         <div className="grid grid-cols-3 sm:flex sm:items-center gap-2">
           <MulkEkleButton className={`${primaryBtn} justify-center px-2 sm:px-4`} />

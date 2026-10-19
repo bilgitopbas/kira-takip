@@ -75,3 +75,6 @@ keystore.properties
 /ios/App/App/public
 **/xcuserdata
 *.xcuserstate
+
+# maplibre harita isci dosyasi (prebuild adiminda node_modules'tan kopyalanir)
+/public/vendor/maplibre
