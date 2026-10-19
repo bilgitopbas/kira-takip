@@ -90,6 +90,24 @@ export default function YeniPanel({
     [binalar, durumSuzgeci, tipSuzgeci]
   );
 
+  // Mülk Şehrim: "Yalnız gecikmiş" çipi ve 3D seçimi (panel ve haritayla ortak durum)
+  const [yalnizGecikmis, setYalnizGecikmis] = useState(false);
+  const secim3d = useMemo(
+    () => ({ bina: seciliBina?.anahtar ?? null, blok: secim?.blok || null, birim: secim?.birim ?? null }),
+    [seciliBina, secim]
+  );
+  const sec3d = useCallback(
+    (bina: string | null, birim: string | null, blok: string | null) => {
+      if (!bina) {
+        setSecim(null);
+        return;
+      }
+      const birimBlogu = birim ? birimler.find((b) => b.id === birim)?.bina.blok ?? null : null;
+      setSecim({ bina, blok: blok ?? birimBlogu ?? "", birim });
+    },
+    [birimler]
+  );
+
   const konumDuzelt = useCallback((anahtar: string, nokta: Nokta) => setDuzeltmeler((d) => ({ ...d, [anahtar]: nokta })), []);
   const altSayfa = !!seciliBina && darEkran;
 
@@ -194,6 +212,20 @@ export default function YeniPanel({
             <h2 className="text-sm font-bold text-slate-800">
               {sahne === "sehir" ? "Mülk Şehrim" : "Portföy Haritası"} · {il || "Tüm iller"}
             </h2>
+            {sahne === "sehir" && (
+              <button
+                type="button"
+                aria-pressed={yalnizGecikmis}
+                onClick={() => setYalnizGecikmis((v) => !v)}
+                title="Gecikmiş birimi olmayan binaları soluklaştır"
+                className={`ml-auto inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold transition ${
+                  yalnizGecikmis ? "bg-red-600 border-red-600 text-white" : "bg-white border-gray-200 text-slate-600 hover:border-red-300"
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${yalnizGecikmis ? "bg-white" : "bg-red-500"}`} aria-hidden="true" />
+                Yalnız gecikmiş
+              </button>
+            )}
             {sahne === "konum" && (
               <div role="group" aria-label="Harita süzgeçleri" className="w-full flex flex-wrap items-center gap-1.5 pt-2">
                 {(
@@ -258,6 +290,9 @@ export default function YeniPanel({
               il={il}
               seciliAnahtar={seciliBina?.anahtar ?? null}
               duzeltmeler={duzeltmeler}
+              secim3d={secim3d}
+              yalnizGecikmis={yalnizGecikmis}
+              onSec3d={sec3d}
               onSec={binaSec}
               onKonumDuzelt={konumDuzelt}
             />

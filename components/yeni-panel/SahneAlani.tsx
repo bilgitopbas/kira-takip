@@ -8,6 +8,7 @@ import { useSyncExternalStore } from "react";
 import { grafikSeviyesi, type GrafikSeviyesi } from "@/lib/webglDestek";
 import type { Bina } from "@/lib/yeniPanelBina";
 import type { Nokta } from "@/lib/haritaModeli";
+import type { Sehir3DSecim } from "@/components/yeni-panel/Sehir3D";
 
 const Yukleniyor = ({ metin }: { metin: string }) => (
   <div className="absolute inset-0 flex items-center justify-center text-sm text-slate-400" role="status">
@@ -40,7 +41,10 @@ export default function SahneAlani({
   il,
   seciliAnahtar,
   duzeltmeler,
+  secim3d,
+  yalnizGecikmis,
   onSec,
+  onSec3d,
   onKonumDuzelt,
 }: {
   sekme: SahneSekmesi;
@@ -52,6 +56,9 @@ export default function SahneAlani({
   seciliAnahtar: string | null;
   duzeltmeler: Record<string, Nokta>;
   onSec: (anahtar: string) => void;
+  secim3d: Sehir3DSecim;
+  yalnizGecikmis: boolean;
+  onSec3d: (bina: string | null, birim: string | null, blok: string | null) => void;
   onKonumDuzelt: (anahtar: string, nokta: Nokta) => void;
 }) {
   const seviye = useSyncExternalStore(abone, seviyeAl, () => "hafif" as GrafikSeviyesi);
@@ -71,7 +78,7 @@ export default function SahneAlani({
   }
 
   return sekme === "sehir" ? (
-    <Sehir3D binaSayisi={binalar.length} />
+    <Sehir3D binalar={binalar} secim={secim3d} yalnizGecikmis={yalnizGecikmis} onSec={onSec3d} />
   ) : (
     <Harita binalar={haritaBinalari} il={il} seciliAnahtar={seciliAnahtar} duzeltmeler={duzeltmeler} onSec={onSec} onKonumDuzelt={onKonumDuzelt} />
   );
