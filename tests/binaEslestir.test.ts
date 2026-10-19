@@ -132,3 +132,21 @@ for (const [girdi, beklenen] of IL_TABLOSU) {
     assert.equal(ilCoz(girdi), beklenen);
   });
 }
+
+test("baslangicKonumu: ilçe bulunursa ilçe, yoksa il merkezi, il yoksa null", async () => {
+  const { baslangicKonumu } = await import("@/lib/konumMerkezi");
+  const meram = baslangicKonumu("KONYA ", "meram");
+  assert.equal(meram?.seviye, "ilce");
+  const bilinmeyen = baslangicKonumu("Konya", "Olmayan İlçe");
+  assert.equal(bilinmeyen?.seviye, "il");
+  assert.ok(bilinmeyen && bilinmeyen.nokta[0] > 32 && bilinmeyen.nokta[0] < 33 && bilinmeyen.nokta[1] > 37.5 && bilinmeyen.nokta[1] < 38.2);
+  assert.equal(baslangicKonumu("", "Meram"), null);
+});
+
+test("il-ilce-merkezleri.json: 81 ilin hepsinin koordinatı Türkiye sınırları içinde", async () => {
+  const veri = (await import("@/lib/veri/il-ilce-merkezleri.json")).default as unknown as { iller: Record<string, [number, number]> };
+  assert.deepEqual(Object.keys(veri.iller).sort(), [...ILLER].sort());
+  for (const [il, [x, y]] of Object.entries(veri.iller)) {
+    assert.ok(x > 25.5 && x < 45 && y > 35.8 && y < 42.2, `${il} sınır dışı`);
+  }
+});
