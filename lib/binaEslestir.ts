@@ -54,13 +54,19 @@ export function basHarfBuyuk(metin: string): string {
 type Parca = { ad: string; blok: string | null; birimNo: string | null; guven: Guven };
 
 // Birim numarası kalıpları; öncelik sırasıyla denenir.
+// Birim numarası; birleşik birimler aralıkla yazılabilir: "102-103", "12-13-14"
+const NUM = `\\d+[${HARF}]?(?:\\s*[-–]\\s*\\d+[${HARF}]?)*`;
+
 const DAIRE_KALIPLARI = [
   // "KAPI NO :28", "DAİRE 5", "DAİRE NO:5"
-  new RegExp(`(?:KAPI\\s*NO|DA[İI]RE(?:\\s*NO)?)\\s*[:.]?\\s*(\\d+[${HARF}]?)\\b`),
+  new RegExp(`(?:KAPI\\s*NO|DA[İI]RE(?:\\s*NO)?)\\s*[:.]?\\s*(${NUM})\\b`),
   // "D:5", "D.5" — ayraç ZORUNLU ("D100 Karayolu" daire sanılmasın)
-  new RegExp(`\\bD\\s*[:.]\\s*(\\d+[${HARF}]?)\\b`),
+  new RegExp(`\\bD\\s*[:.]\\s*(${NUM})\\b`),
 ];
-const NO_KALIBI = new RegExp(`\\bNO\\s*[:.]?\\s*(\\d+[${HARF}]?)\\b`);
+const NO_KALIBI = new RegExp(`\\bNO\\s*[:.]?\\s*(${NUM})\\b`);
+// "NO:2A / 15": bina no (2A → A blok, düşük güven) + daire no
+const NO_EGIK_KALIBI = new RegExp(`\\bNO\\s*[:.]?\\s*(\\d+[${HARF}])\\s*\\/\\s*(\\d+)\\b`);
+const BLOK_IZI = new RegExp(`\\bBLOK\\b|\\b\\d*[${HARF}]\\s*-?\\s*BLOK\\b`);
 const EGIK_KALIBI = /\/\s*(\d+)\s*$/;
 
 function sonEslesme(re: RegExp, metin: string): RegExpExecArray | null {
@@ -105,28 +111,46 @@ export function metinCoz(hamMetin: string): Parca | null {
 
   // 1) Birim numarası
   let birimNo: string | null = null;
-  let m: RegExpExecArray | null = null;
-  for (const re of DAIRE_KALIPLARI) {
-    m = sonEslesme(re, s);
-    if (m) break;
-  }
-  if (!m) m = sonEslesme(NO_KALIBI, s);
-  if (!m) m = EGIK_KALIBI.exec(s);
-  if (m) {
-    birimNo = m[1];
-    s = kes(s, m);
-  }
-
-  // 2) Blok: "A BLOK", "A-BLOK", "BLOK A", "BİNA NO 2A", ya da sondaki tek harf / rakam+harf
   let blok: string | null = null;
   let guven: Guven = "yuksek";
   let acikBlok = false;
+
+  const noEgik = sonEslesme(NO_EGIK_KALIBI, s);
+  if (noEgik) {
+    // "NO:2A / 15" — bina no'dan blok, eğik çizgiden sonrası daire
+    ({ blok, guven } = blokNormalle(noEgik[1]));
+    acikBlok = true;
+    birimNo = noEgik[2];
+    s = s.slice(0, noEgik.index).trim();
+  } else {
+    let m: RegExpExecArray | null = null;
+    let sondaki = false;
+    for (const re of DAIRE_KALIPLARI) {
+      m = sonEslesme(re, s);
+      if (m) break;
+    }
+    if (!m) m = sonEslesme(NO_KALIBI, s);
+    if (!m) {
+      m = EGIK_KALIBI.exec(s);
+      sondaki = true;
+    }
+    if (m) {
+      birimNo = m[1].replace(/\s+/g, "");
+      // Numaradan sonraki serbest metin ("No:12 Dükkan") bina adına katılmaz;
+      // yalnız bir blok izi taşıyorsa ("No:5 A Blok") korunur.
+      const sonra = s.slice(m.index + m[0].length);
+      s = sondaki || BLOK_IZI.test(sonra) ? kes(s, m) : s.slice(0, m.index).trim();
+    }
+  }
+
+  // 2) Blok: "A BLOK", "A-BLOK", "BLOK A", "BİNA NO 2A", ya da sondaki tek harf / rakam+harf
   const blokKaliplari = [
     new RegExp(`\\b(\\d*[${HARF}])\\s*-?\\s*BLOK\\b`),
     new RegExp(`\\bBLOK\\s*[:.]?\\s*(\\d*[${HARF}])\\b`),
     new RegExp(`\\bB[İI]NA\\s*NO\\s*[:.]?\\s*(\\d*[${HARF}])\\b`),
   ];
   for (const re of blokKaliplari) {
+    if (blok) break;
     const b = re.exec(s);
     if (b) {
       ({ blok, guven } = blokNormalle(b[1]));

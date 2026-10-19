@@ -27,6 +27,12 @@ const TABLO: [string, Beklenen][] = [
   ["Gül Apt. No:5", { ad: "GÜL APT", blok: null, no: "5", guven: "yuksek" }],
   ["Atatürk Cad. No:12 D:5", { ad: "ATATÜRK 12", blok: null, no: "5", guven: "yuksek" }],
   ["D100 Karayolu Depo", null],
+  // Canlı ölçümde görülen kalıplar (sentetik örneklerle)
+  ["Örnektepe A NO:102-103", { ad: "ÖRNEKTEPE", blok: "A", no: "102-103", guven: "yuksek" }],
+  ["Örnektepe A NO:12-13-14", { ad: "ÖRNEKTEPE", blok: "A", no: "12-13-14", guven: "yuksek" }],
+  ["Örnektepe NO:2A / 15", { ad: "ÖRNEKTEPE", blok: "A", no: "15", guven: "dusuk" }],
+  ["Örnektepe A NO:12 Dükkan", { ad: "ÖRNEKTEPE", blok: "A", no: "12", guven: "yuksek" }],
+  ["Örnektepe NO:5 A Blok", { ad: "ÖRNEKTEPE", blok: "A", no: "5", guven: "yuksek" }],
   ["Merkez Dükkan", null],
   ["", null],
 ];
