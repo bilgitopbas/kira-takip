@@ -5,9 +5,11 @@
 // doluluk ve tip grafikleri) aynen yeniden kullanılır; yazma işlemleri onların
 // mevcut uçları üzerinden yürür.
 //
-// A aşaması: kabuk. Sağ panelin içeriği (Bugün / Binalar / bina paneli)
-// C aşamasında, sahnelerin asıl içeriği D ve E aşamalarında gelir.
-import { useMemo, useState } from "react";
+// Sağ panel: Bugün | Binalar | bina paneli (C aşaması). Masaüstünde yapışkan
+// sütun; 1240 px ve altında bina seçilince ekranın altından açılan alt-sayfa.
+// Sahnelerin asıl içeriği (harita pinleri, 3D binalar) D ve E aşamalarında.
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
 import MulkEkleButton from "@/components/MulkEkleButton";
 import KiraciEkleButton from "@/components/KiraciEkleButton";
 import TahsilatEkleButton from "@/components/TahsilatEkleButton";
@@ -16,6 +18,10 @@ import OccupancyChart from "@/components/OccupancyChart";
 import PropertyTypeChart from "@/components/PropertyTypeChart";
 import IlSecici from "@/components/yeni-panel/IlSecici";
 import SahneAlani, { type SahneSekmesi } from "@/components/yeni-panel/SahneAlani";
+import BugunSekmesi from "@/components/yeni-panel/BugunSekmesi";
+import BinalarSekmesi from "@/components/yeni-panel/BinalarSekmesi";
+import BinaPaneli from "@/components/yeni-panel/BinaPaneli";
+import { binalariKur } from "@/lib/yeniPanelBina";
 import { panelGecisAdresi } from "@/lib/panelTercihi";
 import type { BugunListeleri, PanelBirimi, PanelOzeti } from "@/lib/yeniPanelTipleri";
 
@@ -23,14 +29,24 @@ type SagSekme = "bugun" | "binalar";
 
 const tl = (n: number) => `${n.toLocaleString("tr-TR")} ₺`;
 
+// ≤1240 px: bina paneli alt-sayfa olur (önizleme v6 ile aynı eşik)
+const DAR_EKRAN = "(max-width: 1240px)";
+function darEkranAbone(cb: () => void) {
+  const mq = window.matchMedia(DAR_EKRAN);
+  mq.addEventListener("change", cb);
+  return () => mq.removeEventListener("change", cb);
+}
+
+type Secim = { bina: string; blok: string; birim: string | null } | null;
+
 export default function YeniPanel({
   ozet,
   birimler,
+  bugun,
   tarihMetni,
 }: {
   ozet: PanelOzeti;
   birimler: PanelBirimi[];
-  /** Sağ paneldeki "Bugün" sekmesi C aşamasında kullanacak */
   bugun: BugunListeleri;
   tarihMetni: string;
 }) {
@@ -40,7 +56,28 @@ export default function YeniPanel({
 
   // Seçili ildeki birimler ve binalar (Mülk Şehrim ızgarası = bina sayısı)
   const ilBirimleri = useMemo(() => (il ? birimler.filter((b) => b.il === il) : birimler), [birimler, il]);
-  const binaSayisi = useMemo(() => new Set(ilBirimleri.map((b) => b.bina.anahtar)).size, [ilBirimleri]);
+  const binalar = useMemo(() => binalariKur(ilBirimleri), [ilBirimleri]);
+  const binaSayisi = binalar.length;
+
+  const router = useRouter();
+  const [secim, setSecim] = useState<Secim>(null);
+  const darEkran = useSyncExternalStore(darEkranAbone, () => window.matchMedia(DAR_EKRAN).matches, () => false);
+
+  // Seçili bina il değişince ya da kayıt silinince ortadan kalkabilir
+  const seciliBina = secim ? binalar.find((b) => b.anahtar === secim.bina) ?? null : null;
+
+  const binaSec = useCallback((anahtar: string) => setSecim({ bina: anahtar, blok: "", birim: null }), []);
+  const birimSec = useCallback(
+    (birimId: string) => {
+      const b = birimler.find((x) => x.id === birimId);
+      if (!b) return;
+      if (il && b.il !== il) setIl("");
+      setSecim({ bina: b.bina.anahtar, blok: b.bina.blok ?? "", birim: b.id });
+    },
+    [birimler, il]
+  );
+  const tazele = useCallback(() => router.refresh(), [router]);
+  const altSayfa = !!seciliBina && darEkran;
 
   const birincil = "inline-flex bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm";
   const ikincil = "inline-flex bg-white hover:bg-gray-50 text-slate-700 font-semibold px-4 py-2.5 rounded-xl transition text-sm border border-gray-200";
@@ -125,11 +162,19 @@ export default function YeniPanel({
           ))}
         </div>
         <div className="min-w-0 lg:ml-auto">
-          <IlSecici iller={ozet.iller} toplam={ozet.mulkSayisi} secili={il} onSec={setIl} />
+          <IlSecici
+            iller={ozet.iller}
+            toplam={ozet.mulkSayisi}
+            secili={il}
+            onSec={(yeni) => {
+              setIl(yeni);
+              setSecim(null);
+            }}
+          />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-4">
+      <div className="grid grid-cols-1 min-[1241px]:grid-cols-[minmax(0,1fr)_380px] gap-4 items-start">
         <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 px-5 pt-4 pb-3 border-b border-gray-100">
             <h2 className="text-sm font-bold text-slate-800">
@@ -150,35 +195,62 @@ export default function YeniPanel({
           )}
         </section>
 
-        <aside aria-label="Bugün ve binalar" className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div role="tablist" aria-label="Sağ panel" className="flex border-b border-gray-100">
-            {(
-              [
-                ["bugun", "Bugün"],
-                ["binalar", "Binalar"],
-              ] as const
-            ).map(([deger, etiket]) => (
-              <button
-                key={deger}
-                type="button"
-                role="tab"
-                aria-selected={sagSekme === deger}
-                onClick={() => setSagSekme(deger)}
-                className={`flex-1 py-3 text-sm font-semibold border-b-2 transition ${
-                  sagSekme === deger ? "border-[#17B6AE] text-slate-900" : "border-transparent text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                {etiket}
-              </button>
-            ))}
-          </div>
-          <div className="p-5 text-sm text-slate-500">
-            {sagSekme === "bugun"
-              ? "Vadesi gelenler, gecikenler, sözleşme yenilemeleri ve kira artış tarihleri burada listelenecek."
-              : "Binalar, bloklar ve daireler burada listelenecek."}
-          </div>
+        <aside
+          aria-label="Bugün, binalar ve bina paneli"
+          className={
+            altSayfa
+              ? "fixed inset-x-0 bottom-0 lg:left-64 z-30 max-h-[70vh] overflow-y-auto overscroll-contain bg-white rounded-t-2xl border border-gray-100 shadow-[0_-10px_34px_rgba(6,33,31,0.24)]"
+              : "bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden min-[1241px]:sticky min-[1241px]:top-0 min-[1241px]:max-h-[calc(100dvh-2rem)] min-[1241px]:overflow-y-auto overscroll-contain"
+          }
+        >
+          {altSayfa && <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-gray-200" aria-hidden="true" />}
+          {seciliBina && secim ? (
+            <BinaPaneli
+              key={seciliBina.anahtar}
+              bina={seciliBina}
+              blok={secim.blok}
+              seciliBirimId={secim.birim}
+              sahne={sahne}
+              onBlok={(blok) => setSecim({ ...secim, blok, birim: null })}
+              onBirim={(birim) => setSecim({ ...secim, birim })}
+              onKapat={() => setSecim(null)}
+              onSahneDegistir={() => setSahne(sahne === "konum" ? "sehir" : "konum")}
+              onDegisti={tazele}
+            />
+          ) : (
+            <>
+              <div role="tablist" aria-label="Sağ panel" className="flex border-b border-gray-100">
+                {(
+                  [
+                    ["bugun", "Bugün", null],
+                    ["binalar", "Binalar", binalar.length],
+                  ] as const
+                ).map(([deger, etiket, sayi]) => (
+                  <button
+                    key={deger}
+                    type="button"
+                    role="tab"
+                    aria-selected={sagSekme === deger}
+                    onClick={() => setSagSekme(deger)}
+                    className={`flex-1 py-3 text-sm font-semibold border-b-2 transition ${
+                      sagSekme === deger ? "border-[#17B6AE] text-slate-900" : "border-transparent text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    {etiket}
+                    {sayi !== null && <span className="ml-1.5 text-[11px] font-bold text-slate-400 tabular-nums">{sayi}</span>}
+                  </button>
+                ))}
+              </div>
+              {sagSekme === "bugun" ? (
+                <BugunSekmesi bugun={bugun} birimler={ilBirimleri} tarihMetni={tarihMetni} onBirim={birimSec} />
+              ) : (
+                <BinalarSekmesi binalar={binalar} il={il} onSec={binaSec} />
+              )}
+            </>
+          )}
         </aside>
       </div>
+      {altSayfa && <div className="h-[70vh]" aria-hidden="true" />}
     </div>
   );
 }
