@@ -5,17 +5,19 @@ import type { IlOzeti } from "@/lib/yeniPanelTipleri";
 /** "" = Tüm iller */
 export default function IlSecici({
   iller,
+  toplam,
   secili,
   onSec,
 }: {
   iller: IlOzeti[];
+  /** Tüm mülkler (ili girilmemiş/eşleşmeyenler dahil) */
+  toplam: number;
   secili: string;
   onSec: (il: string) => void;
 }) {
   if (iller.length === 0) return null;
 
-  const tumu = iller.reduce((t, i) => t + i.mulkSayisi, 0);
-  const secenekler = [{ il: "", etiket: "Tüm iller", sayi: tumu }, ...iller.map((i) => ({ il: i.il, etiket: i.il, sayi: i.mulkSayisi }))];
+  const secenekler = [{ il: "", etiket: "Tüm iller", sayi: toplam }, ...iller.map((i) => ({ il: i.il, etiket: i.il, sayi: i.mulkSayisi }))];
 
   return (
     <div role="group" aria-label="İl seçimi" className="flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none]">

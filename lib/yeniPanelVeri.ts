@@ -9,6 +9,7 @@
 // iki panel aynı rakamları göstermelidir.
 import { prisma } from "@/lib/prisma";
 import { PROPERTY_TYPE_LABELS } from "@/lib/excelImport";
+import { ilCoz } from "@/lib/iller";
 import type { PanelOzeti } from "@/lib/yeniPanelTipleri";
 
 const BELIRTILMEMIS = "Belirtilmemiş";
@@ -96,15 +97,18 @@ export async function panelOzetiGetir(ownerId: string): Promise<PanelOzeti> {
       return b.value - a.value;
     });
 
-  // İl metni şimdilik olduğu gibi gruplanır ("Konya" / "KONYA " ayrı düşebilir);
-  // 81 il eşlemesi B aşamasında eklenecek.
-  const iller = ilGruplari
-    .filter((g) => g.city && g.city.trim())
-    .map((g) => ({ il: g.city!.trim(), mulkSayisi: g._count._all }))
+  // Serbest il metni 81 ile eşlenir ("Konya", "KONYA ", "konya" → Konya).
+  // Kayıt değiştirilmez; boş ya da eşleşmeyen il "ilsiz" sayılır.
+  const ilSayaci = new Map<string, number>();
+  let ilsizMulkSayisi = 0;
+  for (const g of ilGruplari) {
+    const il = ilCoz(g.city);
+    if (il) ilSayaci.set(il, (ilSayaci.get(il) ?? 0) + g._count._all);
+    else ilsizMulkSayisi += g._count._all;
+  }
+  const iller = [...ilSayaci.entries()]
+    .map(([il, mulkSayisi]) => ({ il, mulkSayisi }))
     .sort((a, b) => b.mulkSayisi - a.mulkSayisi || a.il.localeCompare(b.il, "tr"));
-  const ilsizMulkSayisi = ilGruplari
-    .filter((g) => !g.city || !g.city.trim())
-    .reduce((t, g) => t + g._count._all, 0);
 
   return {
     mulkSayisi,

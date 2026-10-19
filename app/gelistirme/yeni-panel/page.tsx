@@ -42,7 +42,7 @@ export default function GelistirmeYeniPanel() {
       <p className="mb-4 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
         Geliştirme önizlemesi — uydurma veri, üretimde kapalı.
       </p>
-      <YeniPanel ozet={ORNEK} tarihMetni="19 Ekim 2026 Pazartesi" />
+      <YeniPanel ozet={ORNEK} birimler={[]} bugun={{ vadesiGelenler: [], sozlesmeYenilemeleri: [], kiraArtislari: [] }} tarihMetni="19 Ekim 2026 Pazartesi" />
     </div>
   );
 }

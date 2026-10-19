@@ -17,6 +17,7 @@ import { getEffectiveDebtStatus } from "@/lib/debtStatus";
 import { getAccessStateForUser } from "@/lib/access";
 import { PANEL_CEREZI, panelGecisAdresi, panelTercihiCoz, yeniPanelIzinli } from "@/lib/panelTercihi";
 import { panelOzetiGetir } from "@/lib/yeniPanelVeri";
+import { panelBirimleriGetir } from "@/lib/yeniPanelBirimleri";
 import YeniPanel from "@/components/yeni-panel/YeniPanel";
 
 const MONTH_SHORT = [
@@ -233,7 +234,10 @@ export default async function DashboardPage({
     if (istenen) redirect(panelGecisAdresi(istenen));
     const cerezDeposu = await cookies();
     if (cerezDeposu.get(PANEL_CEREZI)?.value === "yeni") {
-      const ozet = await panelOzetiGetir(session.userId);
+      const [ozet, { birimler, bugun }] = await Promise.all([
+        panelOzetiGetir(session.userId),
+        panelBirimleriGetir(session.userId),
+      ]);
       const tarihMetni = new Date().toLocaleDateString("tr-TR", {
         day: "numeric",
         month: "long",
@@ -241,7 +245,7 @@ export default async function DashboardPage({
         weekday: "long",
         timeZone: "Europe/Istanbul",
       });
-      return <YeniPanel ozet={ozet} tarihMetni={tarihMetni} />;
+      return <YeniPanel ozet={ozet} birimler={birimler} bugun={bugun} tarihMetni={tarihMetni} />;
     }
   }
 

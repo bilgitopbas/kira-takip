@@ -7,7 +7,7 @@
 //
 // A aşaması: kabuk. Sağ panelin içeriği (Bugün / Binalar / bina paneli)
 // C aşamasında, sahnelerin asıl içeriği D ve E aşamalarında gelir.
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import MulkEkleButton from "@/components/MulkEkleButton";
 import KiraciEkleButton from "@/components/KiraciEkleButton";
 import TahsilatEkleButton from "@/components/TahsilatEkleButton";
@@ -17,16 +17,30 @@ import PropertyTypeChart from "@/components/PropertyTypeChart";
 import IlSecici from "@/components/yeni-panel/IlSecici";
 import SahneAlani, { type SahneSekmesi } from "@/components/yeni-panel/SahneAlani";
 import { panelGecisAdresi } from "@/lib/panelTercihi";
-import type { PanelOzeti } from "@/lib/yeniPanelTipleri";
+import type { BugunListeleri, PanelBirimi, PanelOzeti } from "@/lib/yeniPanelTipleri";
 
 type SagSekme = "bugun" | "binalar";
 
 const tl = (n: number) => `${n.toLocaleString("tr-TR")} ₺`;
 
-export default function YeniPanel({ ozet, tarihMetni }: { ozet: PanelOzeti; tarihMetni: string }) {
+export default function YeniPanel({
+  ozet,
+  birimler,
+  tarihMetni,
+}: {
+  ozet: PanelOzeti;
+  birimler: PanelBirimi[];
+  /** Sağ paneldeki "Bugün" sekmesi C aşamasında kullanacak */
+  bugun: BugunListeleri;
+  tarihMetni: string;
+}) {
   const [sahne, setSahne] = useState<SahneSekmesi>("sehir");
   const [il, setIl] = useState("");
   const [sagSekme, setSagSekme] = useState<SagSekme>("bugun");
+
+  // Seçili ildeki birimler ve binalar (Mülk Şehrim ızgarası = bina sayısı)
+  const ilBirimleri = useMemo(() => (il ? birimler.filter((b) => b.il === il) : birimler), [birimler, il]);
+  const binaSayisi = useMemo(() => new Set(ilBirimleri.map((b) => b.bina.anahtar)).size, [ilBirimleri]);
 
   const birincil = "inline-flex bg-[#17B6AE] hover:bg-[#149891] text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm";
   const ikincil = "inline-flex bg-white hover:bg-gray-50 text-slate-700 font-semibold px-4 py-2.5 rounded-xl transition text-sm border border-gray-200";
@@ -111,7 +125,7 @@ export default function YeniPanel({ ozet, tarihMetni }: { ozet: PanelOzeti; tari
           ))}
         </div>
         <div className="min-w-0 lg:ml-auto">
-          <IlSecici iller={ozet.iller} secili={il} onSec={setIl} />
+          <IlSecici iller={ozet.iller} toplam={ozet.mulkSayisi} secili={il} onSec={setIl} />
         </div>
       </div>
 
@@ -123,7 +137,7 @@ export default function YeniPanel({ ozet, tarihMetni }: { ozet: PanelOzeti; tari
             </h2>
           </div>
           <div className="relative h-[52vh] min-h-[320px] max-h-[640px] bg-[#eef1ea]">
-            <SahneAlani sekme={sahne} binaSayisi={ozet.mulkSayisi} />
+            <SahneAlani sekme={sahne} binaSayisi={binaSayisi} />
           </div>
           {sahne === "sehir" && (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 border-t border-gray-100 text-[11px] text-slate-500">
