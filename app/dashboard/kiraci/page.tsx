@@ -6,6 +6,7 @@ import KiraciEkleButton from "@/components/KiraciEkleButton";
 import ExcelIceAktarButton from "@/components/ExcelIceAktarButton";
 import Pagination from "@/components/Pagination";
 import { isNativeApp } from "@/lib/native";
+import { borcGorunumu, odemeTarihiMetni } from "@/lib/kiraciBorcu";
 
 const PAGE_SIZE = 10;
 
@@ -23,6 +24,8 @@ type Tenant = {
   monthlyRent: string | null;
   contractStart: string | null;
   rating: number | null;
+  rentPaymentDate: string | null;
+  toplamBorc: number;
   occupancyStatus: "LIVING" | "VACATED";
   property: { title: string };
   otherProperties: { property: { title: string } }[];
@@ -306,6 +309,14 @@ export default function KiraciListPage() {
                     <span className="text-slate-700">
                       {t.contractStart ? new Date(t.contractStart).toLocaleDateString("tr-TR") : "—"}
                     </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500">Kira Ödeme Tarihi</span>
+                    <span className="text-slate-700">{odemeTarihiMetni(t.rentPaymentDate) ?? "—"}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500">Toplam Borç</span>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${borcGorunumu(t.toplamBorc).sinif}`}>{borcGorunumu(t.toplamBorc).metin}</span>
                   </div>
                 </div>
 

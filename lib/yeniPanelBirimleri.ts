@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { binaAnahtariOlustur, binaCoz } from "@/lib/binaEslestir";
 import { ilCoz } from "@/lib/iller";
 import { birimDurumuHesapla } from "@/lib/birimDurumu";
+import { toplamBorclar } from "@/lib/kiraciBorcu";
 import { getEffectiveDebtStatus } from "@/lib/debtStatus";
 import type { BugunListeleri, BugunSatiri, PanelBirimi } from "@/lib/yeniPanelTipleri";
 
@@ -52,6 +53,7 @@ export async function panelBirimleriGetir(
     contractStart: true,
     contractEnd: true,
     rentRevisionDate: true,
+    rentPaymentDate: true,
     rating: true,
     debts: {
       where: {
@@ -164,6 +166,8 @@ export async function panelBirimleriGetir(
             monthlyRent: ilk.monthlyRent === null ? null : Number(ilk.monthlyRent),
             contractStart: isoGun(ilk.contractStart),
             rating: ilk.rating,
+            rentPaymentDate: isoGun(ilk.rentPaymentDate),
+            toplamBorc: 0,
           }
         : null,
       oturanKiraciSayisi: kiracilar.length,
@@ -212,6 +216,10 @@ export async function panelBirimleriGetir(
       }
     }
   }
+
+  // Kart için toplam borç: kartta görünen kiracılar için iki toplu sorgu (N+1 yok)
+  const borclar = await toplamBorclar(prisma, birimler.flatMap((b) => (b.kiraci ? [b.kiraci.id] : [])), bugun);
+  for (const b of birimler) if (b.kiraci) b.kiraci.toplamBorc = borclar.get(b.kiraci.id) ?? 0;
 
   const tariheGore = (a: BugunSatiri, b: BugunSatiri) => a.tarih.localeCompare(b.tarih);
   return {

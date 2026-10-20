@@ -6,6 +6,7 @@ import BackButton from "@/components/BackButton";
 import CurrencyInput from "@/components/CurrencyInput";
 import { getLastCoveredMonth } from "@/lib/debts";
 import { isNativeApp } from "@/lib/native";
+import { toplamFarkBorc } from "@/lib/kiraciBorcu";
 import {
   getEffectiveDebtStatus,
   getTotalPaid,
@@ -311,13 +312,8 @@ export default function KiraciDetayPage({ params }: { params: Promise<{ id: stri
     [currentPeriod]
   );
 
-  const grandTotalDifference = useMemo(() => {
-    const debts = tenant?.debts ?? [];
-    const dueDebts = debts.filter((d) => getEffectiveDebtStatus(d) !== "PENDING");
-    const totalAmount = dueDebts.reduce((sum, d) => sum + Number(d.amount), 0);
-    const totalPaid = dueDebts.reduce((sum, d) => sum + getTotalPaid(d.payments), 0);
-    return totalAmount - totalPaid;
-  }, [tenant]);
+  // Kiracı kartlarındaki "Toplam Borç" ile aynı hesap (lib/kiraciBorcu.ts)
+  const grandTotalDifference = useMemo(() => toplamFarkBorc(tenant?.debts ?? []), [tenant]);
 
   async function load() {
     setLoading(true);

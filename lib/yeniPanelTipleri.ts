@@ -35,6 +35,10 @@ export type PanelKiracisi = {
   /** ISO tarih (yyyy-mm-dd) */
   contractStart: string | null;
   rating: number | null;
+  /** ISO tarih (yyyy-mm-dd) */
+  rentPaymentDate: string | null;
+  /** Kiracı detayındaki "Toplam Fark Borç (Tüm Yıllar)" ile aynı (lib/kiraciBorcu.ts) */
+  toplamBorc: number;
 };
 
 export type PanelBirimi = {

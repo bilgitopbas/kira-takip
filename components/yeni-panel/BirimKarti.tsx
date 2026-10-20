@@ -11,6 +11,7 @@ import TahsilatEkleButton from "@/components/TahsilatEkleButton";
 import KiraciEkleButton from "@/components/KiraciEkleButton";
 import { durumMetni } from "@/lib/yeniPanelBina";
 import type { PanelBirimi } from "@/lib/yeniPanelTipleri";
+import { borcGorunumu } from "@/lib/kiraciBorcu";
 import { BasHarf, DURUM_ROZET, TipRozeti, isoTr, tl } from "@/components/yeni-panel/ortak";
 
 const AY_ADI = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
@@ -142,6 +143,16 @@ export default function BirimKarti({
             <div className="flex items-center justify-between">
               <dt className="text-slate-500">Başlangıç</dt>
               <dd className="text-slate-700">{isoTr(k.contractStart)}</dd>
+            </div>
+            <div className="flex items-center justify-between">
+              <dt className="text-slate-500">Kira Ödeme Tarihi</dt>
+              <dd className="text-slate-700">{isoTr(k.rentPaymentDate)}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <dt className="text-slate-500">Toplam Borç</dt>
+              <dd>
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${borcGorunumu(k.toplamBorc).sinif}`}>{borcGorunumu(k.toplamBorc).metin}</span>
+              </dd>
             </div>
             <div className="flex items-center justify-between gap-2">
               <dt className="text-slate-500">{buAy} ödemesi</dt>

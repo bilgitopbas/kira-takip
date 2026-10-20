@@ -5,6 +5,7 @@ import { getSession } from "@/lib/auth";
 import { saveUploadedFile } from "@/lib/uploads";
 import { parseTenantFormData } from "@/lib/tenantForm";
 import { requireWriteAccess } from "@/lib/access";
+import { toplamBorclar } from "@/lib/kiraciBorcu";
 
 const PAGE_SIZE = 10;
 
@@ -59,6 +60,7 @@ export async function GET(req: NextRequest) {
         monthlyRent: true,
         contractStart: true,
         rating: true,
+        rentPaymentDate: true,
         occupancyStatus: true,
         property: { select: { title: true } },
         otherProperties: { select: { property: { select: { title: true } } } },
@@ -70,7 +72,13 @@ export async function GET(req: NextRequest) {
     prisma.tenant.count({ where }),
   ]);
 
-  return NextResponse.json({ tenants, total, hasMore: page * PAGE_SIZE < total });
+  // Kart için toplam borç: sayfadaki kiracılar için iki toplu sorgu (N+1 yok)
+  const borclar = await toplamBorclar(prisma, tenants.map((t) => t.id));
+  return NextResponse.json({
+    tenants: tenants.map((t) => ({ ...t, toplamBorc: borclar.get(t.id) ?? 0 })),
+    total,
+    hasMore: page * PAGE_SIZE < total,
+  });
 }
 
 export async function POST(req: NextRequest) {
