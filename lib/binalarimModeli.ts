@@ -25,6 +25,7 @@ export type BBina = {
   lat: number | null;
   lng: number | null;
   locationVerified: boolean;
+  gorunum?: string | null;
 };
 
 export type EBirim = {
@@ -44,6 +45,8 @@ export type EGrup = {
   il: string;
   ilce: string;
   konum: { lat: number; lng: number; dogrulandi: boolean } | null;
+  /** 3D görünüm ("" = otomatik) */
+  gorunum: string;
   birimler: EBirim[];
   /** Öneri mi (henüz kaydedilmemiş) */
   oneri: boolean;
@@ -76,6 +79,7 @@ export function baslangicGruplari(mulkler: BMulk[], binalar: BBina[]): EGrup[] {
         il: b.city && ILLER_KUMESI.has(b.city) ? b.city : "",
         ilce: b.district ?? "",
         konum: b.lat !== null && b.lng !== null ? { lat: b.lat, lng: b.lng, dogrulandi: b.locationVerified } : null,
+        gorunum: b.gorunum ?? "",
         birimler: [],
         oneri: false,
         onayli: true,
@@ -102,7 +106,7 @@ export function baslangicGruplari(mulkler: BMulk[], binalar: BBina[]): EGrup[] {
     let o = oneriler.get(c.binaAnahtari);
     if (!o) {
       o = {
-        grup: { anahtar: `o:${c.binaAnahtari}`, id: null, ad: c.binaAdi, il: c.il ?? ilCoz(m.city) ?? "", ilce: "", konum: null, birimler: [], oneri: true, onayli: false },
+        grup: { anahtar: `o:${c.binaAnahtari}`, id: null, ad: c.binaAdi, il: c.il ?? ilCoz(m.city) ?? "", ilce: "", konum: null, gorunum: "", birimler: [], oneri: true, onayli: false },
         ilceler: [],
       };
       oneriler.set(c.binaAnahtari, o);
@@ -135,6 +139,7 @@ export function kayitGovdesi(gruplar: EGrup[]): { binalar: KayitBinasi[] } {
         il: g.il || null,
         ilce: g.ilce || null,
         konum: g.konum,
+        gorunum: (g.gorunum || null) as KayitBinasi["gorunum"],
         birimler: g.birimler.map((b) => ({ propertyId: b.propertyId, blok: b.blok || null, daireNo: b.daireNo || null })),
       })),
   };
@@ -190,7 +195,7 @@ export function yenidenEsle(gruplar: EGrup[], anahtar: string, mulkler: BMulk[])
       liste = liste.map((g) => (g === hedef ? { ...g, birimler: [...g.birimler, birim], onayli: true } : g));
     } else {
       liste = [
-        { anahtar: `o:${c.binaAnahtari}`, id: null, ad: c.binaAdi, il, ilce: m.district?.trim() ?? "", konum: null, birimler: [birim], oneri: true, onayli: true },
+        { anahtar: `o:${c.binaAnahtari}`, id: null, ad: c.binaAdi, il, ilce: m.district?.trim() ?? "", konum: null, gorunum: "", birimler: [birim], oneri: true, onayli: true },
         ...liste,
       ];
     }

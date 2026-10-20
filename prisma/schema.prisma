@@ -518,6 +518,8 @@ model Building {
   lat              Float?
   lng              Float?
   locationVerified Boolean @default(false)
+  // 3D görünüm (lib/binaGorunumu.ts): villa | mustakil | apt | ofis | plaza | avm | fabrika | arsa; null = otomatik
+  gorunum          String?
 
   properties Property[]
 

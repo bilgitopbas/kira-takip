@@ -96,7 +96,7 @@ export default function SahneAlani({
   }
 
   return sekme === "sehir" ? (
-    <Sehir3D binalar={binalar} secim={secim3d} yalnizGecikmis={yalnizGecikmis} tumIller={il === ""} il={il} onSec={onSec3d} />
+    <Sehir3D binalar={binalar} secim={secim3d} yalnizGecikmis={yalnizGecikmis} il={il} onSec={onSec3d} />
   ) : (
     <Harita binalar={haritaBinalari} il={il} seciliAnahtar={seciliAnahtar} duzeltmeler={duzeltmeler} onSec={onSec} onKonumDuzelt={onKonumDuzelt} onKonumKaydet={onKonumKaydet} />
   );

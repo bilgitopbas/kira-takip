@@ -25,7 +25,7 @@ export async function GET() {
     }),
     prisma.building.findMany({
       where: { ownerId: session.userId },
-      select: { id: true, name: true, city: true, district: true, lat: true, lng: true, locationVerified: true },
+      select: { id: true, name: true, city: true, district: true, lat: true, lng: true, locationVerified: true, gorunum: true },
       orderBy: { createdAt: "asc" },
     }),
   ]);
@@ -60,6 +60,7 @@ export async function POST(req: NextRequest) {
   );
   if (!sonuc.ok) return NextResponse.json({ error: sonuc.hata }, { status: 400 });
 
+  const binaIdleri: string[] = [];
   try {
     await prisma.$transaction(
       async (tx) => {
@@ -71,11 +72,14 @@ export async function POST(req: NextRequest) {
             lat: b.konum?.lat ?? null,
             lng: b.konum?.lng ?? null,
             locationVerified: b.konum?.dogrulandi ?? false,
+            // Görünüm gönderilmediyse kayıttaki değer korunur
+            ...(b.gorunum !== undefined ? { gorunum: b.gorunum } : {}),
           };
           // Sahiplik kayitDogrula'da denetlendi; yine de where'de ownerId şart
           const bina = b.id
             ? (await tx.building.updateMany({ where: { id: b.id, ownerId }, data: veri }), { id: b.id })
             : await tx.building.create({ data: { ...veri, ownerId }, select: { id: true } });
+          binaIdleri.push(bina.id);
           for (const u of b.birimler) {
             await tx.property.updateMany({
               where: { id: u.propertyId, ownerId },
@@ -93,5 +97,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Kaydedilemedi. Lütfen tekrar deneyin." }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, binaIdleri });
 }

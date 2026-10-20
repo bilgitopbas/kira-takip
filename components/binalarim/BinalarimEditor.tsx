@@ -15,6 +15,7 @@ import { ILLER } from "@/lib/iller";
 import { baslangicKonumu } from "@/lib/konumMerkezi";
 import { baslangicGruplari, ilUyarilari, kayitGovdesi, yenidenEsle, type BBina, type BMulk, type EGrup } from "@/lib/binalarimModeli";
 import MulkDuzenleButton from "@/components/MulkDuzenleButton";
+import { GORUNUMLER } from "@/lib/binaGorunumu";
 
 const KonumSecici = dynamic(() => import("@/components/binalarim/KonumSecici"), {
   ssr: false,
@@ -61,7 +62,7 @@ export default function BinalarimEditor({ mulkler, binalar }: { mulkler: BMulk[]
       if (!k || !birim) return gs;
       let liste = gs.map((g) => (g.anahtar === kaynak ? { ...g, birimler: g.birimler.filter((b) => b.propertyId !== birimId), onayli: true } : g));
       if (hedef === "__yeni") {
-        const yeni: EGrup = { anahtar: `y:${yeniSayac}`, id: null, ad: "Yeni bina", il: k.il, ilce: k.ilce, konum: null, birimler: [birim], oneri: false, onayli: true };
+        const yeni: EGrup = { anahtar: `y:${yeniSayac}`, id: null, ad: "Yeni bina", il: k.il, ilce: k.ilce, konum: null, gorunum: k.gorunum, birimler: [birim], oneri: false, onayli: true };
         setYeniSayac((n) => n + 1);
         liste = [yeni, ...liste];
       } else {
@@ -292,6 +293,20 @@ export default function BinalarimEditor({ mulkler, binalar }: { mulkler: BMulk[]
                 >
                   {konumAcik === g.anahtar ? "Haritayı kapat" : "Konumu haritada seç"}
                 </button>
+                <select
+                  value={g.gorunum}
+                  onChange={(e) => guncelle(g.anahtar, (x) => ({ ...x, gorunum: e.target.value }))}
+                  aria-label="3D görünüm"
+                  title="Mülk Şehrim 3D'de bina görünümü"
+                  className={`${girdi} py-1 text-xs`}
+                >
+                  <option value="">Görünüm: Otomatik</option>
+                  {GORUNUMLER.map((x) => (
+                    <option key={x.deger} value={x.deger}>
+                      Görünüm: {x.ad}
+                    </option>
+                  ))}
+                </select>
                 {gruplar.length > 1 && (
                   <select
                     value=""

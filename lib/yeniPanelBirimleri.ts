@@ -12,6 +12,7 @@ import { binaAnahtariOlustur, binaCoz } from "@/lib/binaEslestir";
 import { ilCoz } from "@/lib/iller";
 import { birimDurumuHesapla } from "@/lib/birimDurumu";
 import { toplamBorclar } from "@/lib/kiraciBorcu";
+import { gorunumCoz } from "@/lib/binaGorunumu";
 import { getEffectiveDebtStatus } from "@/lib/debtStatus";
 import type { BugunListeleri, BugunSatiri, PanelBirimi } from "@/lib/yeniPanelTipleri";
 
@@ -82,7 +83,7 @@ export async function panelBirimleriGetir(
       isOccupied: true,
       block: true,
       unitNo: true,
-      building: { select: { id: true, name: true, city: true, district: true, lat: true, lng: true, locationVerified: true } },
+      building: { select: { id: true, name: true, city: true, district: true, lat: true, lng: true, locationVerified: true, gorunum: true } },
       tenants: {
         where: { occupancyStatus: "LIVING" },
         select: kiraciSecimi,
@@ -144,6 +145,7 @@ export async function panelBirimleriGetir(
             guven: bagli ? "yuksek" : cozum.guven,
             kaynak: "kayit",
             binaId: kayitli.id,
+            gorunum: gorunumCoz(kayitli.gorunum) ?? null,
             konum:
               kayitli.lat !== null && kayitli.lng !== null
                 ? { lat: kayitli.lat, lng: kayitli.lng, dogrulandi: kayitli.locationVerified }

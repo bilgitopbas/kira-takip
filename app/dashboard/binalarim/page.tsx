@@ -26,14 +26,14 @@ export default async function BinalarimSayfasi() {
     }),
     prisma.building.findMany({
       where: { ownerId: session.userId },
-      select: { id: true, name: true, city: true, district: true, lat: true, lng: true, locationVerified: true },
+      select: { id: true, name: true, city: true, district: true, lat: true, lng: true, locationVerified: true, gorunum: true },
       orderBy: { createdAt: "asc" },
     }),
   ]);
 
   // Kayıttan ya da mülk düzenlemesinden sonra (router.refresh) düzenleyici
   // yeni veriyle baştan kurulsun
-  const surum = ozet(`${binalar.map((b) => `${b.id}${b.name}${b.city ?? ""}${b.lat ?? ""}`).join(",")}|${mulkler
+  const surum = ozet(`${binalar.map((b) => `${b.id}${b.name}${b.city ?? ""}${b.lat ?? ""}${b.gorunum ?? ""}`).join(",")}|${mulkler
     .map((m) => `${m.buildingId ?? ""}${m.block ?? ""}${m.unitNo ?? ""}${m.title}${m.address}${m.city ?? ""}${m.district ?? ""}`)
     .join(",")}`);
 

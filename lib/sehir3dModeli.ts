@@ -9,6 +9,7 @@
 //  - Konut (ve tipi girilmemiş): 1 birim villa/müstakil, 2–24 birim apartman
 import type { Bina } from "@/lib/yeniPanelBina";
 import { ILLER, plakaKodu, type Il } from "@/lib/iller";
+import { gorunumdenAile } from "@/lib/binaGorunumu";
 import type { BirimDurumu, PanelBirimi } from "@/lib/yeniPanelTipleri";
 
 export type Aile = "plaza" | "han" | "kucukofis" | "apt" | "villa" | "mustakil" | "avm" | "fabrika" | "arsa";
@@ -96,11 +97,15 @@ export function kuleGenisligi(katBasi: number) {
 
 export function aileSec(bina: Bina): Aile {
   const n = bina.birimler.length;
+  // Mülk sahibi görünümü seçtiyse o (ör. "Towerpark Sitesi" → plaza)
+  if (bina.gorunum) return gorunumdenAile(bina.gorunum, n);
   const tip = bina.tip;
   if (tip === "AVM") return "avm";
   if (tip === "FABRIKA" || tip === "DEPO") return "fabrika";
   // Arsa: bina yok; çevrili boş parsel + küçük tabela
   if (tip === "ARSA") return "arsa";
+  // Ad ipucu: "Towerpark Sitesi", "Adalet Plaza", "… Rezidans", "… Kuleleri" → gökdelen
+  if (/tower|plaza|rezidans|residence|(^|\s)kule/i.test(bina.ad)) return "plaza";
   if (bina.bloklar.length >= 2) return "plaza";
   if (tip === "OFIS") {
     if (n <= 1) return "kucukofis";

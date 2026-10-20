@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   const [binalar, mulk] = await Promise.all([
     prisma.building.findMany({
       where: { ownerId },
-      select: { id: true, name: true, city: true, district: true, lat: true, lng: true, locationVerified: true, _count: { select: { properties: true } } },
+      select: { id: true, name: true, city: true, district: true, lat: true, lng: true, locationVerified: true, gorunum: true, _count: { select: { properties: true } } },
       orderBy: { name: "asc" },
     }),
     propertyId
@@ -67,14 +67,13 @@ export async function POST(req: NextRequest) {
       let id: string | null = null;
       if (atama.bina?.id) {
         // Mevcut bina: ad/il değişmez (Binalarım'dan yönetilir); yalnız pin
-        // taşındıysa konum yazılır.
+        // taşındıysa konum, görünüm gönderildiyse görünüm yazılır.
         id = atama.bina.id;
-        if (atama.bina.konum) {
-          await tx.building.updateMany({
-            where: { id, ownerId },
-            data: { lat: atama.bina.konum.lat, lng: atama.bina.konum.lng, locationVerified: atama.bina.konum.dogrulandi },
-          });
-        }
+        const guncelle = {
+          ...(atama.bina.konum ? { lat: atama.bina.konum.lat, lng: atama.bina.konum.lng, locationVerified: atama.bina.konum.dogrulandi } : {}),
+          ...(atama.bina.gorunum !== undefined ? { gorunum: atama.bina.gorunum } : {}),
+        };
+        if (Object.keys(guncelle).length) await tx.building.updateMany({ where: { id, ownerId }, data: guncelle });
       } else if (atama.bina) {
         const yeni = await tx.building.create({
           data: {
@@ -85,6 +84,7 @@ export async function POST(req: NextRequest) {
             lat: atama.bina.konum?.lat ?? null,
             lng: atama.bina.konum?.lng ?? null,
             locationVerified: atama.bina.konum?.dogrulandi ?? false,
+            gorunum: atama.bina.gorunum ?? null,
           },
           select: { id: true },
         });

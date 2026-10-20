@@ -2,6 +2,7 @@
 // kümeleri çağırandan gelir). Sunucu ucu (app/api/dashboard/binalar) bunu
 // kullanır; istemci de aynı kurallarla önceden uyarı verebilir.
 import { ILLER } from "@/lib/iller";
+import { gorunumCoz, type Gorunum } from "@/lib/binaGorunumu";
 
 export type KayitBirimi = { propertyId: string; blok: string | null; daireNo: string | null };
 export type KayitKonumu = { lat: number; lng: number; dogrulandi: boolean };
@@ -13,6 +14,8 @@ export type KayitBinasi = {
   ilce: string | null;
   konum: KayitKonumu | null;
   birimler: KayitBirimi[];
+  /** 3D görünüm; null = otomatik; undefined = gönderilmedi (kayıttaki değer korunur) */
+  gorunum?: Gorunum | null;
 };
 
 export const SINIR = { bina: 1000, ad: 80, ilce: 60, blok: 10, daireNo: 20 };
@@ -72,6 +75,9 @@ export function kayitDogrula(
       konum = { lat: Number(lat.toFixed(6)), lng: Number(lng.toFixed(6)), dogrulandi: k.dogrulandi === true };
     }
 
+    const gorunum = gorunumCoz(b.gorunum);
+    if (b.gorunum !== undefined && gorunum === undefined) return { ok: false, hata: `${sira}: görünüm listeden seçilmeli.` };
+
     if (!Array.isArray(b.birimler) || b.birimler.length === 0) return { ok: false, hata: `${sira}: en az bir birim olmalı.` };
     const birimler: KayitBirimi[] = [];
     for (const hamBirim of b.birimler) {
@@ -91,7 +97,7 @@ export function kayitDogrula(
       birimler.push({ propertyId, blok, daireNo });
     }
 
-    binalar.push({ id, ad, il, ilce, konum, birimler });
+    binalar.push({ id, ad, il, ilce, konum, birimler, ...(gorunum !== undefined ? { gorunum } : {}) });
   }
 
   return { ok: true, binalar };
@@ -109,7 +115,7 @@ export function konumDogrula(govde: unknown): KayitKonumu | null {
 export type Atama = {
   propertyId: string;
   /** null: mülk binadan çıkarılır */
-  bina: { id: string | null; ad: string; il: string | null; ilce: string | null; konum: KayitKonumu | null } | null;
+  bina: { id: string | null; ad: string; il: string | null; ilce: string | null; konum: KayitKonumu | null; gorunum?: Gorunum | null } | null;
   blok: string | null;
   daireNo: string | null;
 };
@@ -129,7 +135,7 @@ export function atamaDogrula(
   if (g.bina === null || g.bina === undefined) return { ok: true, atama: { propertyId, bina: null, blok: null, daireNo: null } };
   const b = g.bina as Record<string, unknown>;
   const sonuc = kayitDogrula(
-    { binalar: [{ id: b.id ?? null, ad: b.ad, il: b.il, ilce: b.ilce, konum: b.konum ?? null, birimler: [{ propertyId, blok: g.blok, daireNo: g.daireNo }]}] },
+    { binalar: [{ id: b.id ?? null, ad: b.ad, il: b.il, ilce: b.ilce, konum: b.konum ?? null, gorunum: b.gorunum, birimler: [{ propertyId, blok: g.blok, daireNo: g.daireNo }]}] },
     sahipMulkleri,
     sahipBinalari
   );
@@ -137,6 +143,11 @@ export function atamaDogrula(
   const k = sonuc.binalar[0];
   return {
     ok: true,
-    atama: { propertyId, bina: { id: k.id, ad: k.ad, il: k.il, ilce: k.ilce, konum: k.konum }, blok: k.birimler[0].blok, daireNo: k.birimler[0].daireNo },
+    atama: {
+      propertyId,
+      bina: { id: k.id, ad: k.ad, il: k.il, ilce: k.ilce, konum: k.konum, ...(k.gorunum !== undefined ? { gorunum: k.gorunum } : {}) },
+      blok: k.birimler[0].blok,
+      daireNo: k.birimler[0].daireNo,
+    },
   };
 }

@@ -17,6 +17,49 @@ import {
 import type { PanelBirimi } from "@/lib/yeniPanelTipleri";
 import { DURUM_YAZI, DURUM_ZEMIN, DURUM_ZEMIN_ACIK, DagilimCubugu, TIP_ETIKETI, TipIkonu, kisaTl, tl } from "@/components/yeni-panel/ortak";
 import { sehirBinasi } from "@/lib/sehir3dModeli";
+import { GORUNUMLER, gorunumAdi } from "@/lib/binaGorunumu";
+import { ILLER } from "@/lib/iller";
+import { GorunumIkonu } from "@/components/yeni-panel/GorunumSecici";
+
+const BLOK_BICIMI = /^[A-ZÇĞİÖŞÜ0-9-]{1,10}$/;
+
+/**
+ * Görünüm kaydı: kayıtlı binada yalnız görünüm yazılır; öneri (kayıtsız)
+ * binada Binalarım kayıt ucuyla bina kaydı oluşturulup görünüm yazılır.
+ * Dönen: binanın yeni ekran anahtarı.
+ */
+async function gorunumKaydet(bina: Bina, gorunum: string | null): Promise<string> {
+  const istek = async (url: string, method: string, govde: unknown) => {
+    const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(govde) });
+    const v = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(v.error || "Kaydedilemedi.");
+    return v as { binaIdleri?: string[] };
+  };
+  if (bina.binaId) {
+    await istek(`/api/dashboard/binalar/${bina.binaId}/gorunum`, "PATCH", { gorunum });
+    return bina.anahtar;
+  }
+  const v = await istek("/api/dashboard/binalar", "POST", {
+    binalar: [
+      {
+        id: null,
+        ad: bina.ad.slice(0, 80),
+        il: bina.il && (ILLER as readonly string[]).includes(bina.il) ? bina.il : null,
+        ilce: bina.ilce ? bina.ilce.slice(0, 60) : null,
+        konum: null,
+        gorunum,
+        birimler: bina.birimler.map((u) => ({
+          propertyId: u.id,
+          blok: u.bina.blok && BLOK_BICIMI.test(u.bina.blok) ? u.bina.blok : null,
+          daireNo: u.bina.birimNo ? u.bina.birimNo.slice(0, 20) : null,
+        })),
+      },
+    ],
+  });
+  const id = v.binaIdleri?.[0];
+  if (!id) throw new Error("Kaydedilemedi.");
+  return `b:${id}`;
+}
 
 const SIRALAMA_IPUCU: Record<BirimSiralama, string> = { no: "numara sırasıyla", gec: "gecikmiş önce", kira: "kiraya göre" };
 
@@ -37,6 +80,7 @@ export default function BinaPaneli({
   onKapat,
   onSahneDegistir,
   onDegisti,
+  onBinaKaydedildi,
 }: {
   bina: Bina;
   /** "" = Tümü */
@@ -50,8 +94,11 @@ export default function BinaPaneli({
   onKapat: () => void;
   onSahneDegistir: () => void;
   onDegisti: () => void;
+  /** Görünüm kaydedildi: binanın (yeni olabilecek) anahtarıyla seçimi koru ve tazele */
+  onBinaKaydedildi: (anahtar: string) => void;
 }) {
   const [sorgu, setSorgu] = useState("");
+  const [gorunumKayit, setGorunumKayit] = useState<{ durum: "bos" | "kaydediliyor" | "hata"; metin?: string }>({ durum: "bos" });
   const [siralama, setSiralama] = useState<BirimSiralama>("no");
 
   const cokBlok = bina.bloklar.length > 0;
@@ -111,6 +158,36 @@ export default function BinaPaneli({
             {cokBlok && blok ? ` · ${blok} Blok` : ""}
           </h2>
           <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{bina.adres}</p>
+          <label className="mt-2 inline-flex items-center gap-1.5 text-xs text-slate-600">
+            <GorunumIkonu gorunum={bina.gorunum ?? null} className="w-5 h-5 text-slate-500" />
+            <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500">Görünüm</span>
+            <select
+              value={bina.gorunum ?? ""}
+              disabled={gorunumKayit.durum === "kaydediliyor"}
+              aria-label="Binanın 3D görünümü"
+              onChange={async (e) => {
+                setGorunumKayit({ durum: "kaydediliyor" });
+                try {
+                  const anahtar = await gorunumKaydet(bina, e.target.value || null);
+                  setGorunumKayit({ durum: "bos" });
+                  onBinaKaydedildi(anahtar);
+                } catch (err) {
+                  setGorunumKayit({ durum: "hata", metin: err instanceof Error ? err.message : "Kaydedilemedi." });
+                }
+              }}
+              className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#17B6AE]/30 disabled:opacity-60"
+            >
+              <option value="">Otomatik</option>
+              {GORUNUMLER.map((g) => (
+                <option key={g.deger} value={g.deger}>
+                  {g.ad}
+                </option>
+              ))}
+            </select>
+            {gorunumKayit.durum === "kaydediliyor" && <span className="text-[11px] text-slate-400">kaydediliyor…</span>}
+            {gorunumKayit.durum === "hata" && <span className="text-[11px] text-red-600">{gorunumKayit.metin}</span>}
+          </label>
+          <span className="sr-only">Şu anki görünüm: {gorunumAdi(bina.gorunum)}</span>
         </div>
         <button type="button" onClick={onKapat} aria-label="Bina panelini kapat" className="w-8 h-8 -mr-1 rounded-lg text-slate-400 hover:bg-gray-100 hover:text-slate-600 text-lg leading-none">
           ×

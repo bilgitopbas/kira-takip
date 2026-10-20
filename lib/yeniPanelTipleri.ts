@@ -1,3 +1,4 @@
+import type { Gorunum } from "@/lib/binaGorunumu";
 // Yeni panelin istemciye giden veri biçimi. Bu dosya Prisma'yı içe aktarmaz;
 // istemci bileşenleri güvenle kullanabilir.
 
@@ -61,6 +62,8 @@ export type PanelBirimi = {
     kaynak: "baslik" | "adres" | "yok" | "kayit";
     /** Kayıtlı bina kimliği (Binalarım); öneriyse null */
     binaId: string | null;
+    /** Kayıtlı binada mülk sahibinin seçtiği 3D görünüm; yoksa/öneride otomatik */
+    gorunum?: Gorunum | null;
     /** Kayıtlı konum; yoksa null (haritada ilçe/il merkezinden türetilir) */
     konum: { lat: number; lng: number; dogrulandi: boolean } | null;
   };

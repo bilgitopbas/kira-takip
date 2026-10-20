@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import veri from "@/lib/veri/il-ilce-merkezleri.json";
 import { ILLER, ilCoz, katla, plakaKodu } from "@/lib/iller";
 import { atamaGovdesi, formOnerisi, pinBaslangici, secilebilirBinalar, type BinaAlani, type FBina } from "@/lib/mulkFormuBina";
+import { gorunumCoz, type Gorunum } from "@/lib/binaGorunumu";
+import { GorunumKartlari } from "@/components/yeni-panel/GorunumSecici";
 
 // Harita yalnız bina/konum bölümü açıkken (yeni panel) ve tarayıcıda yüklenir
 const KonumHaritasi = dynamic(() => import("@/components/forms/KonumHaritasi"), {
@@ -72,6 +74,8 @@ export default function MulkForm({
   // Elle düzenlenmemişse bina alanları başlık/adres/il'den önerilir
   const [elleBina, setElleBina] = useState<BinaAlani | null>(null);
   const [konum, setKonum] = useState<{ lat: number; lng: number } | null>(null);
+  // 3D görünüm: kullanıcı bu bina seçimi için değiştirdiyse onun değeri
+  const [gorunumElle, setGorunumElle] = useState<{ secim: string; deger: Gorunum | null } | null>(null);
 
   useEffect(() => {
     let iptal = false;
@@ -113,6 +117,8 @@ export default function MulkForm({
   const oneri = useMemo(() => formOnerisi({ title, address, city }, binalar), [title, address, city, binalar]);
   const bina = elleBina ?? oneri;
   const seciliBina = binalar.find((b) => b.id === bina.secim) ?? null;
+  const gorunumDegisti = !!gorunumElle && gorunumElle.secim === bina.secim;
+  const gorunum: Gorunum | null = gorunumDegisti ? gorunumElle!.deger : gorunumCoz(seciliBina?.gorunum) ?? null;
   const pin = pinBaslangici(seciliBina, city, district);
   const pinNokta = useMemo<[number, number]>(() => (konum ? [konum.lng, konum.lat] : pin.nokta), [konum, pin.nokta[0], pin.nokta[1]]); // eslint-disable-line react-hooks/exhaustive-deps
   const secenekler = secilebilirBinalar(binalar, city, bina.secim);
@@ -164,7 +170,9 @@ export default function MulkForm({
       const atamaRes = await fetch("/api/dashboard/binalar/ata", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(atamaGovdesi(property.id, bina, { title, city, district }, binalar, konum)),
+        body: JSON.stringify(
+          atamaGovdesi(property.id, bina, { title, city, district }, binalar, konum, bina.secim === "yeni" || gorunumDegisti ? gorunum : undefined)
+        ),
       }).catch(() => null);
       if (!atamaRes?.ok) {
         setSubmitting(false);
@@ -386,6 +394,15 @@ export default function MulkForm({
           )}
           {!elleBina && bina.secim !== "" && (
             <p className="text-[11px] text-slate-500">Mülk adı ve adresten önerildi; değiştirebilirsiniz.</p>
+          )}
+
+          {bina.secim !== "" && (
+            <div>
+              <span className="block text-xs font-semibold text-slate-600 mb-1.5">
+                3D görünüm{seciliBina && seciliBina.birimSayisi > 1 ? ` (binanın tüm birimleri için)` : ""}
+              </span>
+              <GorunumKartlari deger={gorunum} onDegis={(g) => setGorunumElle({ secim: bina.secim, deger: g })} />
+            </div>
           )}
 
           {bina.secim !== "" && (

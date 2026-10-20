@@ -6,6 +6,7 @@
 import { binaAnahtariOlustur, binaCoz } from "@/lib/binaEslestir";
 import { ilCoz } from "@/lib/iller";
 import { baslangicKonumu } from "@/lib/konumMerkezi";
+import type { Gorunum } from "@/lib/binaGorunumu";
 
 export type FBina = {
   id: string;
@@ -16,6 +17,7 @@ export type FBina = {
   lng: number | null;
   locationVerified: boolean;
   birimSayisi: number;
+  gorunum?: string | null;
 };
 
 /** "" = binaya bağlama · "yeni" = yeni bina · diğerleri kayıtlı bina kimliği */
@@ -61,7 +63,9 @@ export function atamaGovdesi(
   alan: BinaAlani,
   mulk: { title: string; city: string; district: string },
   binalar: FBina[],
-  konum: { lat: number; lng: number } | null
+  konum: { lat: number; lng: number } | null,
+  /** Yeni binada her zaman; kayıtlı binada yalnız kullanıcı değiştirdiyse (undefined = dokunma) */
+  gorunum?: Gorunum | null
 ) {
   const k = konum ? { lat: konum.lat, lng: konum.lng, dogrulandi: true } : null;
   if (!alan.secim) return { propertyId, bina: null, blok: null, daireNo: null };
@@ -70,11 +74,16 @@ export function atamaGovdesi(
   if (alan.secim === "yeni") {
     return {
       propertyId,
-      bina: { id: null, ad: alan.yeniAd.trim() || mulk.title.trim(), il: ilCoz(mulk.city), ilce: mulk.district.trim() || null, konum: k },
+      bina: { id: null, ad: alan.yeniAd.trim() || mulk.title.trim(), il: ilCoz(mulk.city), ilce: mulk.district.trim() || null, konum: k, gorunum: gorunum ?? null },
       blok,
       daireNo,
     };
   }
   const b = binalar.find((x) => x.id === alan.secim);
-  return { propertyId, bina: { id: alan.secim, ad: b?.name ?? "Bina", il: ilCoz(b?.city), ilce: b?.district ?? null, konum: k }, blok, daireNo };
+  return {
+    propertyId,
+    bina: { id: alan.secim, ad: b?.name ?? "Bina", il: ilCoz(b?.city), ilce: b?.district ?? null, konum: k, ...(gorunum !== undefined ? { gorunum } : {}) },
+    blok,
+    daireNo,
+  };
 }

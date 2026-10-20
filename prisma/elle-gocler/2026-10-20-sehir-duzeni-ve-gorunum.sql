@@ -1,7 +1,12 @@
--- Mulk Sehrim 3D bina duzeni sema eki (2026-10-20). EKLEYICI: yalniz yeni tablo city_layouts.
--- Mevcut hicbir tablo/kolon degismez. Uretim: npx prisma migrate diff (schema once -> sonra).
+-- Mulk Sehrim sema eki (2026-10-20). EKLEYICI:
+--   1) buildings tablosuna bos (nullable) "gorunum" kolonu (3D gorunum secimi; null = otomatik)
+--   2) yeni tablo city_layouts (3D bina duzeni, il basina tek satir)
+-- Mevcut hicbir kolon degismez/silinmez. Uretim: npx prisma migrate diff (schema once -> sonra).
 -- Uygulama: docker exec -i kira_db psql -U kira_admin -d kira_takip_db -v ON_ERROR_STOP=1 < bu_dosya.sql
 BEGIN;
+
+-- AlterTable
+ALTER TABLE "buildings" ADD COLUMN     "gorunum" TEXT;
 
 -- CreateTable
 CREATE TABLE "city_layouts" (

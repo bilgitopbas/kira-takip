@@ -1,6 +1,7 @@
 // Yeni panelin istemci tarafı bina görünüm modeli: PanelBirimi listesinden
 // bina → blok → birim ağacı ve özet sayılar. SAF; Prisma içe aktarmaz.
 import type { BirimDurumu, PanelBirimi } from "@/lib/yeniPanelTipleri";
+import type { Gorunum } from "@/lib/binaGorunumu";
 
 export const DURUM_SIRASI: BirimDurumu[] = ["gecikmis", "bekliyor", "odendi", "bos"];
 
@@ -60,6 +61,8 @@ export type Bina = {
   kontrolGerekli: boolean;
   /** Binalarım'da kaydedilmiş bina kimliği; öneriyse null */
   binaId: string | null;
+  /** Mülk sahibinin seçtiği 3D görünüm (kayıtlı binada); null/yok = otomatik */
+  gorunum?: Gorunum | null;
   /** Kayıtlı konum (varsa) */
   konum: { lat: number; lng: number; dogrulandi: boolean } | null;
   /** Mülk kendi başına (eşleşmedi ya da tek birim) */
@@ -116,6 +119,7 @@ export function binalariKur(birimler: PanelBirimi[]): Bina[] {
       birimler: sirali,
       kontrolGerekli: sirali.some((b) => b.bina.guven === "dusuk"),
       binaId: ilk.bina.binaId ?? null,
+      gorunum: ilk.bina.gorunum ?? null,
       konum: sirali.find((b) => b.bina.konum)?.bina.konum ?? null,
       tekBirim: sirali.length === 1,
     });

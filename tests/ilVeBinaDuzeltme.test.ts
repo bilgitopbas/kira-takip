@@ -99,7 +99,7 @@ test("seçilebilir binalar aynı ilden (+ seçili olan); atama gövdesi", () => 
   assert.equal(secilebilirBinalar(FB, "", "").length, 2);
 
   const yeni = atamaGovdesi("p1", { secim: "yeni", yeniAd: " ", blok: "a ", daireNo: "" }, { title: "Daire 5", city: "KONYA ", district: "Meram" }, FB, { lat: 37.8, lng: 32.4 });
-  assert.deepEqual(yeni, { propertyId: "p1", bina: { id: null, ad: "Daire 5", il: "Konya", ilce: "Meram", konum: { lat: 37.8, lng: 32.4, dogrulandi: true } }, blok: "a", daireNo: null });
+  assert.deepEqual(yeni, { propertyId: "p1", bina: { id: null, ad: "Daire 5", il: "Konya", ilce: "Meram", konum: { lat: 37.8, lng: 32.4, dogrulandi: true }, gorunum: null }, blok: "a", daireNo: null });
   const mevcut = atamaGovdesi("p1", { secim: "bA", yeniAd: "", blok: "B", daireNo: "12" }, { title: "x", city: "Ankara", district: "" }, FB, null);
   assert.equal(mevcut.bina?.id, "bA");
   assert.equal(mevcut.bina?.konum, null);

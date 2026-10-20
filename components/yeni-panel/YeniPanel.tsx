@@ -8,7 +8,7 @@
 // Sağ panel: Bugün | Binalar | bina paneli (C aşaması). Masaüstünde yapışkan
 // sütun; 1240 px ve altında bina seçilince ekranın altından açılan alt-sayfa.
 // Sahnelerin asıl içeriği (harita pinleri, 3D binalar) D ve E aşamalarında.
-import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { startTransition, useCallback, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import MulkEkleButton from "@/components/MulkEkleButton";
 import KiraciEkleButton from "@/components/KiraciEkleButton";
@@ -439,6 +439,13 @@ export default function YeniPanel({
               onKapat={() => setSecim(null)}
               onSahneDegistir={() => setSahne(sahne === "konum" ? "sehir" : "konum")}
               onDegisti={tazele}
+              onBinaKaydedildi={(anahtar) =>
+                // Seçim yeni anahtarla, tazelenen veriyle birlikte işlensin
+                startTransition(() => {
+                  setSecim((s) => (s ? { ...s, bina: anahtar } : s));
+                  router.refresh();
+                })
+              }
             />
           ) : (
             <>

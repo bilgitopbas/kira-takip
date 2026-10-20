@@ -17,7 +17,7 @@ import { canliSahneUygun } from "@/lib/webglDestek";
 import type { Bina } from "@/lib/yeniPanelBina";
 import type { BirimDurumu } from "@/lib/yeniPanelTipleri";
 import { ARALIK, DUMAN_BULUTU, GY, sehirKur, type Kutu, type Sehir } from "@/components/yeni-panel/sehir3d/insa";
-import { bosHedefler, hedefGecerli, kisaAd, tasi, yerlesimCoz, type Hucre } from "@/lib/sehirDuzeni";
+import { bosHedefler, hedefGecerli, tasi, yerlesimCoz, type Hucre } from "@/lib/sehirDuzeni";
 import { useSehirDuzeni } from "@/components/yeni-panel/sehirDuzeniDeposu";
 
 const VURGU = "#17B6AE";
@@ -35,9 +35,10 @@ const SIRA: BirimDurumu[] = ["gecikmis", "bekliyor", "odendi", "bos"];
 
 export type Sehir3DSecim = { bina: string | null; blok: string | null; birim: string | null };
 /** Etiket tercihi: rozet = yalnız nokta + birim sayısı; ad = uzakta rozet, yakında kısa ad; kapalı */
-export type EtiketKipi = "rozet" | "ad" | "kapali";
-type EtiketDuzeyi = "" | "gizli" | "rozet" | "kisa" | "tam";
-type Etiket = { el: HTMLButtonElement; ad: HTMLSpanElement; plaka: HTMLSpanElement; duzey: EtiketDuzeyi; sinif: string; w: number; h: number };
+export type EtiketKipi = "acik" | "kapali";
+/** Etiket içeriği hep "Bina adı · N birim"; düzey yalnız boyutu belirler */
+type EtiketDuzeyi = "" | "gizli" | "uzak" | "yakin" | "tam";
+type Etiket = { el: HTMLButtonElement; duzey: EtiketDuzeyi; sinif: string; w: number; h: number };
 
 type Motor = {
   /** hucreler: kullanıcı düzeni (null = varsayılan); kameraKoru: yalnız düzen değiştiyse kamera yerinde kalır */
@@ -45,8 +46,6 @@ type Motor = {
   etiketKipi: (k: EtiketKipi) => void;
   sec: (s: Sehir3DSecim) => void;
   yalnizGecikmis: (v: boolean) => void;
-  /** "Tüm iller" görünümünde etiketlerde il plaka kodu gösterilir */
-  plakalar: (v: boolean) => void;
   yakinlas: (f: number) => void;
   dondur: (a: number) => void;
   kusBakisi: () => void;
@@ -171,10 +170,9 @@ function motorKur(
   const vurusGeo: THREE.BufferGeometry[] = [];
   const vurusMal = new THREE.MeshBasicMaterial();
   let etiketler = new Map<string, Etiket>();
-  let etiketKipi: EtiketKipi = dokunmatik ? "rozet" : "ad";
+  let etiketKipi: EtiketKipi = "acik";
   let secim: Sehir3DSecim = { bina: null, blok: null, birim: null };
   let gecikmisFiltre = false;
-  let plakaGoster = true;
   const solukHedef: number[] = [];
   const solukSimdi: number[] = [];
   let solukAnim = false;
@@ -302,22 +300,24 @@ function motorKur(
     });
   }
   /** Etiketin görünüm düzeyi değiştiyse sınıf/metin yenilenir ve boyutu ölçülür */
-  function etiketGorunumu(e: Etiket, b: SehirBinasi, duzey: EtiketDuzeyi) {
+  // Boyut uzaklığa göre: uzak küçük ve yarı saydam, yakın normal, seçili vurgulu;
+  // telefonda bir kademe küçük. Uzun ad uzak/yakında kısaltılır (…), seçilince tam.
+  const ETIKET_BOYU: Record<Exclude<EtiketDuzeyi, "" | "gizli">, string> = dokunmatik
+    ? {
+        uzak: "gap-1 bg-white/75 backdrop-blur-[2px] border-white/80 text-[9.5px] py-px pl-1 pr-1.5 [&_.ad]:max-w-[6.5rem]",
+        yakin: "gap-1 bg-white/90 border-gray-200 text-[10.5px] py-[2px] pl-1.5 pr-2 [&_.ad]:max-w-[8.5rem]",
+        tam: "gap-1.5 bg-white border-[#17B6AE] text-[11.5px] font-bold py-[3px] pl-1.5 pr-2",
+      }
+    : {
+        uzak: "gap-1 bg-white/75 backdrop-blur-[2px] border-white/80 text-[10.5px] py-px pl-[5px] pr-1.5 [&_.ad]:max-w-[8rem]",
+        yakin: "gap-1.5 bg-white/90 border-gray-200 text-[12px] py-[2px] pl-1.5 pr-2 [&_.ad]:max-w-[11rem]",
+        tam: "gap-1.5 bg-white border-[#17B6AE] text-[13px] font-bold py-[3px] pl-2 pr-2.5",
+      };
+  function etiketGorunumu(e: Etiket, _b: SehirBinasi, duzey: EtiketDuzeyi) {
     if (e.duzey === duzey) return;
     e.duzey = duzey;
-    const tam = duzey === "tam";
-    e.el.className = `absolute left-0 top-0 pointer-events-auto flex items-center rounded-full border whitespace-nowrap font-semibold text-slate-800 hover:border-[#17B6AE] will-change-transform ${
-      tam
-        ? "gap-1.5 bg-white shadow-sm text-xs py-[3px] pl-1.5 pr-1"
-        : "gap-1 bg-white/75 backdrop-blur-[2px] border-white/80 shadow-sm text-[10.5px] py-[2px] pl-[5px] pr-[3px]"
-    } ${e.sinif}`;
-    e.ad.textContent = tam
-      ? b.kuleler.length > 1
-        ? `${b.ad} · ${b.kuleler.map((k) => `${k.ad} ${k.izgara.flat().filter(Boolean).length}`).join(" / ")}`
-        : b.ad
-      : kisaAd(b.ad);
-    e.ad.style.display = duzey === "kisa" || tam ? "inline" : "none";
-    e.plaka.hidden = !tam || !plakaGoster || !b.plaka;
+    if (duzey === "" || duzey === "gizli") return;
+    e.el.className = `absolute left-0 top-0 pointer-events-auto flex items-center rounded-full border shadow-sm whitespace-nowrap font-semibold text-slate-800 hover:border-[#17B6AE] will-change-transform ${ETIKET_BOYU[duzey]} ${e.sinif}`;
     e.w = e.h = 0;
   }
 
@@ -341,8 +341,7 @@ function motorKur(
       if (surukleme) duzey = "gizli";
       else if (odak) duzey = "tam";
       else if (etiketKipi === "kapali") duzey = "gizli";
-      else if (etiketKipi === "rozet") duzey = "rozet";
-      else duzey = _cv.set(bi.x, GY + bi.ust * 0.5, bi.z).distanceTo(kamera.position) < YAKIN ? "kisa" : "rozet";
+      else duzey = _cv.set(bi.x, GY + bi.ust * 0.5, bi.z).distanceTo(kamera.position) < YAKIN ? "yakin" : "uzak";
       let x: number, y: number, z: number;
       if (duzey === "tam") {
         _tv.set(bi.x, GY + bi.ust + 1.6, bi.z).project(kamera);
@@ -912,28 +911,21 @@ function motorKur(
       for (const b of binalar) {
         const el = document.createElement("button");
         el.type = "button";
+        // İçerik: durum noktası + "Bina adı · N birim" (il plakası yok)
         const nokta = document.createElement("span");
-        nokta.className = "w-2 h-2 rounded-full flex-none";
-        const plaka = document.createElement("span");
-        plaka.className = "text-[10px] font-extrabold px-1.5 rounded-lg bg-[#f5f2ea] text-slate-500 border border-[#dbe3df] tracking-wide";
-        plaka.textContent = b.plaka ?? "";
-        plaka.title = "İl plaka kodu";
+        nokta.className = "w-[7px] h-[7px] rounded-full flex-none";
         const ad = document.createElement("span");
-        ad.textContent = b.kuleler.length > 1 ? `${b.ad} · ${b.kuleler.map((k) => `${k.ad} ${k.izgara.flat().filter(Boolean).length}`).join(" / ")}` : b.ad;
-        plaka.hidden = true;
-        ad.style.display = "none";
-        el.append(nokta, plaka, ad);
-        if (b.birimler.length > 1) {
-          const c = document.createElement("span");
-          c.className = "text-[10px] font-bold px-1.5 rounded-full bg-[#06211f]/90 text-white";
-          c.textContent = String(b.birimler.length);
-          el.append(c);
-        }
-        el.title = b.ad;
+        ad.className = "ad truncate";
+        ad.textContent = b.ad;
+        const sayi = document.createElement("span");
+        sayi.className = "flex-none font-medium text-slate-500";
+        sayi.textContent = `· ${b.birimler.length} birim`;
+        el.append(nokta, ad, sayi);
+        el.title = `${b.ad} · ${b.birimler.length} birim`;
         el.addEventListener("click", () => geri.onSec(b.anahtar, null, null));
         el.hidden = true;
         etiketKabi.appendChild(el);
-        etiketler.set(b.anahtar, { el, ad, plaka, duzey: "", sinif: "", w: 0, h: 0 });
+        etiketler.set(b.anahtar, { el, duzey: "", sinif: "", w: 0, h: 0 });
       }
       boyutla();
       if (ilkKurulum) kusBakisi(true);
@@ -968,11 +960,6 @@ function motorKur(
     yalnizGecikmis(v) {
       gecikmisFiltre = v;
       soluklariGuncelle(false);
-    },
-    plakalar(v) {
-      plakaGoster = v;
-      etiketler.forEach((e) => (e.duzey = ""));
-      iste();
     },
     etiketKipi(k) {
       etiketKipi = k;
@@ -1040,14 +1027,12 @@ export default function Sehir3D({
   binalar,
   secim,
   yalnizGecikmis,
-  tumIller,
   il,
   onSec,
 }: {
   binalar: Bina[];
   secim: Sehir3DSecim;
   yalnizGecikmis: boolean;
-  tumIller: boolean;
   /** Seçili il ("" = tüm iller); bina düzeni il başına saklanır */
   il: string;
   onSec: (bina: string | null, birim: string | null, blok: string | null) => void;
@@ -1086,13 +1071,12 @@ export default function Sehir3D({
     };
   });
 
-  // Etiket tercihi (cihazda): telefonda varsayılan yalnız rozet
+  // Etiket tercihi (cihazda): Açık / Kapalı (eski "rozet"/"ad" kayıtları = Açık)
   const [etiketKipi, setEtiketKipi] = useState<EtiketKipi>(() => {
     try {
-      const v = window.localStorage.getItem("mizan_etiket_kipi");
-      if (v === "rozet" || v === "ad" || v === "kapali") return v;
+      if (window.localStorage.getItem("mizan_etiket_kipi") === "kapali") return "kapali";
     } catch {}
-    return window.matchMedia("(pointer: coarse)").matches ? "rozet" : "ad";
+    return "acik";
   });
   useEffect(() => {
     motorRef.current?.etiketKipi(etiketKipi);
@@ -1116,14 +1100,16 @@ export default function Sehir3D({
     };
   }, []);
 
-  // Düzen yüklenince kur; yalnız düzen değiştiyse kamera yerinde kalır
-  const sonImza = useRef<string | null>(null);
+  // Düzen yüklenince kur. Aynı binalar kaldıysa (düzen, görünüm ya da birim
+  // durumu değişti) kamera yerinde kalır; bina listesi değiştiyse kuş bakışına döner.
+  const sonAnahtarlar = useRef<string | null>(null);
   useEffect(() => {
     if (!yuklendi || !motorRef.current) return;
-    const yalnizDuzen = sonImza.current === imza;
-    sonImza.current = imza;
+    const anahtarlar = modeller.map((b) => b.anahtar).join("|");
+    const ayniBinalar = sonAnahtarlar.current === anahtarlar;
+    sonAnahtarlar.current = anahtarlar;
     motorRef.current.etiketKipi(etiketKipi);
-    motorRef.current.sehriKur(modeller, hucreler, yalnizDuzen);
+    motorRef.current.sehriKur(modeller, hucreler, ayniBinalar);
     // imza / düzen değişmedikçe yeniden kurma
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imza, duzenImzasi, yuklendi]);
@@ -1136,9 +1122,6 @@ export default function Sehir3D({
     motorRef.current?.yalnizGecikmis(yalnizGecikmis);
   }, [yalnizGecikmis]);
 
-  useEffect(() => {
-    motorRef.current?.plakalar(tumIller);
-  }, [tumIller, imza]);
 
   const seciliAd = secim.bina ? modeller.find((b) => b.anahtar === secim.bina)?.ad : null;
   const dugme = "w-9 h-9 rounded-xl border border-gray-200 bg-white shadow-sm grid place-items-center text-lg font-semibold text-slate-700 hover:bg-gray-50";
@@ -1149,26 +1132,15 @@ export default function Sehir3D({
       <div ref={etiketRef} className="absolute inset-0 pointer-events-none overflow-hidden z-[2]" />
 
       <div className="absolute left-3 top-3 z-[3] flex flex-wrap items-center gap-1.5">
-        <div role="radiogroup" aria-label="Bina etiketleri" className="flex rounded-lg border border-gray-200 bg-white/90 p-0.5 shadow-sm text-[11px] font-semibold">
-          {(
-            [
-              ["rozet", "Rozet"],
-              ["ad", "Ad"],
-              ["kapali", "Kapalı"],
-            ] as const
-          ).map(([k, e]) => (
-            <button
-              key={k}
-              type="button"
-              role="radio"
-              aria-checked={etiketKipi === k}
-              onClick={() => setEtiketKipi(k)}
-              className={`px-2 py-1 rounded-md ${etiketKipi === k ? "bg-[#06211f] text-white" : "text-slate-600 hover:bg-gray-100"}`}
-            >
-              {e}
-            </button>
-          ))}
-        </div>
+        <button
+          type="button"
+          aria-pressed={etiketKipi === "acik"}
+          onClick={() => setEtiketKipi(etiketKipi === "acik" ? "kapali" : "acik")}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white/90 px-2 py-1 text-[11px] font-semibold text-slate-600 shadow-sm hover:bg-gray-50"
+        >
+          Etiketler:
+          <b className={etiketKipi === "acik" ? "text-[#0a7c76]" : "text-slate-400"}>{etiketKipi === "acik" ? "Açık" : "Kapalı"}</b>
+        </button>
         {ozel && (
           <button
             type="button"
