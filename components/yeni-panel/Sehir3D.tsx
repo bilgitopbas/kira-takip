@@ -9,14 +9,16 @@
 // etiketleri HTML (uzakta rozet, yakında ad). Seçim panel ve haritayla ortak.
 // Performans: sürekli döngü YOK — yalnız etkileşim/animasyon sırasında çizilir;
 // DPR ≤ 1.5, gölge kapalı; bileşen kalkınca her şey dispose edilir.
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { dumanBulutu, dumanEvresi, gecikmeVar, parlamaKatsayisi, sehirBinasi, type SehirBinasi } from "@/lib/sehir3dModeli";
 import { canliSahneUygun } from "@/lib/webglDestek";
 import type { Bina } from "@/lib/yeniPanelBina";
 import type { BirimDurumu } from "@/lib/yeniPanelTipleri";
-import { DUMAN_BULUTU, GY, sehirKur, type Kutu, type Sehir } from "@/components/yeni-panel/sehir3d/insa";
+import { ARALIK, DUMAN_BULUTU, GY, sehirKur, type Kutu, type Sehir } from "@/components/yeni-panel/sehir3d/insa";
+import { bosHedefler, hedefGecerli, kisaAd, tasi, yerlesimCoz, type Hucre } from "@/lib/sehirDuzeni";
+import { useSehirDuzeni } from "@/components/yeni-panel/sehirDuzeniDeposu";
 
 const VURGU = "#17B6AE";
 const PENCERE_RENGI: Record<BirimDurumu | "suslu", string> = {
@@ -32,9 +34,15 @@ const BEYAZ = new THREE.Color("#ffffff");
 const SIRA: BirimDurumu[] = ["gecikmis", "bekliyor", "odendi", "bos"];
 
 export type Sehir3DSecim = { bina: string | null; blok: string | null; birim: string | null };
+/** Etiket tercihi: rozet = yalnız nokta + birim sayısı; ad = uzakta rozet, yakında kısa ad; kapalı */
+export type EtiketKipi = "rozet" | "ad" | "kapali";
+type EtiketDuzeyi = "" | "gizli" | "rozet" | "kisa" | "tam";
+type Etiket = { el: HTMLButtonElement; ad: HTMLSpanElement; plaka: HTMLSpanElement; duzey: EtiketDuzeyi; sinif: string; w: number; h: number };
 
 type Motor = {
-  sehriKur: (binalar: SehirBinasi[]) => void;
+  /** hucreler: kullanıcı düzeni (null = varsayılan); kameraKoru: yalnız düzen değiştiyse kamera yerinde kalır */
+  sehriKur: (binalar: SehirBinasi[], hucreler: Hucre[] | null, kameraKoru?: boolean) => void;
+  etiketKipi: (k: EtiketKipi) => void;
   sec: (s: Sehir3DSecim) => void;
   yalnizGecikmis: (v: boolean) => void;
   /** "Tüm iller" görünümünde etiketlerde il plaka kodu gösterilir */
@@ -64,7 +72,11 @@ function gokDokusu() {
 function motorKur(
   kap: HTMLDivElement,
   etiketKabi: HTMLDivElement,
-  geri: { onSec: (bina: string | null, birim: string | null, blok: string | null) => void }
+  geri: {
+    onSec: (bina: string | null, birim: string | null, blok: string | null) => void;
+    /** Kullanıcı binayı başka hücreye bıraktı */
+    onTasi: (anahtar: string, hedef: Hucre) => void;
+  }
 ): Motor {
   const azHareket = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   // Telefon/tablet: DPR 1 (pil ve ısı), tek parmak sayfayı kaydırır
@@ -158,7 +170,8 @@ function motorKur(
   let vurusAglari: THREE.Mesh[] = [];
   const vurusGeo: THREE.BufferGeometry[] = [];
   const vurusMal = new THREE.MeshBasicMaterial();
-  let etiketler = new Map<string, { el: HTMLButtonElement; yakin: boolean; sinif: string }>();
+  let etiketler = new Map<string, Etiket>();
+  let etiketKipi: EtiketKipi = dokunmatik ? "rozet" : "ad";
   let secim: Sehir3DSecim = { bina: null, blok: null, birim: null };
   let gecikmisFiltre = false;
   let plakaGoster = true;
@@ -282,40 +295,96 @@ function motorKur(
       e.sinif = `${secili ? "ring-2 ring-[#17B6AE] border-[#17B6AE] z-[1000]" : "border-gray-200"} ${soluk ? "opacity-40 hover:opacity-100" : ""}`;
       e.el.dataset.durum = enKotu;
       (e.el.firstChild as HTMLElement).style.background = ETIKET_NOKTASI[enKotu];
-      etiketSinifi(e, secili);
+      const d = e.duzey;
+      e.duzey = "";
+      if (d) etiketGorunumu(e, b, d);
       e.el.setAttribute("aria-label", `${b.ad}, ${b.birimler.length} birim, ${sayac.gecikmis} gecikmiş`);
     });
   }
-  function etiketSinifi(e: { el: HTMLButtonElement; yakin: boolean; sinif: string }, secili: boolean) {
-    e.el.className = `absolute left-0 top-0 pointer-events-auto flex items-center gap-1.5 rounded-full bg-white border shadow-sm text-xs font-semibold text-slate-800 whitespace-nowrap py-[3px] pl-1.5 pr-1 hover:border-[#17B6AE] will-change-transform ${e.sinif}`;
-    const ad = e.el.children[2] as HTMLElement;
-    ad.style.display = e.yakin || secili ? "inline" : "none";
+  /** Etiketin görünüm düzeyi değiştiyse sınıf/metin yenilenir ve boyutu ölçülür */
+  function etiketGorunumu(e: Etiket, b: SehirBinasi, duzey: EtiketDuzeyi) {
+    if (e.duzey === duzey) return;
+    e.duzey = duzey;
+    const tam = duzey === "tam";
+    e.el.className = `absolute left-0 top-0 pointer-events-auto flex items-center rounded-full border whitespace-nowrap font-semibold text-slate-800 hover:border-[#17B6AE] will-change-transform ${
+      tam
+        ? "gap-1.5 bg-white shadow-sm text-xs py-[3px] pl-1.5 pr-1"
+        : "gap-1 bg-white/75 backdrop-blur-[2px] border-white/80 shadow-sm text-[10.5px] py-[2px] pl-[5px] pr-[3px]"
+    } ${e.sinif}`;
+    e.ad.textContent = tam
+      ? b.kuleler.length > 1
+        ? `${b.ad} · ${b.kuleler.map((k) => `${k.ad} ${k.izgara.flat().filter(Boolean).length}`).join(" / ")}`
+        : b.ad
+      : kisaAd(b.ad);
+    e.ad.style.display = duzey === "kisa" || tam ? "inline" : "none";
+    e.plaka.hidden = !tam || !plakaGoster || !b.plaka;
+    e.w = e.h = 0;
   }
 
+  // Yerleşim: seçili/üzerine gelinen tam ad binanın üstünde; diğerleri binanın
+  // ekranda en sağdaki tepe köşesinin hemen yanında (bina örtülmesin). Üst üste
+  // binen etiketlerden uzaktaki gizlenir (seçili her zaman görünür).
+  const _etiketKutulari: [number, number, number, number][] = [];
   function etiketleriYerlestir() {
     if (!sehir) return;
     const W2 = kap.clientWidth;
     const H2 = kap.clientHeight;
     const alcak = kamera.position.y < 16;
     const YAKIN = (W2 < 680 ? 95 : 150) * Math.max(1, sehir.olcek * 0.9);
+    const adaylar: { e: Etiket; b: SehirBinasi; duzey: EtiketDuzeyi; x: number; y: number; z: number; odak: boolean }[] = [];
     for (const b of modeller) {
       const bi = sehir.binalar.get(b.anahtar);
       const e = etiketler.get(b.anahtar);
       if (!bi || !e) continue;
-      _tv.set(bi.x, GY + bi.ust + 1.6, bi.z).project(kamera);
-      const gorunur = (!alcak || b.anahtar === secim.bina) && _tv.z < 1 && _tv.x > -1.15 && _tv.x < 1.15 && _tv.y > -1.1 && _tv.y < 1.25;
+      const odak = b.anahtar === secim.bina || (!!uzerindeAnahtar && uzerindeAnahtar.startsWith(`${b.anahtar}|`));
+      let duzey: EtiketDuzeyi;
+      if (surukleme) duzey = "gizli";
+      else if (odak) duzey = "tam";
+      else if (etiketKipi === "kapali") duzey = "gizli";
+      else if (etiketKipi === "rozet") duzey = "rozet";
+      else duzey = _cv.set(bi.x, GY + bi.ust * 0.5, bi.z).distanceTo(kamera.position) < YAKIN ? "kisa" : "rozet";
+      let x: number, y: number, z: number;
+      if (duzey === "tam") {
+        _tv.set(bi.x, GY + bi.ust + 1.6, bi.z).project(kamera);
+        [x, y, z] = [_tv.x, _tv.y, _tv.z];
+      } else {
+        x = -Infinity;
+        y = z = 0;
+        for (const [sx, sz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+          _tv.set(bi.x + (sx * bi.w) / 2, GY + bi.ust * 0.82, bi.z + (sz * bi.d) / 2).project(kamera);
+          if (_tv.x > x) [x, y, z] = [_tv.x, _tv.y, _tv.z];
+        }
+      }
+      const gorunur = duzey !== "gizli" && (!alcak || b.anahtar === secim.bina) && z < 1 && x > -1.15 && x < 1.15 && y > -1.1 && y < 1.25;
       if (!gorunur) {
         e.el.hidden = true;
         continue;
       }
-      e.el.hidden = false;
-      const yakin = _cv.set(bi.x, GY + bi.ust * 0.5, bi.z).distanceTo(kamera.position) < YAKIN;
-      if (yakin !== e.yakin) {
-        e.yakin = yakin;
-        etiketSinifi(e, secim.bina === b.anahtar);
+      adaylar.push({ e, b, duzey, x, y, z, odak });
+    }
+    adaylar.sort((a, b) => Number(b.odak) - Number(a.odak) || a.z - b.z);
+    _etiketKutulari.length = 0;
+    for (const a of adaylar) {
+      etiketGorunumu(a.e, a.b, a.duzey);
+      a.e.el.hidden = false;
+      if (!a.e.w) {
+        a.e.w = a.e.el.offsetWidth;
+        a.e.h = a.e.el.offsetHeight;
       }
-      e.el.style.zIndex = b.anahtar === secim.bina ? "1000" : String(Math.round((1 - _tv.z) * 400));
-      e.el.style.transform = `translate(${((_tv.x * 0.5 + 0.5) * W2).toFixed(1)}px,${((-_tv.y * 0.5 + 0.5) * H2).toFixed(1)}px) translate(-50%,-100%)`;
+      const px = (a.x * 0.5 + 0.5) * W2;
+      const py = (-a.y * 0.5 + 0.5) * H2;
+      const sol = a.duzey === "tam" ? px - a.e.w / 2 : px + 4;
+      const ust = a.duzey === "tam" ? py - a.e.h : py - a.e.h / 2;
+      const kutu: [number, number, number, number] = [sol - 2, ust - 2, sol + a.e.w + 2, ust + a.e.h + 2];
+      const carpisir = _etiketKutulari.some((k) => kutu[0] < k[2] && kutu[2] > k[0] && kutu[1] < k[3] && kutu[3] > k[1]);
+      if (carpisir && !a.odak) {
+        a.e.el.style.visibility = "hidden";
+        continue;
+      }
+      a.e.el.style.visibility = "";
+      _etiketKutulari.push(kutu);
+      a.e.el.style.zIndex = a.odak ? "1000" : String(Math.round((1 - a.z) * 400));
+      a.e.el.style.transform = `translate(${sol.toFixed(1)}px,${ust.toFixed(1)}px)`;
     }
   }
 
@@ -342,12 +411,46 @@ function motorKur(
     const uzak = THREE.MathUtils.clamp(off.length() * 0.7, blok ? 55 : 48, 110);
     ucusBaslat(tp, tp.clone().add(off.setLength(uzak)), 850);
   }
+  const _sigKamera = new THREE.PerspectiveCamera();
+  function binalaraSigdir(tp: THREE.Vector3, cp: THREE.Vector3) {
+    if (!sehir) return;
+    let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity, ust = 0;
+    for (const bi of sehir.binalar.values()) {
+      x0 = Math.min(x0, bi.x - bi.w / 2);
+      x1 = Math.max(x1, bi.x + bi.w / 2);
+      z0 = Math.min(z0, bi.z - bi.d / 2);
+      z1 = Math.max(z1, bi.z + bi.d / 2);
+      ust = Math.max(ust, bi.ust);
+    }
+    if (!Number.isFinite(x0)) return;
+    tp.set((x0 + x1) / 2, Math.min(ust * 0.3, 8), (z0 + z1) / 2);
+    const yon = cp.clone().sub(tp).normalize();
+    const koseler = [x0, x1].flatMap((x) => [z0, z1].flatMap((z) => [GY, GY + ust].map((y) => new THREE.Vector3(x, y, z))));
+    _sigKamera.copy(kamera);
+    let uz = cp.distanceTo(tp);
+    for (let n = 0; n < 6; n++) {
+      _sigKamera.position.copy(tp).addScaledVector(yon, uz);
+      _sigKamera.lookAt(tp);
+      _sigKamera.updateMatrixWorld();
+      let m = 0;
+      for (const c of koseler) {
+        _tv.copy(c).project(_sigKamera);
+        m = Math.max(m, Math.abs(_tv.x), Math.abs(_tv.y));
+      }
+      if (m <= 0) break;
+      uz = THREE.MathUtils.clamp(uz * (m / 0.92), kontrol.minDistance, kontrol.maxDistance);
+    }
+    cp.copy(tp).addScaledVector(yon, uz);
+  }
   function kusBakisi(aninda = false) {
     if (!sehir) return;
     const k = Math.max(1, 1.45 / Math.max(0.5, kamera.aspect || 1.4)) * sehir.olcek * (sehir.gx > 3 ? 1.24 : 1);
     const [mx, mz] = sehir.merkez;
     const tp = new THREE.Vector3(mx, 2, mz + 8 * sehir.olcek);
     const cp = new THREE.Vector3(mx + 96 * k, 104 * k, mz + 142 * k);
+    // Telefon / dik ekran: kadraj binaların kendisine sığdırılır (yollar ve
+    // kenar boşlukları değil); böylece ilk açılışta binalar seçilebilir büyüklükte.
+    if (dokunmatik || kamera.aspect < 1) binalaraSigdir(tp, cp);
     if (aninda) {
       kontrol.target.copy(tp);
       kamera.position.copy(cp);
@@ -380,16 +483,34 @@ function motorKur(
   let sonDokunma: { x: number; y: number; t: number } | null = null;
   const onDown = (e: PointerEvent) => {
     basili = { x: e.clientX, y: e.clientY, dugme: e.button, t: performance.now() };
+    if (e.pointerType !== "mouse" || e.button !== 0) return;
+    const h = sec(e.clientX, e.clientY);
+    if (!h) return;
+    if (e.shiftKey) suruklemeBasla(h.bina);
+    else {
+      // 250 ms kıpırdamadan basılı tutulursa taşıma başlar (kıpırdarsa kaydırma)
+      const basladiT = basili.t;
+      clearTimeout(tutmaZamani);
+      tutmaZamani = window.setTimeout(() => {
+        if (basili && basili.t === basladiT) suruklemeBasla(h.bina);
+      }, 250);
+    }
   };
   const onUp = (e: PointerEvent) => {
+    clearTimeout(tutmaZamani);
+    if (surukleme && e.pointerType === "mouse") {
+      basili = null;
+      suruklemeBitir(true);
+      return;
+    }
     if (!basili) return;
     const oynadi = Math.abs(e.clientX - basili.x) + Math.abs(e.clientY - basili.y);
     const dugme = basili.dugme;
     const basladi = basili.t;
     basili = null;
     if (oynadi > 6 || dugme !== 0) return;
-    // İki parmak jestinin ardından kalkan parmak seçim sayılmaz
-    if (jest || sonJest > basladi) return;
+    // İki parmak jestinin ya da bina taşımanın ardından kalkan parmak seçim sayılmaz
+    if (jest || sonJest > basladi || sonSurukleme > basladi) return;
     if (e.pointerType === "touch") {
       const simdi = performance.now();
       const onceki = sonDokunma;
@@ -411,6 +532,11 @@ function motorKur(
     geri.onSec(h.bina, h.birim, h.blok);
   };
   const onMove = (e: PointerEvent) => {
+    if (surukleme && e.pointerType === "mouse") {
+      suruklemeGuncelle(e.clientX, e.clientY);
+      return;
+    }
+    if (basili && Math.abs(e.clientX - basili.x) + Math.abs(e.clientY - basili.y) > 6) clearTimeout(tutmaZamani);
     if (e.pointerType === "mouse" && !basili) {
       bekleyenUzerinde = [e.clientX, e.clientY];
       iste();
@@ -433,6 +559,22 @@ function motorKur(
   const _sag = new THREE.Vector3();
   const _ileri = new THREE.Vector3();
   const onJestBasla = (e: TouchEvent) => {
+    clearTimeout(tutmaZamani);
+    uzunBasis = null;
+    if (e.touches.length === 1) {
+      // Uzun basış (parmak kıpırdamadan 450 ms) binayı taşımaya başlatır;
+      // parmak önce kıpırdarsa tarayıcı sayfayı kaydırır (dokunulmaz).
+      const t = e.touches[0];
+      uzunBasis = { x: t.clientX, y: t.clientY };
+      tutmaZamani = window.setTimeout(() => {
+        const u = uzunBasis;
+        if (!u) return;
+        const h = sec(u.x, u.y);
+        if (h) suruklemeBasla(h.bina);
+      }, 450);
+      return;
+    }
+    if (surukleme) suruklemeBitir(false);
     if (e.touches.length < 2) return;
     e.preventDefault();
     ucus = null;
@@ -448,6 +590,15 @@ function motorKur(
     };
   };
   const onJest = (e: TouchEvent) => {
+    if (surukleme && e.touches.length === 1) {
+      e.preventDefault();
+      suruklemeGuncelle(e.touches[0].clientX, e.touches[0].clientY);
+      return;
+    }
+    if (uzunBasis && e.touches.length === 1 && Math.abs(e.touches[0].clientX - uzunBasis.x) + Math.abs(e.touches[0].clientY - uzunBasis.y) > 8) {
+      clearTimeout(tutmaZamani);
+      uzunBasis = null;
+    }
     if (!jest || e.touches.length < 2) return;
     e.preventDefault();
     const uz = THREE.MathUtils.clamp((jest.uzunluk * jest.d0) / Math.max(1, parmakArasi(e.touches)), kontrol.minDistance, kontrol.maxDistance);
@@ -463,17 +614,124 @@ function motorKur(
     iste();
   };
   const onJestBitti = (e: TouchEvent) => {
+    clearTimeout(tutmaZamani);
+    uzunBasis = null;
+    if (surukleme && e.touches.length === 0) suruklemeBitir(e.type === "touchend");
     if (!jest || e.touches.length >= 2) return;
     jest = null;
     sonJest = performance.now();
   };
+  const sagTikEngeli = (e: Event) => e.preventDefault();
+  const tusla = (e: KeyboardEvent) => {
+    if (e.key === "Escape" && surukleme) suruklemeBitir(false);
+  };
+  window.addEventListener("keydown", tusla);
   if (dokunmatik) {
+    // Uzun basışta iOS büyüteç/menüsü ve Android bağlam menüsü çıkmasın
+    yuzey.style.setProperty("-webkit-touch-callout", "none");
+    yuzey.style.userSelect = "none";
+    yuzey.style.setProperty("-webkit-user-select", "none");
+    yuzey.addEventListener("contextmenu", sagTikEngeli);
     yuzey.style.touchAction = "pan-y";
     yuzey.addEventListener("touchstart", onJestBasla, { passive: false });
     yuzey.addEventListener("touchmove", onJest, { passive: false });
     yuzey.addEventListener("touchend", onJestBitti);
     yuzey.addEventListener("touchcancel", onJestBitti);
   }
+  // ---- Bina taşıma: hedef hücreler, hayalet kutu, bırakınca ızgaraya oturma ----
+  type Surukleme = { anahtar: string; idx: number; hedef: Hucre | null; gecerli: boolean };
+  let surukleme: Surukleme | null = null;
+  let tutmaZamani = 0;
+  let sonSurukleme = 0;
+  let uzunBasis: { x: number; y: number } | null = null;
+  let oturma: { t0: number; ax: number; az: number; bx: number; bz: number; anahtar: string; hedef: Hucre } | null = null;
+  const HEDEF_KENAR = ARALIK - 14;
+  const hedefMal = new THREE.MeshBasicMaterial({ color: "#ffffff", transparent: true, opacity: 0.3, depthWrite: false, toneMapped: false });
+  const hedefVurguMal = new THREE.MeshBasicMaterial({ color: VURGU, transparent: true, opacity: 0.5, depthWrite: false, toneMapped: false });
+  const hedefVurgu = new THREE.Mesh(plakaGeo, hedefVurguMal);
+  hedefVurgu.rotation.x = -Math.PI / 2;
+  hedefVurgu.scale.set(HEDEF_KENAR, HEDEF_KENAR, 1);
+  const hayaletMal = new THREE.LineBasicMaterial({ color: VURGU, toneMapped: false });
+  const hayalet = new THREE.LineSegments(kenarGeo, hayaletMal);
+  hedefVurgu.visible = hayalet.visible = false;
+  sahne.add(hedefVurgu, hayalet);
+  let hedefAgi: THREE.InstancedMesh | null = null;
+  const _yatay = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+  const _hm = new THREE.Matrix4();
+  const _hp = new THREE.Vector3();
+  const _hs = new THREE.Vector3();
+  const zemin = new THREE.Plane(new THREE.Vector3(0, 1, 0), -GY);
+  const _zp = new THREE.Vector3();
+  const hucreMerkezi = (h: Hucre): [number, number] => (sehir ? [(h[0] - sehir.izgara.cx) * ARALIK, (h[1] - sehir.izgara.cz) * ARALIK] : [0, 0]);
+
+  function suruklemeBasla(anahtar: string) {
+    if (!sehir || surukleme) return;
+    const idx = modeller.findIndex((b) => b.anahtar === anahtar);
+    const k = kutuOf(anahtar, null);
+    if (idx < 0 || !k) return;
+    ucus = null;
+    donus = null;
+    kontrol.enabled = false;
+    surukleme = { anahtar, idx, hedef: null, gecerli: false };
+    const bos = bosHedefler(sehir.izgara.hucreler, idx);
+    hedefAgi = new THREE.InstancedMesh(plakaGeo, hedefMal, Math.max(1, bos.length));
+    bos.forEach((h, n) => {
+      const [x, z] = hucreMerkezi(h);
+      _hm.compose(_hp.set(x, GY + 0.06, z), _yatay, _hs.set(HEDEF_KENAR, HEDEF_KENAR, 1));
+      hedefAgi!.setMatrixAt(n, _hm);
+    });
+    hedefAgi.count = bos.length;
+    sahne.add(hedefAgi);
+    kutuyaOturt(hayalet, k, 1.2);
+    hayalet.visible = true;
+    R.domElement.style.cursor = "grabbing";
+    try {
+      navigator.vibrate?.(12);
+    } catch {}
+    iste();
+  }
+  function suruklemeGuncelle(cx: number, cy: number) {
+    const s = surukleme;
+    if (!s || !sehir) return;
+    const r = R.domElement.getBoundingClientRect();
+    ndc.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
+    isin.setFromCamera(ndc, kamera);
+    if (!isin.ray.intersectPlane(zemin, _zp)) return;
+    const h: Hucre = [Math.round(_zp.x / ARALIK + sehir.izgara.cx), Math.round(_zp.z / ARALIK + sehir.izgara.cz)];
+    const simdiki = sehir.izgara.hucreler[s.idx];
+    s.hedef = h;
+    s.gecerli = !(h[0] === simdiki[0] && h[1] === simdiki[1]) && hedefGecerli(sehir.izgara.hucreler, s.idx, h);
+    hayalet.position.x = _zp.x;
+    hayalet.position.z = _zp.z;
+    if (s.gecerli) {
+      const [x, z] = hucreMerkezi(h);
+      const dolu = sehir.izgara.hucreler.some((c, i) => i !== s.idx && c[0] === h[0] && c[1] === h[1]);
+      hedefVurguMal.color.set(dolu ? "#e6b23c" : VURGU);
+      hedefVurgu.position.set(x, GY + 0.08, z);
+      hedefVurgu.visible = true;
+    } else hedefVurgu.visible = false;
+    iste();
+  }
+  function suruklemeBitir(birak: boolean) {
+    const s = surukleme;
+    if (!s) return;
+    surukleme = null;
+    sonSurukleme = performance.now();
+    kontrol.enabled = true;
+    R.domElement.style.cursor = "";
+    if (hedefAgi) {
+      sahne.remove(hedefAgi);
+      hedefAgi.dispose();
+      hedefAgi = null;
+    }
+    hedefVurgu.visible = false;
+    if (birak && s.gecerli && s.hedef) {
+      const [bx, bz] = hucreMerkezi(s.hedef);
+      oturma = { t0: performance.now(), ax: hayalet.position.x, az: hayalet.position.z, bx, bz, anahtar: s.anahtar, hedef: s.hedef };
+    } else hayalet.visible = false;
+    iste();
+  }
+
   function uzerindeAyarla(h: { bina: string; blok: string | null } | null) {
     const id = h ? `${h.bina}|${h.blok ?? ""}` : null;
     if (id === uzerindeAnahtar) return;
@@ -576,6 +834,18 @@ function motorKur(
       uzerindeAyarla(h);
     }
     if (solukAnim && solukAdimi()) devam = true;
+    if (oturma) {
+      const u = azHareket ? 1 : Math.min(1, (t - oturma.t0) / 180);
+      const e = 1 - Math.pow(1 - u, 3);
+      hayalet.position.x = oturma.ax + (oturma.bx - oturma.ax) * e;
+      hayalet.position.z = oturma.az + (oturma.bz - oturma.az) * e;
+      if (u >= 1) {
+        const o = oturma;
+        oturma = null;
+        hayalet.visible = false;
+        geri.onTasi(o.anahtar, o.hedef);
+      } else devam = true;
+    }
     if (canliOge()) {
       canlandir(t);
       devam = true;
@@ -600,8 +870,9 @@ function motorKur(
   }
 
   const motor: Motor = {
-    sehriKur(binalar) {
+    sehriKur(binalar, hucreler, kameraKoru) {
       const ilkKurulum = !sehir;
+      if (surukleme) suruklemeBitir(false);
       sehriSok();
       modeller = binalar;
       solukHedef.length = solukSimdi.length = 0;
@@ -610,7 +881,7 @@ function motorKur(
         iste();
         return;
       }
-      sehir = sehirKur(binalar, binaMal, zeminMal, pencereMal);
+      sehir = sehirKur(binalar, binaMal, zeminMal, pencereMal, hucreler ?? undefined);
       solukU.value = sehir.solukDoku;
       sayiU.value = Math.max(1, binalar.length);
       sehir.binaAgi.castShadow = sehir.binaAgi.receiveShadow = golge;
@@ -649,22 +920,24 @@ function motorKur(
         plaka.title = "İl plaka kodu";
         const ad = document.createElement("span");
         ad.textContent = b.kuleler.length > 1 ? `${b.ad} · ${b.kuleler.map((k) => `${k.ad} ${k.izgara.flat().filter(Boolean).length}`).join(" / ")}` : b.ad;
-        plaka.hidden = !plakaGoster || !b.plaka;
+        plaka.hidden = true;
+        ad.style.display = "none";
         el.append(nokta, plaka, ad);
         if (b.birimler.length > 1) {
           const c = document.createElement("span");
-          c.className = "text-[10.5px] font-bold px-1.5 rounded-full bg-[#06211f] text-white";
+          c.className = "text-[10px] font-bold px-1.5 rounded-full bg-[#06211f]/90 text-white";
           c.textContent = String(b.birimler.length);
           el.append(c);
         }
         el.title = b.ad;
         el.addEventListener("click", () => geri.onSec(b.anahtar, null, null));
+        el.hidden = true;
         etiketKabi.appendChild(el);
-        etiketler.set(b.anahtar, { el, yakin: false, sinif: "" });
+        etiketler.set(b.anahtar, { el, ad, plaka, duzey: "", sinif: "", w: 0, h: 0 });
       }
       boyutla();
       if (ilkKurulum) kusBakisi(true);
-      else kusBakisi(false);
+      else if (!kameraKoru) kusBakisi(false);
       soluklariGuncelle(true);
       solukDokuyuYaz();
       pencereleriBoya();
@@ -698,10 +971,12 @@ function motorKur(
     },
     plakalar(v) {
       plakaGoster = v;
-      etiketler.forEach((e, anahtar) => {
-        const p = e.el.children[1] as HTMLElement;
-        p.hidden = !v || !modeller.find((m) => m.anahtar === anahtar)?.plaka;
-      });
+      etiketler.forEach((e) => (e.duzey = ""));
+      iste();
+    },
+    etiketKipi(k) {
+      etiketKipi = k;
+      iste();
     },
     yakinlas(f) {
       const off = kamera.position.clone().sub(kontrol.target);
@@ -734,6 +1009,13 @@ function motorKur(
       yuzey.removeEventListener("touchmove", onJest);
       yuzey.removeEventListener("touchend", onJestBitti);
       yuzey.removeEventListener("touchcancel", onJestBitti);
+      yuzey.removeEventListener("contextmenu", sagTikEngeli);
+      window.removeEventListener("keydown", tusla);
+      clearTimeout(tutmaZamani);
+      hedefAgi?.dispose();
+      hedefMal.dispose();
+      hedefVurguMal.dispose();
+      hayaletMal.dispose();
       kontrol.dispose();
       sehriSok();
       binaMal.dispose();
@@ -759,12 +1041,15 @@ export default function Sehir3D({
   secim,
   yalnizGecikmis,
   tumIller,
+  il,
   onSec,
 }: {
   binalar: Bina[];
   secim: Sehir3DSecim;
   yalnizGecikmis: boolean;
   tumIller: boolean;
+  /** Seçili il ("" = tüm iller); bina düzeni il başına saklanır */
+  il: string;
   onSec: (bina: string | null, birim: string | null, blok: string | null) => void;
 }) {
   const kapRef = useRef<HTMLDivElement>(null);
@@ -782,11 +1067,48 @@ export default function Sehir3D({
     [modeller]
   );
 
+  // Bina düzeni (kullanıcı taşıdıysa) — il başına, hesap düzeyinde
+  const { duzen, yuklendi, kaydet } = useSehirDuzeni(il);
+  const hucreler = useMemo(() => yerlesimCoz(modeller.map((b) => b.anahtar), duzen), [modeller, duzen]);
+  const duzenImzasi = hucreler.map((h) => h.join(",")).join(";");
+  const ozel = !!duzen && Object.keys(duzen).length > 0;
+  const tasiRef = useRef<(anahtar: string, hedef: Hucre) => void>(() => {});
+  useEffect(() => {
+    tasiRef.current = (anahtar, hedef) => {
+      const idx = modeller.findIndex((b) => b.anahtar === anahtar);
+      const yeni = tasi(
+        modeller.map((b) => b.anahtar),
+        hucreler,
+        idx,
+        hedef
+      );
+      if (yeni) kaydet(yeni);
+    };
+  });
+
+  // Etiket tercihi (cihazda): telefonda varsayılan yalnız rozet
+  const [etiketKipi, setEtiketKipi] = useState<EtiketKipi>(() => {
+    try {
+      const v = window.localStorage.getItem("mizan_etiket_kipi");
+      if (v === "rozet" || v === "ad" || v === "kapali") return v;
+    } catch {}
+    return window.matchMedia("(pointer: coarse)").matches ? "rozet" : "ad";
+  });
+  useEffect(() => {
+    motorRef.current?.etiketKipi(etiketKipi);
+    try {
+      window.localStorage.setItem("mizan_etiket_kipi", etiketKipi);
+    } catch {}
+  }, [etiketKipi]);
+
   useEffect(() => {
     const kap = kapRef.current;
     const etiket = etiketRef.current;
     if (!kap || !etiket) return;
-    const motor = motorKur(kap, etiket, { onSec: (b, u, k) => onSecRef.current(b, u, k) });
+    const motor = motorKur(kap, etiket, {
+      onSec: (b, u, k) => onSecRef.current(b, u, k),
+      onTasi: (a, h) => tasiRef.current(a, h),
+    });
     motorRef.current = motor;
     return () => {
       motor.birak();
@@ -794,11 +1116,17 @@ export default function Sehir3D({
     };
   }, []);
 
+  // Düzen yüklenince kur; yalnız düzen değiştiyse kamera yerinde kalır
+  const sonImza = useRef<string | null>(null);
   useEffect(() => {
-    motorRef.current?.sehriKur(modeller);
-    // imza değişmedikçe yeniden kurma
+    if (!yuklendi || !motorRef.current) return;
+    const yalnizDuzen = sonImza.current === imza;
+    sonImza.current = imza;
+    motorRef.current.etiketKipi(etiketKipi);
+    motorRef.current.sehriKur(modeller, hucreler, yalnizDuzen);
+    // imza / düzen değişmedikçe yeniden kurma
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [imza]);
+  }, [imza, duzenImzasi, yuklendi]);
 
   useEffect(() => {
     motorRef.current?.sec(secim);
@@ -819,6 +1147,39 @@ export default function Sehir3D({
     <div className="absolute inset-0">
       <div ref={kapRef} className="absolute inset-0" />
       <div ref={etiketRef} className="absolute inset-0 pointer-events-none overflow-hidden z-[2]" />
+
+      <div className="absolute left-3 top-3 z-[3] flex flex-wrap items-center gap-1.5">
+        <div role="radiogroup" aria-label="Bina etiketleri" className="flex rounded-lg border border-gray-200 bg-white/90 p-0.5 shadow-sm text-[11px] font-semibold">
+          {(
+            [
+              ["rozet", "Rozet"],
+              ["ad", "Ad"],
+              ["kapali", "Kapalı"],
+            ] as const
+          ).map(([k, e]) => (
+            <button
+              key={k}
+              type="button"
+              role="radio"
+              aria-checked={etiketKipi === k}
+              onClick={() => setEtiketKipi(k)}
+              className={`px-2 py-1 rounded-md ${etiketKipi === k ? "bg-[#06211f] text-white" : "text-slate-600 hover:bg-gray-100"}`}
+            >
+              {e}
+            </button>
+          ))}
+        </div>
+        {ozel && (
+          <button
+            type="button"
+            onClick={() => kaydet(null)}
+            title="Binaları varsayılan sıraya döndür (bu il)"
+            className="rounded-lg border border-gray-200 bg-white/90 px-2 py-1 text-[11px] font-semibold text-slate-600 shadow-sm hover:bg-gray-50"
+          >
+            Düzeni sıfırla
+          </button>
+        )}
+      </div>
 
       {modeller.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center text-sm text-slate-500 pointer-events-none">Bu ilde kayıtlı mülk yok.</div>
@@ -863,8 +1224,8 @@ export default function Sehir3D({
         </div>
       ) : (
         <div className="absolute left-3 bottom-3 z-[3] max-w-[calc(100%-80px)] text-[11px] text-slate-500 bg-white/95 border border-gray-200 rounded-md px-2 py-1">
-          <span className="hidden [@media(pointer:fine)]:inline">Sürükle: kaydır · Sağ tık: döndür · Tekerlek: yakınlaştır · Binaya dokun</span>
-          <span className="[@media(pointer:fine)]:hidden">İki parmak: yakınlaştır/kaydır · Çift dokun: yaklaş · Binaya dokun</span>
+          <span className="hidden [@media(pointer:fine)]:inline">Sürükle: kaydır · Sağ tık: döndür · Tekerlek: yakınlaştır · Binayı basılı tut (ya da Shift) + sürükle: taşı</span>
+          <span className="[@media(pointer:fine)]:hidden">İki parmak: yakınlaştır/kaydır · Çift dokun: yaklaş · Uzun bas + sürükle: taşı</span>
         </div>
       )}
     </div>

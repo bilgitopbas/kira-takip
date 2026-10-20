@@ -118,6 +118,7 @@ model User {
   announcements  Announcement[]  @relation("AnnouncementSender")
   paymentNotices PaymentNotice[]
   buildings      Building[]
+  cityLayouts    CityLayout[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -525,4 +526,20 @@ model Building {
 
   @@index([ownerId])
   @@map("buildings")
+}
+
+// Mülk Şehrim 3D: kullanıcının binaları taşıdığı ızgara düzeni, il başına tek
+// satır ("*" = tüm iller). cells: { binaAnahtari: [sütun, satır] }.
+model CityLayout {
+  id      String @id @default(cuid())
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+
+  il    String
+  cells Json
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, il])
+  @@map("city_layouts")
 }

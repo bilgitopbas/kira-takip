@@ -42,6 +42,9 @@ export type Sehir = {
   sinirZ: number;
   olcek: number;
   gx: number;
+  gz: number;
+  /** Hücre (i, j) dünya merkezi: ((i - cx) * ARALIK, (j - cz) * ARALIK); hucreler bina sırasıyla */
+  izgara: { cx: number; cz: number; hucreler: [number, number][] };
   binaSayisi: number;
   /** Soluklaştırma dokusu (bina sırası → 0..255) */
   solukDoku: THREE.DataTexture;
@@ -709,9 +712,20 @@ class Insaatci {
   }
 
   /* ---------- dünya ---------- */
-  kur(binalar: SehirBinasi[]) {
-    const { gx: GX, gz: GZ, hucreler } = izgaraYerlesimi(binalar.length);
-    const CX = (GX - 1) / 2, CZ = (GZ - 1) / 2;
+  kur(binalar: SehirBinasi[], verilenHucreler?: [number, number][]) {
+    // Hücreler: kullanıcı düzeni (lib/sehirDuzeni.ts) ya da varsayılan sıra.
+    // Şehir, dolu hücrelerin kapsayan kutusunun ortasına göre merkezlenir.
+    const hucreler = verilenHucreler && verilenHucreler.length === binalar.length ? verilenHucreler : izgaraYerlesimi(binalar.length).hucreler;
+    let minI = Infinity, maxI = -Infinity, minJ = Infinity, maxJ = -Infinity;
+    for (const [i, j] of hucreler) {
+      minI = Math.min(minI, i);
+      maxI = Math.max(maxI, i);
+      minJ = Math.min(minJ, j);
+      maxJ = Math.max(maxJ, j);
+    }
+    if (!hucreler.length) minI = maxI = minJ = maxJ = 0;
+    const GX = maxI - minI + 1, GZ = maxJ - minJ + 1;
+    const CX = (minI + maxI) / 2, CZ = (minJ + maxJ) / 2;
     const dolu = new Set(hucreler.map(([i, j]) => `${i},${j}`));
     const var_ = (i: number, j: number) => dolu.has(`${i},${j}`);
     const cxx = (i: number) => (i - CX) * ARALIK;
@@ -857,7 +871,15 @@ class Insaatci {
     const dolular = hucreler.map(([i, j]) => [cxx(i), czz(j)]);
     const mx = dolular.reduce((t, c) => t + c[0], 0) / Math.max(1, dolular.length);
     const mz = dolular.reduce((t, c) => t + c[1], 0) / Math.max(1, dolular.length);
-    return { merkez: [mx, mz] as [number, number], sinirX: CX * ARALIK + BS / 2 + 12, sinirZ: CZ * ARALIK + BS / 2 + 12, olcek, gx: GX };
+    return {
+      merkez: [mx, mz] as [number, number],
+      sinirX: ((GX - 1) / 2) * ARALIK + BS / 2 + 12,
+      sinirZ: ((GZ - 1) / 2) * ARALIK + BS / 2 + 12,
+      olcek,
+      gx: GX,
+      gz: GZ,
+      izgara: { cx: CX, cz: CZ, hucreler: hucreler.map(([i, j]) => [i, j] as [number, number]) },
+    };
   }
 
   sablonlariBirak() {
@@ -870,9 +892,15 @@ class Insaatci {
  * dönen `temizle` tüm geometri/doku/malzemeleri bırakır (malzemeler hariç
  * — onlar sahne ömrü boyunca paylaşılır).
  */
-export function sehirKur(binalar: SehirBinasi[], binaMalzemesi: THREE.Material, zeminMalzemesi: THREE.Material, pencereMalzemesi: THREE.Material): Sehir {
+export function sehirKur(
+  binalar: SehirBinasi[],
+  binaMalzemesi: THREE.Material,
+  zeminMalzemesi: THREE.Material,
+  pencereMalzemesi: THREE.Material,
+  hucreler?: [number, number][]
+): Sehir {
   const ins = new Insaatci();
-  const yer = ins.kur(binalar);
+  const yer = ins.kur(binalar, hucreler);
 
   const binaAgi = ins.accB.ag(binaMalzemesi);
   const zeminAgi = ins.accG.ag(zeminMalzemesi);
