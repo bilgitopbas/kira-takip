@@ -2,13 +2,13 @@
 
 Tarih: 4 Kasım 2026 · Dal: `mobil-api` (`next-16-4` üstünden) · Durum: sözleşme Lider kapısında; "devam" gelmeden kod yok.
 Kalıp: Topbaş Hukuk (`hukuk-sistemi`, `lib/mobil*.js`, `lib/push*.js`). Sözleşme: `api-sozlesmesi.md`.
+Mobilde giriş yalnız e-posta + şifre (kullanıcı kararı, 5 Kas); Google ve Apple girişi yok, web'deki Google girişi aynen kalır.
 
 ## Şema önerisi (yalnız ekleme, web etkilenmez)
 
 ```prisma
 model User {
   // ...
-  appleSub      String?       @unique
   mobilOturumlar MobilOturum[]
   cihazJetonlari CihazJetonu[]
 }
@@ -25,7 +25,7 @@ model MobilOturum {
   yenilemeOzeti    String    @unique
   oncekiOzet       String?
   oncekiGecerlilik DateTime?
-  sessionVersion   Int       // Topbaş'taki sifreParmak yerine: Google/Apple hesabında şifre yok
+  sessionVersion   Int       // Topbaş'taki sifreParmak yerine: web oturumuyla aynı kaynak
   olusturma        DateTime  @default(now())
   sonGorulme       DateTime  @default(now())
   sonKullanma      DateTime
@@ -71,19 +71,18 @@ model CihazJetonu {
 | `lib/mobilJeton.ts` | Saf. Erişim JWT (jose, HS256, HKDF ile `SESSION_SECRET`'tan türetilmiş anahtar, `tur: "mobil-erisim"`), yenileme jetonu, özet, `bearerAyikla` |
 | `lib/mobilOturum.ts` | `oturumAc`, `oturumYenile`, `oturumKapat`, oturum yanıtı, süresi geçen temizliği |
 | `lib/mobilKapi.ts` | `hataYaniti`, `mobilOturumKapisi`, `panelKapisi`, `jsonGovde` (16 KB), `sayfalama` |
-| `lib/mobilKimlik.ts` | Google/Apple jeton doğrulama (jose JWKS), hesap eşleme, nonce |
 | `lib/auth.ts` | `getSession`: Bearer varsa mobil JWT + `oturumHalaGecerli`; yoksa çerez aynen. `createSession`: Bearer isteğinde çerez yazmaz. Çerezli akış değişmez |
-| `proxy.ts` | Matcher'a `/api/admin/:path*`: Bearer başlıklı istek 403 (Açık nokta 3). Çerezli akış değişmez |
+| `proxy.ts` | Matcher'a `/api/admin/:path*`: Bearer başlıklı istek 403 (Açık nokta 2). Çerezli akış değişmez |
 | `lib/mobilPanel.ts` | Panel okuma sorguları, dar `select`, para sayıya çevrilir, `besYil` |
-| `app/api/mobil/**` | giris, giris-google, giris-apple, yenile, cikis, cihaz, sozlesme-onay, hesap-sil, panel/* |
+| `app/api/mobil/**` | giris, yenile, cikis, cihaz, sozlesme-onay, hesap-sil, panel/* |
 | `lib/pushBicim.ts`, `lib/push.ts` | Topbaş portu; `PUSH_ACIK`, `APNS_*`, `FCM_*` adları aynı |
 | `lib/pushHedef.ts` | `hesapPushHedefleri` kalkar; hedef `CihazJetonu.userId` |
 | `lib/notifications.ts`, `denemeHatirlatma.ts`, `adminNotifications.ts`, `admin/announcements` | Kendi push'a bağlanır, cihazı olmayan sessiz geçer |
-| `tests/` | `mobilJeton`, `pushBicim`, `mobilKimlik` (nonce, aud, iss, eşleme), oturum tablo testleri, panel eşleme testleri |
+| `tests/` | `mobilJeton`, `pushBicim`, oturum tablo testleri, panel eşleme testleri |
 
 ## Topbaş'tan bilerek farklı
 
-- **`sessionVersion`, `sifreParmak` yerine:** Google/Apple hesabında şifre yok. Web oturumuyla aynı kaynak.
+- **`sessionVersion`, `sifreParmak` yerine:** web oturumuyla aynı kaynak; şifre değişimi ve sıfırlama bunu zaten artırıyor.
 - **Erişim jetonu her istekte DB'ye bakar** (`oturumHalaGecerli`, mevcut `getSession` akışı): şifre değişimi ve üye çıkarma 5 dk değil **anında** etkili. İstek başına 1–2 PK okuma, web çerezinde de aynı.
 - **Hand-rolled HMAC yok:** repo zaten `jose` kullanıyor.
 - **Push gönderiminde oturum süzgeci:** Topbaş gönderimde yalnız oturum süresine bakıyor; şifre değişse de jeton, istemci yenileme deneyene kadar push alır. Burada `sessionVersion` da denetlenir, uyuşmayan silinir. Çalınan telefon, şifre değişince bildirim almaz.
@@ -99,7 +98,7 @@ model CihazJetonu {
 ## Adımlar
 
 1. Şema + `elle-gocler` SQL, Prisma üretimi.
-2. `mobilJeton`, `mobilOturum`, `mobilKapi`, `mobilKimlik` + testler.
+2. `mobilJeton`, `mobilOturum`, `mobilKapi` + testler.
 3. `lib/auth.ts` Bearer + `proxy.ts`; web giriş/çıkış dokunulmadan test.
 4. Kimlik uçları, `cihaz`, `sozlesme-onay`, `hesap-sil`.
 5. Panel uçları.
@@ -109,6 +108,6 @@ model CihazJetonu {
 
 ## Canlıya geçiş öncesi Lider/kullanıcı işleri
 
-- SQL uygulaması; env: `APNS_KEY_B64`, `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_BUNDLE_ID`, `FCM_SERVICE_ACCOUNT_B64`, `PUSH_ACIK`, `APPLE_BUNDLE_ID`, isteğe bağlı `GOOGLE_IOS_CLIENT_ID`, `GOOGLE_ANDROID_CLIENT_ID`, `APPLE_SIWA_KEY_ID`, `APPLE_SIWA_KEY_B64`, `APPLE_TEAM_ID`.
-- iOS bundle id doğrulaması (`MizanMulk` görünüyor; ASC ile eşleşmeli), Sign in with Apple yeteneği, Firebase projesi.
+- SQL uygulaması; env: `APNS_KEY_B64`, `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_BUNDLE_ID`, `FCM_SERVICE_ACCOUNT_B64`, `PUSH_ACIK`.
+- iOS bundle id doğrulaması (`MizanMulk` görünüyor; ASC ile eşleşmeli), Firebase projesi.
 - Sunucuda: nginx `x-forwarded-for`'u eziyor mu; `next-16-4` canlı dal mı.

@@ -1,6 +1,6 @@
 # Mizan Mülk Mobil API Sözleşmesi
 
-Dal: `mobil-api` · Sürüm: 4 Kasım 2026 · Durum: **taslak, Lider kapısında** · Okuyan: Expo ajanı (`mizan-mobil` deposu)
+Dal: `mobil-api` · Sürüm: 5 Kasım 2026 (mobilde Google/Apple girişi çıkarıldı) · Durum: **taslak, Lider kapısında** · Okuyan: Expo ajanı (`mizan-mobil` deposu)
 
 - **A. Yeni uçlar** (`/api/mobil/*`): bu belge onaylanınca yazılacak; henüz yok.
 - **B. Mevcut uçlar** (`/api/dashboard/*`, `/api/auth/*`): gerçek koddan çıkarıldı (`065b26f`). Yeniden yazılmaz; `lib/auth.ts` Bearer öğrenince olduğu gibi çalışır.
@@ -53,7 +53,7 @@ Web'in kuralı aynen geçerlidir; mobil hiçbir ek erişim açmaz.
 | Şifre değiştirme | ✓ | ✗ 403 | ✓ |
 | Hesabı silme (`/api/mobil/hesap-sil`) | Tüm hesap | Yalnız kendi üyeliği | ✗ 403 |
 | Bildirimler | ✓ | ✓ (sahibin listesi; okundu bilgisi ortak) | ✓ |
-| `/api/admin/*` | Yok | Yok | v1'de Bearer kabul etmez, web'den (Açık nokta 3) |
+| `/api/admin/*` | Yok | Yok | v1'de Bearer kabul etmez, web'den (Açık nokta 2) |
 
 **Yazma kapısı (`requireWriteAccess`):** yazma uçlarının çoğu buradan geçer; geçmezse 403 `{error}`. Kural, sahibin hesabına göre:
 - `LOCKED` (deneme + 7 gün ek süre bitti ya da `PASSIVE`): yazma kapalı, okuma açık.
@@ -66,7 +66,7 @@ Web'in kuralı aynen geçerlidir; mobil hiçbir ek erişim açmaz.
 
 ## Oturum akışı
 
-1. `POST /api/mobil/giris` (ya da `giris-google`, `giris-apple`) → jetonları expo-secure-store'a yaz. `cihazId`'yi ilk yanıttan sakla, sonraki girişlerde gönder.
+1. `POST /api/mobil/giris` → jetonları expo-secure-store'a yaz. `cihazId`'yi ilk yanıttan sakla, sonraki girişlerde gönder.
 2. `sozlesmeGerekli: true` ise önce onay ekranı → `POST /api/mobil/sozlesme-onay`. Onaysız oturuma `/api/mobil/panel/*` 403 `SOZLESME_ONAYI_GEREK` döner.
 3. Erişim jetonu **5 dk**. `erisimBitis` geçmeden ya da 401 alınca `POST /api/mobil/yenile`.
 4. **Yenileme tek seferde bir istek olmalı (single-flight):** her yenileme yenileme jetonunu da değiştirir. Yanıt yolda kaybolursa eski jeton 60 sn daha çalışır; süre geçince eski jetonun gelmesi çalınma sayılır (`CALINMA_SUPHESI`) ve oturum silinir. Yeni jetonu hemen yaz.
@@ -81,7 +81,7 @@ Web'in kuralı aynen geçerlidir; mobil hiçbir ek erişim açmaz.
 
 ## Kimlik
 
-Üç giriş ucu da aynı **oturum yanıtını** döner:
+Mobilde giriş yalnız e-posta + şifredir (sahip ve ekip üyesi); Google ve Apple girişi yoktur. `giris` ve `yenile` aynı **oturum yanıtını** döner:
 
 ```json
 {
@@ -109,15 +109,13 @@ Web'in kuralı aynen geçerlidir; mobil hiçbir ek erişim açmaz.
   },
   "emailOnayli": true,
   "profilEksik": false,
-  "sozlesmeGerekli": false,
-  "yeniHesap": false
+  "sozlesmeGerekli": false
 }
 ```
 
 - `abonelik`, `emailOnayli`, `profilEksik` **sahibin** kaydından gelir (üyede de).
 - `profilEksik`: sahibin `city` alanı boş; web `/dashboard/profili-tamamla` uyarısının karşılığı. Doldurma: `PATCH /api/dashboard/profile`.
 - `sozlesmeGerekli`: sahipte `termsAcceptedAt` ya da `marketingConsentAt` boş. Üye ve adminde her zaman `false`.
-- `yeniHesap`: yalnız Google/Apple ile bu istekte açıldıysa `true`.
 - `kilitli` / ödeme: **uygulama içinde fiyat, havale ya da satın alma bağlantısı gösterilmez** (App Store 3.1.1; mevcut kabukta da `MizanProView` böyle). Nötr mesaj + web adresi metni yeterli.
 
 ### POST /api/mobil/giris
@@ -127,45 +125,15 @@ Web'in kuralı aynen geçerlidir; mobil hiçbir ek erişim açmaz.
 - **Yanıt 200:** oturum yanıtı.
 - **Hatalar:**
   - 400 `EKSIK_ALAN`
-  - 401 `GECERSIZ`: hesap yok, şifre yanlış, hesap şifresiz (yalnız Google/Apple) ve daveti kabul edilmemiş üye **aynı yanıtı** verir. Mesaj: "E-posta veya şifre hatalı. Hesabınızı Google ya da Apple ile açtıysanız o düğmeyi kullanın."
+  - 401 `GECERSIZ`: hesap yok, şifre yanlış, hesap şifresiz (web'den Google ile açılmış) ve daveti kabul edilmemiş üye **aynı yanıtı** verir. Mesaj: "E-posta veya şifre hatalı. Hesabınızı web'de Google ile açtıysanız önce Şifremi Unuttum ile şifre belirleyin."
   - 429 `RATE_LIMIT`
 - **Not:** Web bu durumları ayrı mesajla söylüyor; mobilde hesap varlığı sızdırılmaz.
-
-### POST /api/mobil/giris-google
-- **Yetki:** açık. Giriş sayacıyla ortak: IP başına 15 dk'da 10.
-- **İstek:** `{ idToken: string (en çok 4096), cihazId?: string }`. Yerel Google Sign-In'in `idToken`'ı. `webClientId` olarak web istemci kimliğini ver (Açık nokta 5).
-- **Doğrulama:** Google JWKS ile imza; `iss` = `accounts.google.com` ya da `https://accounts.google.com`; `exp`; `aud` ∈ {`GOOGLE_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, `GOOGLE_ANDROID_CLIENT_ID`}; `email_verified` = true.
-- **Hesap eşleme (`auth/google/callback` ile aynı):**
-  1. `User.googleId = sub` → giriş.
-  2. Yoksa `User.email = email` → `googleId` yazılır, `emailVerifiedAt` boşsa şimdi; giriş.
-  3. Yoksa yeni `User`: `fullName = name || email`, `role = CUSTOMER`, `subscriptionStatus = TRIAL`, 45 gün deneme, `emailVerifiedAt = şimdi`. Hoş geldin e-postası + admin bildirimi. `yeniHesap: true`, `sozlesmeGerekli: true`.
-- **Hatalar:**
-  - 400 `EKSIK_ALAN`
-  - 401 `GECERSIZ_JETON`
-  - 403 `EPOSTA_ONAYSIZ`
-  - 409 `UYE_HESABI`: bu e-posta bir ekip üyeliğine ait; "E-posta ve şifrenizle giriş yapın." (Açık nokta 2)
-  - 429 `RATE_LIMIT`
-  - 503 `YAPILANDIRILMAMIS`
-
-### POST /api/mobil/giris-apple
-- **Yetki:** açık. Giriş sayacıyla ortak. Yalnız iOS düğmesi.
-- **İstek:**
-  ```json
-  { "identityToken": "…", "nonce": "ham nonce", "adSoyad": "yalnız ilk girişte", "cihazId": "…" }
-  ```
-- **Nonce:** istemci rastgele `ham` üretir, Apple isteğine `SHA256(ham)` (küçük harf hex) verir, sunucuya `ham` gönderir. `nonce` zorunlu.
-- **Doğrulama:** `https://appleid.apple.com/auth/keys` JWKS ile imza; `iss` = `https://appleid.apple.com`; `aud` = `APPLE_BUNDLE_ID`; `exp`; `claim.nonce === SHA256(ham)`.
-- **Hesap eşleme:** Apple e-postayı yalnız ilk girişte verir, kullanıcı eşlemesi `sub` ile yapılır (yeni alan `User.appleSub`, plan.md):
-  1. `User.appleSub = sub` → giriş.
-  2. Yoksa jetonda e-posta var ve `email_verified` true: `User.email = email` → `appleSub` yazılır, `emailVerifiedAt` boşsa şimdi; giriş.
-  3. Yoksa ve e-posta varsa: yeni `User` (Google'daki gibi). `fullName = adSoyad || email`. Gizli aktarma adresi (`@privaterelay.appleid.com`) olduğu gibi saklanır.
-  4. Yoksa ve e-posta yoksa: 400 `EPOSTA_YOK` ("Ayarlar > Apple Kimliği > Apple ile Giriş'ten Mizan'ı kaldırıp tekrar deneyin.").
-- **Hatalar:** Google'daki gibi + `EPOSTA_YOK`. `GECERSIZ_JETON` nonce uyuşmazlığını da kapsar.
+- **Web'den Google ile açılmış hesap:** şifresi yoktur, mobile doğrudan giremez. `POST /api/auth/forgot-password` ile şifre belirledikten sonra girer; web'deki Google girişi aynen sürer. Giriş ekranında Şifremi Unuttum bağlantısı şart.
 
 ### POST /api/mobil/yenile
 - **Yetki:** yenileme jetonunun kendisi. Hız sınırı IP başına 15 dk'da 120.
 - **İstek:** `{ yenilemeJetonu: string (en çok 512) }`
-- **Yanıt 200:** oturum yanıtı (yeni jeton çifti, güncel kullanıcı ve abonelik). 60 gün baştan başlar. `yeniHesap` hep `false`.
+- **Yanıt 200:** oturum yanıtı (yeni jeton çifti, güncel kullanıcı ve abonelik). 60 gün baştan başlar.
 - **Hatalar (hepsi 401, hepsinde giriş ekranı):** `GECERSIZ` · `SURESI_DOLDU` · `SIFRE_DEGISTI` · `CALINMA_SUPHESI`. 429 `RATE_LIMIT`.
 - **Sunucu:** erişim jetonu HS256, 5 dk; anahtar `SESSION_SECRET`'tan HKDF ile türetilir (web çerezi ile birbirinin yerine geçmez). Yenileme jetonu rastgele 256 bit; veritabanında yalnız SHA-256 özeti durur.
 
@@ -192,7 +160,7 @@ Web'in kuralı aynen geçerlidir; mobil hiçbir ek erişim açmaz.
 ### POST /api/mobil/hesap-sil
 Apple 5.1.1(v) ve Play hesap silme kuralı için. **Geri alınamaz; onay ekranı şart.**
 - **Yetki:** mobil oturum. Hız sınırı oturum başına 15 dk'da 5.
-- **İstek:** `{ onayMetni: "hesabımı sil", authorizationCode?: string }`. `onayMetni` tr-TR küçültmeyle karşılaştırılır. `authorizationCode`: Apple hesabında taze Apple girişinden gelir, jeton iptali için (Açık nokta 6).
+- **İstek:** `{ onayMetni: "hesabımı sil" }`. tr-TR küçültmeyle karşılaştırılır.
 - **Etki:**
   - `SAHIP`: mülk, kiracı, borç, tahsilat, masraf, not, bina, düzen, bildirim, destek, ödeme bildirimi, abonelik, ekip üyeleri, oturum, cihaz jetonları ve hesap silinir; yüklenen sözleşme/makbuz dosyaları diskten silinir.
   - `UYE`: yalnız kendi `AccountMember` kaydı, oturumları ve jetonları. Sahibin verisine dokunulmaz.
@@ -433,12 +401,12 @@ Okundu ve sil: B bölümü `notifications`. `type` için Push bölümü. `link` 
 - `EFT_PAYMENT_NOTICE`: yalnız admin bildirim listesine yazılır, **push gitmez** (`/admin/odeme-bildirimleri`).
 - Bildirim listesi başlıkları duyuruda `📢 ` ile başlar, push başlığı başlamaz.
 - Cron günde birdir (`/api/cron/bildirimler`, `/api/cron/deneme-hatirlatma`). Bildirim önce `Notification` kaydı olur, `[userId, dedupeKey]` tekrarı engeller.
-- Metinler kiracı adı içerir (`Ahmet Y. kirasını ödemedi…`): Apple/Google üzerinden geçer, kilit ekranında görünür (Açık nokta 7).
+- Metinler kiracı adı içerir (`Ahmet Y. kirasını ödemedi…`): Apple/Google üzerinden geçer, kilit ekranında görünür (Açık nokta 4).
 
 # Dosyalar
 
 - **Kira sözleşmesi dosyası:** `GET /api/dashboard/tenants/:id/contract`, Bearer ile. Doğru `Content-Type`, `inline`. **Hata JSON değil HTML sayfasıdır** (web için): durum kodu ≠ 200 ise gövdeyi gösterme. Range yok. expo-file-system ile başlıklı indir, sonra aç/paylaş.
-- **Makbuz:** yükleme var (`receiptFile`), **indirme ucu web'de de yok**; yalnız `hasReceipt` gösterilir (Açık nokta 8).
+- **Makbuz:** yükleme var (`receiptFile`), **indirme ucu web'de de yok**; yalnız `hasReceipt` gösterilir (Açık nokta 5).
 - **Yükleme sınırı (`lib/uploads.ts`):** en çok 10 MB; uzantı dosya ADINDAN denetlenir: `.pdf .jpg .jpeg .png .webp .doc .docx`. RN'de `FormData.append('contractFile', { uri, name: 'x.pdf', type })`, `name` uzantılı olmalı (HEIC reddedilir, önce JPEG'e çevir).
 
 ---
@@ -672,7 +640,7 @@ Hepsi `YENI_PANEL=1` ister (canlıda açık); kapalıysa 404 `Bulunamadı.`. Yaz
 
 ### POST /api/dashboard/profile/password
 - **Yetki:** oturum; üye 403 `Şifre değişikliğini yalnızca hesap sahibi yapabilir.`
-- **İstek:** `{ currentPassword?, newPassword }` (en az 6). Şifresiz (Google/Apple) hesapta `currentPassword` gerekmez, ilk şifreyi belirler.
+- **İstek:** `{ currentPassword?, newPassword }` (en az 6). Şifresiz (web'den Google ile açılmış) hesapta `currentPassword` gerekmez, ilk şifreyi belirler.
 - **Yanıt:** `{ success }`. 400 `Mevcut şifre hatalı.` vb.
 - **Not:** `sessionVersion` artar: bu cihazdaki Bearer de düşer → yeni şifreyle `giris` (Oturum akışı 5). Bearer istekte çerez yazılmaz.
 
@@ -713,14 +681,14 @@ Hepsi `YENI_PANEL=1` ister (canlıda açık); kapalıysa 404 `Bulunamadı.`. Yaz
 
 ## Ödeme ve Mizan Pro: mobilde kullanılmaz
 
-`POST /api/dashboard/mizan-pro/request`, `GET|POST /api/dashboard/odeme-bildirimi`. App Store 3.1.1 gereği uygulamada ödeme yöntemi ya da fiyat gösterilmez. İstisna: mevcut kabuktaki "Beni Arayın" (`mizan-pro/request`, `{type: "PLAN_UPGRADE", propertyCount}`) kalsın mı Lider kararı (Açık nokta 4).
+`POST /api/dashboard/mizan-pro/request`, `GET|POST /api/dashboard/odeme-bildirimi`. App Store 3.1.1 gereği uygulamada ödeme yöntemi ya da fiyat gösterilmez. İstisna: mevcut kabuktaki "Beni Arayın" (`mizan-pro/request`, `{type: "PLAN_UPGRADE", propertyCount}`) kalsın mı Lider kararı (Açık nokta 3).
 
 ## Açık kimlik uçları (`/api/auth/*`)
 
 ### POST /api/auth/forgot-password
 - **Yetki:** açık; IP başına saatte 5.
 - **İstek:** `{ email }`. **Yanıt:** `{ success, message }` (var/yok aynı).
-- **Not:** Yalnız `User`; **üyede şifre sıfırlama yok** (web'de de). Bağlantı web sayfasına gider (`/reset-password`, 1 saat), o sayfa sistem tarayıcısında açılır.
+- **Not:** Yalnız `User`; **üyede şifre sıfırlama yok** (web'de de). Şifresiz (web'den Google ile açılmış) hesaba da ilk şifreyi bu akış kazandırır. Bağlantı web sayfasına gider (`/reset-password`, 1 saat), o sayfa sistem tarayıcısında açılır.
 
 **Mobil kullanmaz (web akışı):** `register` (reCAPTCHA + çerez), `reset-password`, `accept-invite`, `verify-email`, `logout`, `login`, `google`, `google/callback`, `exchange-session`, `yazdirma-oturumu`.
 
@@ -731,12 +699,9 @@ Hepsi `YENI_PANEL=1` ister (canlıda açık); kapalıysa 404 `Bulunamadı.`. Yaz
 Varsayılan yazılı olan, karar gelmezse uygulanacak olandır.
 
 1. **Web güvenlik açığı (üye sahibi silebilir):** `DELETE /api/dashboard/profile/delete-account` `session.memberId` denetlemiyor: **ekip üyesi sahibin tüm hesabını silebilir.** Ayrıca web ucu, şemaya göre, kiracı notu, masraf ya da ödeme bildirimi olan hesapta FK kısıtına takılıp 500 verir (canlıda denenmedi), yani çoğu dolu hesap silinemez; bu mağaza kuralına aykırı olur. Varsayılan: mobil yeni `hesap-sil` ucunu kullanır, web ucuna dokunmam. Öneri: web ucuna tek satır üye engeli ayrı onayla.
-2. **Üye e-postasıyla Google/Apple:** web kuralında üyenin e-postasıyla Google girişi yeni bir sahip hesabı açar ve üyenin şifreli girişini kilitler (önce `User` aranır). Görev "eşleme aynen" diyor; bu tek köşede sapıyorum. Varsayılan: mobilde 409 `UYE_HESABI`; web değişmez.
-3. **Admin:** Admin v1'de mobilde kendi hesabının paneli ve bildirimleri. `/api/admin/*` Bearer kabul etmez (`impersonate` gibi uçlar açılmasın, proxy matcher'ıyla 403). Varsayılan: böyle; admin ekranları v2.
-4. **"Beni Arayın":** Varsayılan: mobilde **yok** (3.1.1 riski), yalnız nötr metin. Mevcut kabukta var; kullanıcı isterse eklenir.
-5. **Google istemci kimlikleri:** yeni env adları `GOOGLE_IOS_CLIENT_ID`, `GOOGLE_ANDROID_CLIENT_ID`, `APPLE_BUNDLE_ID`. Varsayılan: Expo `webClientId = GOOGLE_CLIENT_ID` verir, `aud` web kimliği olur; diğer ikisi isteğe bağlı.
-6. **Apple jeton iptali:** Apple hesap silmede SIWA jetonunun iptalini ister. `appleid.apple.com/auth/revoke` için ayrı `.p8` ve env gerekir (`APPLE_SIWA_KEY_ID`, `APPLE_SIWA_KEY_B64`, `APPLE_TEAM_ID`). Varsayılan: kod yazılır, env yoksa iptal sessiz geçilir, hesap yine silinir.
-7. **Kilit ekranında kiracı adı:** Metinler OneSignal'de de böyleydi. Varsayılan: aynen kalır (Topbaş'ta sohbet metni çıkarılmıştı, burada davranış değişmesin diye dokunmuyorum).
-8. **v1'de eksik bırakılanlar:** makbuz indirme (web'de de yok), takvim ve finans raporu uçları (Lider listesinde yok), e-postayla kayıt (reCAPTCHA gerekir; uygulama içi Google/Apple + web `/register` bağlantısı). İstenirse v1.1.
-9. **Hız sınırı:** görevdeki değerler (giriş 10/15 dk IP) uygulanır. Türkiye'de GSM'ler CGNAT kullanır; aynı IP'de çok kullanıcı takılabilir. `getClientIp` `x-forwarded-for`'un ilk değerini alıyor; nginx başlığı eziyor mu sunucuda doğrulanmalı, yoksa sınır atlatılır. Varsayılan: görevdeki gibi.
-10. **Kullanım koşulları onayı:** web Google akışı `termsAcceptedAt` yazmıyor, yani web'den Google ile gelen hesaplarda onay kaydı yok. Mobilde `sozlesmeGerekli` bu hesaplara da bir kez onay ekranı gösterir. Varsayılan: böyle; web'e dokunulmaz.
+2. **Admin:** Admin v1'de mobilde kendi hesabının paneli ve bildirimleri. `/api/admin/*` Bearer kabul etmez (`impersonate` gibi uçlar açılmasın, proxy matcher'ıyla 403). Varsayılan: böyle; admin ekranları v2.
+3. **"Beni Arayın":** Varsayılan: mobilde **yok** (3.1.1 riski), yalnız nötr metin. Mevcut kabukta var; kullanıcı isterse eklenir.
+4. **Kilit ekranında kiracı adı:** Metinler OneSignal'de de böyleydi. Varsayılan: aynen kalır (Topbaş'ta sohbet metni çıkarılmıştı, burada davranış değişmesin diye dokunmuyorum).
+5. **v1'de eksik bırakılanlar:** makbuz indirme (web'de de yok), takvim ve finans raporu uçları (Lider listesinde yok), uygulama içi kayıt (web ucu reCAPTCHA ister; yeni hesap web `/register`'dan açılır). İstenirse v1.1.
+6. **Hız sınırı:** görevdeki değerler (giriş 10/15 dk IP) uygulanır. Türkiye'de GSM'ler CGNAT kullanır; aynı IP'de çok kullanıcı takılabilir. `getClientIp` `x-forwarded-for`'un ilk değerini alıyor; nginx başlığı eziyor mu sunucuda doğrulanmalı, yoksa sınır atlatılır. Varsayılan: görevdeki gibi.
+7. **Kullanım koşulları onayı:** web Google akışı `termsAcceptedAt` yazmıyor, yani web'den Google ile gelen hesaplarda onay kaydı yok. Mobilde `sozlesmeGerekli` bu hesaplara da bir kez onay ekranı gösterir. Varsayılan: böyle; web'e dokunulmaz.
