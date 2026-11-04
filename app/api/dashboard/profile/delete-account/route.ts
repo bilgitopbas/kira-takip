@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession, destroySession } from "@/lib/auth";
+import { hesapSilmeEngeli } from "@/lib/hesapSilmeYetkisi";
 
 export async function DELETE() {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Yetkisiz erişim." }, { status: 401 });
+  }
+
+  const engel = hesapSilmeEngeli(session);
+  if (engel) {
+    return NextResponse.json({ error: engel }, { status: 403 });
   }
 
   const properties = await prisma.property.findMany({
