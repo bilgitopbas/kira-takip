@@ -330,9 +330,9 @@ export const sahibePush = (userId: string, ileti: PushIleti) =>
 /** Uygulamayı kurmuş herkes (genel duyuru). Reddolmaz. */
 export const herkesePush = (ileti: PushIleti) => gonder({}, ileti);
 
-/** Duyuru ekranındaki sayı: yalnız anahtarı girilmiş platformlar */
-export async function pushCihazSayisi(): Promise<number> {
+/** Duyuru ekranındaki sayı (hesabın ya da herkesin): yalnız anahtarı girilmiş platformlar */
+export async function pushCihazSayisi(userId?: string): Promise<number> {
   const platformlar = [apnsAyari() && "ios", fcmAyari() && "android"].filter((p): p is string => !!p);
   if (platformlar.length === 0) return 0;
-  return prisma.cihazJetonu.count({ where: { platform: { in: platformlar } } });
+  return prisma.cihazJetonu.count({ where: { platform: { in: platformlar }, ...(userId ? { userId } : {}) } });
 }

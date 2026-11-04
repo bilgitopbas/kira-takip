@@ -2,8 +2,6 @@ import { prisma } from "@/lib/prisma";
 import { getEffectiveDebtStatus } from "@/lib/debtStatus";
 import { getFiveYearDate, getRenewalNotificationDate, toDateKey } from "@/lib/calendarEvents";
 import { getAccessStateForUser } from "@/lib/access";
-import { sendPushNotification } from "@/lib/onesignal";
-import { hesapPushHedefleri } from "@/lib/pushHedef";
 import { hesabaPush } from "@/lib/push";
 
 async function createIfMissing(data: {
@@ -25,12 +23,6 @@ async function createIfMissing(data: {
     await prisma.notification.create({ data });
     // Bildirim ilk kez oluşturulduysa (tekrar değilse) mobil uygulamaya push da
     // gönder — hesap sahibinin yanı sıra davetli üyelerin cihazlarına da.
-    await sendPushNotification(
-      await hesapPushHedefleri(data.userId),
-      data.title,
-      data.message,
-      data.link
-    );
     await hesabaPush(data.userId, { baslik: data.title, govde: data.message, tur: data.type, yol: data.link });
   } catch {
     // unique constraint on [userId, dedupeKey] -> already exists, ignore

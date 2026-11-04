@@ -2,9 +2,7 @@ import type { PaymentNoticeStatus } from "@/app/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import type { Paket } from "@/lib/paketler";
 import { calculatePlanPrice } from "@/lib/access";
-import { sendPushNotification, sendPushToAll } from "@/lib/onesignal";
-import { hesapPushHedefleri } from "@/lib/pushHedef";
-import { hesabaPush, herkesePush } from "@/lib/push";
+import { hesabaPush, herkesePush, pushCihazSayisi } from "@/lib/push";
 
 // Yönetim paneli iş mantığı: web (/admin, /api/admin/*) ve mobil (/api/mobil/admin/*)
 // aynı işlevleri kullanır. Yetki denetimi çağıranındır.
@@ -261,15 +259,13 @@ export async function duyuruGonder(g: DuyuruGirdisi) {
       },
     });
     // Hesap sahibi + davetli üyelerin cihazları
-    const hedefler = await hesapPushHedefleri(target.id);
-    await sendPushNotification(hedefler, announcement.title, announcement.message);
     await hesabaPush(target.id, {
       baslik: announcement.title,
       altBaslik: g.subtitle,
       govde: announcement.message,
       tur: "ANNOUNCEMENT",
     });
-    pushRecipients = hedefler.length;
+    pushRecipients = await pushCihazSayisi(target.id);
   } else {
     // Herkese: tüm kullanıcılara uygulama içi bildirim + genel push
     const users = await prisma.user.findMany({ select: { id: true } });
@@ -285,7 +281,6 @@ export async function duyuruGonder(g: DuyuruGirdisi) {
         skipDuplicates: true,
       });
     }
-    const push = await sendPushToAll(announcement.title, announcement.message, g.subtitle);
     // Beklenmez: on binlerce cihazda yanıt zaman aşımına düşmesin; herkesePush reddolmaz
     void herkesePush({
       baslik: announcement.title,
@@ -293,7 +288,7 @@ export async function duyuruGonder(g: DuyuruGirdisi) {
       govde: announcement.message,
       tur: "ANNOUNCEMENT",
     });
-    pushRecipients = (push as { recipients?: number } | null)?.recipients ?? null;
+    pushRecipients = await pushCihazSayisi();
   }
 
   return { announcement, pushRecipients };

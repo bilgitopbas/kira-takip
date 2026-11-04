@@ -5,8 +5,6 @@ import {
   sendTrialGraceEmail,
   sendTrialLockedEmail,
 } from "@/lib/mail";
-import { sendPushNotification } from "@/lib/onesignal";
-import { hesapPushHedefleri } from "@/lib/pushHedef";
 import { hesabaPush } from "@/lib/push";
 
 const GRACE_DAYS = 7;
@@ -147,12 +145,6 @@ async function asamayiIsle(
 
   // Mobil uygulamaya push (başarısız olursa akış kesilmez)
   try {
-    await sendPushNotification(
-      await hesapPushHedefleri(kullanici.id),
-      baslik,
-      "Detaylar için panele girin.",
-      "/dashboard/mizan-pro"
-    );
     await hesabaPush(kullanici.id, {
       baslik,
       govde: "Detaylar için panele girin.",
