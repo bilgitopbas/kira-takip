@@ -7,6 +7,7 @@ import {
 } from "@/lib/mail";
 import { sendPushNotification } from "@/lib/onesignal";
 import { hesapPushHedefleri } from "@/lib/pushHedef";
+import { hesabaPush } from "@/lib/push";
 
 const GRACE_DAYS = 7;
 const UYARI_GUNU = 7; // deneme bitimine kaç gün kala ilk uyarı
@@ -152,6 +153,12 @@ async function asamayiIsle(
       "Detaylar için panele girin.",
       "/dashboard/mizan-pro"
     );
+    await hesabaPush(kullanici.id, {
+      baslik,
+      govde: "Detaylar için panele girin.",
+      tur: "TRIAL_REMINDER",
+      yol: "/dashboard/mizan-pro",
+    });
   } catch {
     // yoksay
   }

@@ -11,6 +11,14 @@ const PROTECTED_ADMIN_PATHS = ["/admin"];
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // Yönetim uçları mobil jetonu kabul etmez (v1); çerezli istekler etkilenmez.
+  if (pathname.startsWith("/api/admin")) {
+    if (req.headers.get("authorization")?.startsWith("Bearer ")) {
+      return NextResponse.json({ hata: "Bu işlem mobil uygulamadan yapılamaz.", kod: "YETKISIZ" }, { status: 403 });
+    }
+    return NextResponse.next();
+  }
+
   const isCustomerPath = PROTECTED_CUSTOMER_PATHS.some((p) => pathname.startsWith(p));
   const isAdminPath = PROTECTED_ADMIN_PATHS.some((p) => pathname.startsWith(p));
 
@@ -39,5 +47,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*"],
+  matcher: ["/dashboard/:path*", "/admin/:path*", "/api/admin/:path*"],
 };

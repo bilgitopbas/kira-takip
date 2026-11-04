@@ -1,8 +1,9 @@
 import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
+import { bearerAyikla, erisimJetonuCoz } from "@/lib/mobilJeton";
 
 const secretKey = process.env.SESSION_SECRET!;
 const key = new TextEncoder().encode(secretKey);
@@ -26,7 +27,15 @@ type SessionPayload = {
   memberId?: string;
   memberEmail?: string;
   memberName?: string;
+  // Yalnız mobil jetonla açılan oturumda (Authorization: Bearer)
+  mobilOturumId?: string;
 };
+
+// Mobil istek mi? Başlık varsa çerez hiç okunmaz ve yazılmaz.
+async function yetkiBasligi() {
+  const baslik = (await headers()).get("authorization");
+  return baslik?.startsWith("Bearer ") ? baslik : null;
+}
 
 // Jetonun içinde ayrıca taşınan oturum sürümü (users.sessionVersion).
 // Bu alanın olmadığı eski jetonlar sürüm 0 kabul edilir.
@@ -45,6 +54,9 @@ export async function createSession(payload: SessionPayload) {
     .setIssuedAt()
     .setExpirationTime("7d")
     .sign(key);
+
+  // Mobil istemciye çerez yazılmaz (ör. parola değişiminden sonra)
+  if (await yetkiBasligi()) return;
 
   const cookieStore = await cookies();
   cookieStore.set(COOKIE_NAME, token, {
@@ -80,6 +92,21 @@ const oturumHalaGecerli = cache(
 );
 
 export async function getSession(): Promise<SessionPayload | null> {
+  const yetki = await yetkiBasligi();
+  if (yetki) {
+    // Geçersiz Bearer çereze düşmez; sürüm ve üyelik denetimi web'le aynı
+    const y = await erisimJetonuCoz(bearerAyikla(yetki));
+    if (!y || !(await oturumHalaGecerli(y.userId, y.sv, y.memberId))) return null;
+    return {
+      userId: y.userId,
+      role: y.role,
+      memberId: y.memberId,
+      memberEmail: y.memberEmail,
+      memberName: y.memberName,
+      mobilOturumId: y.oturumId,
+    };
+  }
+
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
   if (!token) return null;

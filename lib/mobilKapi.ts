@@ -1,0 +1,63 @@
+import { NextResponse } from "next/server";
+import { getSession } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { kullaniciTuru, sozlesmeGerekli } from "@/lib/mobilBicim";
+
+// app/api/mobil/* uçlarının ortak kapıları ve yanıtları. Kullanım:
+//   const k = await panelKapisi(); if ("yanit" in k) return k.yanit; k.session ...
+
+const GOVDE_SINIRI = 16 * 1024;
+const OZEL = { "Cache-Control": "private, no-store" };
+
+export const hataYaniti = (hata: string, durum: number, kod?: string) =>
+  NextResponse.json({ hata, ...(kod ? { kod } : {}) }, { status: durum, headers: OZEL });
+
+export const jsonYanit = (veri: unknown) => NextResponse.json(veri, { headers: OZEL });
+
+export const sunucuHatasi = (err: unknown) => {
+  console.error("Mobil API hatası:", err);
+  return hataYaniti("Sunucu hatası.", 500);
+};
+
+const YETKISIZ = () => hataYaniti("Yetkisiz.", 401, "YETKISIZ");
+
+type Oturum = NonNullable<Awaited<ReturnType<typeof getSession>>>;
+export type MobilOturumu = Oturum & { mobilOturumId: string };
+type Kapi = { session: MobilOturumu } | { yanit: NextResponse };
+
+// Yalnız mobil jetonla: çerezli web oturumu bu uçlara girmez
+export async function mobilKapisi(): Promise<Kapi> {
+  const session = await getSession();
+  return session?.mobilOturumId ? { session: session as MobilOturumu } : { yanit: YETKISIZ() };
+}
+
+// Panel okumaları: onayı eksik sahibe veri verilmez, uygulama onay ekranına gider
+export async function panelKapisi(): Promise<Kapi> {
+  const k = await mobilKapisi();
+  if ("yanit" in k) return k;
+  const tur = kullaniciTuru(k.session.role, k.session.memberId);
+  if (tur !== "SAHIP") return k;
+  const sahip = await prisma.user.findUnique({
+    where: { id: k.session.userId },
+    select: { termsAcceptedAt: true, marketingConsentAt: true },
+  });
+  if (!sahip) return { yanit: YETKISIZ() };
+  if (sozlesmeGerekli(tur, sahip)) {
+    return { yanit: hataYaniti("Sözleşme onayı gerekiyor.", 403, "SOZLESME_ONAYI_GEREK") };
+  }
+  return k;
+}
+
+// Bozuk JSON boş gövde sayılır; zorunlu alan denetimi uçta yapılır
+export async function jsonGovde(req: Request): Promise<{ govde: Record<string, unknown> } | { yanit: NextResponse }> {
+  const buyuk = () => ({ yanit: hataYaniti("İstek gövdesi çok büyük.", 413, "GOVDE_BUYUK") });
+  if (Number(req.headers.get("content-length") ?? 0) > GOVDE_SINIRI) return buyuk();
+  const metin = await req.text().catch(() => "");
+  if (metin.length > GOVDE_SINIRI) return buyuk();
+  try {
+    const g: unknown = JSON.parse(metin);
+    return { govde: g && typeof g === "object" && !Array.isArray(g) ? (g as Record<string, unknown>) : {} };
+  } catch {
+    return { govde: {} };
+  }
+}

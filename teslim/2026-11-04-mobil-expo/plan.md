@@ -1,6 +1,6 @@
 # Mizan Mülk mobil API: uygulama planı
 
-Tarih: 4 Kasım 2026 · Dal: `mobil-api` (`next-16-4` üstünden) · Durum: sözleşme Lider kapısında; "devam" gelmeden kod yok.
+Tarih: 4 Kasım 2026 · Dal: `mobil-api` (`next-16-4` üstünden) · Durum: API ve push yazıldı; canlıya Lider çıkarır.
 Kalıp: Topbaş Hukuk (`hukuk-sistemi`, `lib/mobil*.js`, `lib/push*.js`). Sözleşme: `api-sozlesmesi.md`.
 Mobilde giriş yalnız e-posta + şifre (kullanıcı kararı, 5 Kas); Google ve Apple girişi yok, web'deki Google girişi aynen kalır.
 
@@ -40,6 +40,7 @@ model MobilOturum {
   @@unique([userId, cihazId])
   @@index([oncekiOzet])
   @@index([memberId])
+  @@index([sonKullanma])
   @@map("mobil_oturumlar")
 }
 
@@ -53,8 +54,8 @@ model CihazJetonu {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  mobilOturumId String?
-  mobilOturum   MobilOturum? @relation(fields: [mobilOturumId], references: [id], onDelete: Cascade)
+  mobilOturumId String
+  mobilOturum   MobilOturum @relation(fields: [mobilOturumId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([mobilOturumId])
@@ -73,12 +74,14 @@ model CihazJetonu {
 | `lib/mobilKapi.ts` | `hataYaniti`, `mobilOturumKapisi`, `panelKapisi`, `jsonGovde` (16 KB), `sayfalama` |
 | `lib/auth.ts` | `getSession`: Bearer varsa mobil JWT + `oturumHalaGecerli`; yoksa çerez aynen. `createSession`: Bearer isteğinde çerez yazmaz. Çerezli akış değişmez |
 | `proxy.ts` | Matcher'a `/api/admin/:path*`: Bearer başlıklı istek 403 (Açık nokta 2). Çerezli akış değişmez |
-| `lib/mobilPanel.ts` | Panel okuma sorguları, dar `select`, para sayıya çevrilir, `besYil` |
+| `lib/mobilBicim.ts`, `lib/mobilPanelModeli.ts` | Saf kurallar (abonelik, yenileme kararı, sayfalama; birim süzme, `besYil`, harita) |
+| `lib/mobilPanel.ts` | Panel okuma sorguları, dar `select`, para sayıya çevrilir |
+| `lib/hesapSilme.ts` | Sahip hesabının tüm verisi tek işlemde; dosyalar diskten |
 | `app/api/mobil/**` | giris, yenile, cikis, cihaz, sozlesme-onay, hesap-sil, panel/* |
 | `lib/pushBicim.ts`, `lib/push.ts` | Topbaş portu; `PUSH_ACIK`, `APNS_*`, `FCM_*` adları aynı |
 | `lib/pushHedef.ts` | `hesapPushHedefleri` kalkar; hedef `CihazJetonu.userId` |
 | `lib/notifications.ts`, `denemeHatirlatma.ts`, `adminNotifications.ts`, `admin/announcements` | Kendi push'a bağlanır, cihazı olmayan sessiz geçer |
-| `tests/` | `mobilJeton`, `pushBicim`, oturum tablo testleri, panel eşleme testleri |
+| `tests/` | `mobilJeton`, `mobilBicim`, `mobilPanelModeli`, `pushBicim` (APNs döngüsü dahil) |
 
 ## Topbaş'tan bilerek farklı
 
@@ -92,7 +95,7 @@ model CihazJetonu {
 ## OneSignal sökümü
 
 - **Silinir:** `lib/onesignal.ts`, `components/OneSignalBridge.tsx`, `DashboardShell`/`AdminShell`/`dashboard/layout` bağları (`pushId`), `onesignal-cordova-plugin`, `android/app/capacitor.build.gradle` ve `ios/App/CapApp-SPM/Package.swift` kayıtları, `config.xml` ve `cordova_plugins.js` kalıntıları, env adı referansları. Gizlilik metinlerinde OneSignal geçmiyor (arandı).
-- **AYRI COMMIT.** Eski Capacitor uygulaması `server.url` ile canlı siteyi yüklüyor. Söküm canlıya, yeni uygulama mağazaya çıkmadan giderse eski uygulamadakiler push'u kaybeder ve kendi push'umuz da onlara ulaşamaz (cihaz jetonu yok). Hangi sürümde canlıya gideceği Lider kararı.
+- **AYRI COMMIT (önceki commit'te OneSignal ve kendi push birlikte çalışır).** Eski Capacitor uygulaması `server.url` ile canlı siteyi yüklüyor. Söküm canlıya, yeni uygulama mağazaya çıkmadan giderse eski uygulamadakiler push'u kaybeder ve kendi push'umuz da onlara ulaşamaz (cihaz jetonu yok). Hangi sürümde canlıya gideceği Lider kararı.
 - Web push yok (kullanıcı kararı); panel içi liste kalır.
 
 ## Adımlar

@@ -1,8 +1,8 @@
 # Mizan Mülk Mobil API Sözleşmesi
 
-Dal: `mobil-api` · Sürüm: 5 Kasım 2026 (mobilde Google/Apple girişi çıkarıldı) · Durum: **taslak, Lider kapısında** · Okuyan: Expo ajanı (`mizan-mobil` deposu)
+Dal: `mobil-api` · Sürüm: 5 Kasım 2026 (mobilde Google/Apple girişi çıkarıldı) · Durum: **kod yazıldı, canlıya çıkmadı** · Okuyan: Expo ajanı (`mizan-mobil` deposu)
 
-- **A. Yeni uçlar** (`/api/mobil/*`): bu belge onaylanınca yazılacak; henüz yok.
+- **A. Yeni uçlar** (`/api/mobil/*`): `mobil-api` dalında yazıldı; canlıda henüz yok.
 - **B. Mevcut uçlar** (`/api/dashboard/*`, `/api/auth/*`): gerçek koddan çıkarıldı (`065b26f`). Yeniden yazılmaz; `lib/auth.ts` Bearer öğrenince olduğu gibi çalışır.
 
 Kod ile belge çelişirse kod doğrudur; bildir.
@@ -143,7 +143,7 @@ Mobilde giriş yalnız e-posta + şifredir (sahip ve ekip üyesi); Google ve App
 - **Yanıt 200:** `{ mesaj }`. Jeton geçersizse de 200.
 
 ### POST /api/mobil/cihaz
-- **Yetki:** mobil oturum (Bearer). Çerezli web oturumu 401. Hız sınırı IP başına 15 dk'da 60.
+- **Yetki:** mobil oturum (Bearer). Çerezli web oturumu 401. Hız sınırı oturum başına 15 dk'da 60.
 - **İstek:** `{ platform: "ios"|"android", jeton: string (en çok 1024) }`. Yerel APNs/FCM jetonu (`getDevicePushTokenAsync`), **Expo push jetonu DEĞİL**.
 - **Yanıt 200:** `{ mesaj }`. Aynı jeton başka hesaptaysa bu hesaba geçer.
 - **Kural:** jeton erişim jetonundaki oturuma bağlanır. Oturum düşünce (şifre değişimi, üye çıkarılması, süre, çalınma şüphesi, çıkış) push kaydı da gider. Yeniden girişten sonra tekrar kaydet.
@@ -172,7 +172,7 @@ Apple 5.1.1(v) ve Play hesap silme kuralı için. **Geri alınamaz; onay ekranı
 ## Panel (`/api/mobil/panel/*`)
 
 - **Yetki hepsinde:** mobil oturum + `sozlesmeGerekli` değil; süzgeç `ownerId = session.userId`. Yalnız okuma. Kilitli hesap da okur.
-- **Hatalar:** 401 · 403 `SOZLESME_ONAYI_GEREK` · 404 `BULUNAMADI` (detaylarda).
+- **Hatalar:** 401 `YETKISIZ` · 403 `SOZLESME_ONAYI_GEREK` · 404 `BULUNAMADI` (detaylarda).
 - **`YENI_PANEL` bayrağına bağlı değildir** (web'in `binalar` / `sehir-duzeni` yazma uçları bağlıdır).
 - **Sunucu tarafı aynı işlevler:** `panelOzetiGetir`, `panelBirimleriGetir`, `binalariKur`, `binaKonumlari`; web ile aynı rakam.
 
@@ -322,7 +322,7 @@ Başkasının kiracısı 404. Sözleşme bu yanıttadır.
     "monthlyRent": null, "contractStart": null, "contractEnd": null, "contractDurationMonths": null,
     "rentRevisionDate": null, "rentPaymentDate": null, "paymentFrequency": null, "increaseType": null,
     "increaseRate": null, "depositAmount": null, "depositCurrency": null, "contractNotes": null,
-    "besYilTarihi": null,
+    "besYilTarihi": "yyyy-mm-dd|null",
     "dosya": { "ad": "Sözleşme.pdf", "yol": "/api/dashboard/tenants/:id/contract" }
   },
   "toplamBorc": 0,

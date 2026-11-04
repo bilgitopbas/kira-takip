@@ -119,6 +119,8 @@ model User {
   paymentNotices PaymentNotice[]
   buildings      Building[]
   cityLayouts    CityLayout[]
+  mobilOturumlar MobilOturum[]
+  cihazJetonlari CihazJetonu[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -138,6 +140,8 @@ model AccountMember {
   inviteToken        String?   @unique
   inviteTokenExpires DateTime?
   acceptedAt         DateTime?
+
+  mobilOturumlar MobilOturum[]
 
   createdAt DateTime @default(now())
 
@@ -544,4 +548,53 @@ model CityLayout {
 
   @@unique([ownerId, il])
   @@map("city_layouts")
+}
+
+// Mobil uygulama oturumu: cihaz başına tek satır, yenileme jetonunun yalnız özeti
+// durur. Üye oturumunda userId hesap sahibinindir (web oturumuyla aynı). Üye
+// çıkarılınca ya da hesap silinince satır ve push jetonları Cascade ile düşer.
+model MobilOturum {
+  id               String    @id @default(cuid())
+  cihazId          String
+  yenilemeOzeti    String    @unique
+  oncekiOzet       String?
+  oncekiGecerlilik DateTime?
+  // Girişteki users.sessionVersion; parola değişince eşleşmez, oturum düşer
+  sessionVersion   Int
+  olusturma        DateTime  @default(now())
+  sonGorulme       DateTime  @default(now())
+  sonKullanma      DateTime
+
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+  member   AccountMember? @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId String?
+
+  cihazJetonlari CihazJetonu[]
+
+  @@unique([userId, cihazId])
+  @@index([oncekiOzet])
+  @@index([memberId])
+  @@index([sonKullanma])
+  @@map("mobil_oturumlar")
+}
+
+// Push hedefi (yerel APNs / FCM jetonu). Bir jeton tek hesaba bağlıdır: cihazda
+// hesap değişince aynı jeton yeni hesaba geçer. Oturum düşünce jeton da silinir.
+model CihazJetonu {
+  id         String   @id @default(cuid())
+  platform   String // ios | android
+  jeton      String   @unique
+  olusturma  DateTime @default(now())
+  sonGorulme DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  mobilOturum   MobilOturum @relation(fields: [mobilOturumId], references: [id], onDelete: Cascade)
+  mobilOturumId String
+
+  @@index([userId])
+  @@index([mobilOturumId])
+  @@map("cihaz_jetonlari")
 }

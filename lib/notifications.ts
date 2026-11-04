@@ -4,6 +4,7 @@ import { getFiveYearDate, getRenewalNotificationDate, toDateKey } from "@/lib/ca
 import { getAccessStateForUser } from "@/lib/access";
 import { sendPushNotification } from "@/lib/onesignal";
 import { hesapPushHedefleri } from "@/lib/pushHedef";
+import { hesabaPush } from "@/lib/push";
 
 async function createIfMissing(data: {
   userId: string;
@@ -30,6 +31,7 @@ async function createIfMissing(data: {
       data.message,
       data.link
     );
+    await hesabaPush(data.userId, { baslik: data.title, govde: data.message, tur: data.type, yol: data.link });
   } catch {
     // unique constraint on [userId, dedupeKey] -> already exists, ignore
   }
