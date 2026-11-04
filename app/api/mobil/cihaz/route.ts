@@ -1,8 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { cihazJetonuGecerli } from "@/lib/pushBicim";
 import { hataYaniti, jsonGovde, jsonYanit, mobilKapisi, sunucuHatasi } from "@/lib/mobilKapi";
-
-const jetonGecerli = (j: unknown): j is string => typeof j === "string" && j.length > 0 && j.length <= 1024;
 
 // Push jetonu kaydı: uygulama her açılışta çağırabilir (jeton değişmişse güncellenir).
 // Aynı jeton başka hesapta kayıtlıysa bu hesaba geçer: cihazda oturum değişmiştir.
@@ -19,7 +18,7 @@ export async function POST(req: Request) {
     if ("yanit" in g) return g.yanit;
     const { platform, jeton } = g.govde;
     if (platform !== "ios" && platform !== "android") return hataYaniti("Geçersiz platform.", 400, "GECERSIZ_PLATFORM");
-    if (!jetonGecerli(jeton)) return hataYaniti("Geçersiz cihaz jetonu.", 400, "GECERSIZ_JETON");
+    if (!cihazJetonuGecerli(platform, jeton)) return hataYaniti("Geçersiz cihaz jetonu.", 400, "GECERSIZ_JETON");
     // Erişim jetonu çıkıştan birkaç dakika uzun yaşayabilir: düşmüş oturuma push kaydı açılmaz
     const oturum = await prisma.mobilOturum.findFirst({ where: { id: mobilOturumId, userId }, select: { id: true } });
     if (!oturum) return hataYaniti("Oturum geçersiz. Lütfen yeniden giriş yapın.", 401, "OTURUM_YOK");
@@ -42,7 +41,7 @@ export async function DELETE(req: Request) {
     const g = await jsonGovde(req);
     if ("yanit" in g) return g.yanit;
     const { jeton } = g.govde;
-    if (!jetonGecerli(jeton)) return hataYaniti("Geçersiz cihaz jetonu.", 400, "GECERSIZ_JETON");
+    if (typeof jeton !== "string" || !jeton) return hataYaniti("Geçersiz cihaz jetonu.", 400, "GECERSIZ_JETON");
     await prisma.cihazJetonu.deleteMany({ where: { jeton, userId: k.session.userId } });
     return jsonYanit({ mesaj: "Cihaz silindi." });
   } catch (err) {

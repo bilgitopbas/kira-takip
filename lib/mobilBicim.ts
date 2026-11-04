@@ -63,11 +63,16 @@ export function yenilemeKarari(
 }
 
 const ADET_SINIRI = 100;
+const SAYFA_SINIRI = 1_000_000;
 
 /** ?sayfa=1&adet=20 → Prisma skip/take + yanıt sarmalayıcı */
 export function sayfalama(arama: URLSearchParams, varsayilanAdet = 20) {
-  const sayfa = Math.max(1, Math.trunc(Number(arama.get("sayfa"))) || 1);
-  const adet = Math.min(ADET_SINIRI, Math.max(1, Math.trunc(Number(arama.get("adet"))) || varsayilanAdet));
+  const tamsayi = (ad: string) => {
+    const n = Math.trunc(Number(arama.get(ad)));
+    return Number.isFinite(n) ? n : 0;
+  };
+  const sayfa = Math.min(SAYFA_SINIRI, Math.max(1, tamsayi("sayfa") || 1));
+  const adet = Math.min(ADET_SINIRI, Math.max(1, tamsayi("adet") || varsayilanAdet));
   return {
     sayfa,
     adet,

@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 
 const buckets = new Map<string, { count: number; resetAt: number }>();
 
@@ -21,10 +21,17 @@ export function checkRateLimit(key: string, limit: number, windowMs: number): bo
   return true;
 }
 
+// x-forwarded-for'un soldaki değerlerini istemci uydurabilir; güvenilen her proxy sağa
+// bir değer ekler. Bu yüzden sağdan N. değer alınır. GUVENILEN_PROXY: önümüzdeki proxy
+// sayısı (varsayılan 1 = nginx; Cloudflare eklenirse 2; 0 = başlığa güvenme).
+export function istemciIpCoz(forwardedFor: string | null, realIp: string | null, guvenilen: string | undefined): string {
+  const n = guvenilen !== undefined && /^\d+$/.test(guvenilen) ? Number(guvenilen) : 1;
+  const zincir = n > 0 && forwardedFor ? forwardedFor.split(",").map((p) => p.trim()).filter(Boolean) : [];
+  return zincir[Math.max(0, zincir.length - n)] || realIp || "unknown";
+}
+
 export function getClientIp(req: NextRequest): string {
-  const forwardedFor = req.headers.get("x-forwarded-for");
-  if (forwardedFor) return forwardedFor.split(",")[0].trim();
-  return req.headers.get("x-real-ip") || "unknown";
+  return istemciIpCoz(req.headers.get("x-forwarded-for"), req.headers.get("x-real-ip"), process.env.GUVENILEN_PROXY);
 }
 
 // Bellek büyümesini önlemek için eski kayıtları periyodik temizle

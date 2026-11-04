@@ -1,4 +1,5 @@
 import http2, { type ClientHttp2Session, type ClientHttp2Stream } from "node:http2";
+import type { Prisma } from "@/app/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import {
   apnsAyari,
@@ -60,6 +61,8 @@ type Baglanti = {
   al: (konak: string) => ClientHttp2Session;
   /** Gönderim bitti: boşta kalınca kapanır */
   birak: () => void;
+  /** Yanıt gelmedi: bağlantı yarı açık olabilir, sıradaki istek yeniden bağlansın */
+  dusur: () => void;
 };
 
 // Tek http2 oturumu GÖNDERİMLER ARASINDA da paylaşılır: cron bildirimleri tek tek
@@ -101,12 +104,18 @@ export function baglantiKur(
       }, bostaMs);
       sayac.unref?.();
     },
+    dusur() {
+      try {
+        oturum?.destroy();
+      } catch {}
+      oturum = null;
+    },
   };
 }
 
 const paylasilanBaglanti = baglantiKur();
 
-type GonderimSonucu = { tamam: boolean; olu?: boolean };
+type GonderimSonucu = { tamam: boolean; olu?: boolean; ulasilamadi?: boolean };
 
 // Toplu APNs gönderimi: en çok ESZAMANLI açık istek. Her isteğin kendi sayacı var; asılı
 // istek yalnız kendini düşürür. Yanıt gelmeden art arda ARDISIK_HATA_SINIRI istek düşerse
@@ -140,7 +149,10 @@ export async function iosTopluGonder(
         } catch {}
         coz(sonuc);
       };
-      const sayac = setTimeout(() => bitir({ tamam: false }), sureMs);
+      const sayac = setTimeout(() => {
+        bitir({ tamam: false });
+        baglanti.dusur();
+      }, sureMs);
       try {
         istek = baglanti.al(ayar.konak).request({
           ":method": "POST",
@@ -202,7 +214,7 @@ async function androidGonder(ayar: FcmAyari, jeton: string, ileti: PushIleti): P
     erisim = await fcmErisimJetonu(ayar);
   } catch (e) {
     console.error(`[push] ${(e as Error).message}`);
-    return { tamam: false };
+    return { tamam: false, ulasilamadi: true };
   }
   let cevap: Response;
   try {
@@ -213,7 +225,7 @@ async function androidGonder(ayar: FcmAyari, jeton: string, ileti: PushIleti): P
       signal: AbortSignal.timeout(ISTEK_SURESI_MS),
     });
   } catch {
-    return { tamam: false };
+    return { tamam: false, ulasilamadi: true };
   }
   if (cevap.ok) return { tamam: true };
   let hataAdi = "";
@@ -230,17 +242,27 @@ async function androidGonder(ayar: FcmAyari, jeton: string, ileti: PushIleti): P
   return { tamam: false, olu };
 }
 
-// Tek tek istek ama sırayla değil: 10 bin cihazlık duyuru dakikalarca sürmesin
-async function androidTopluGonder(ayar: FcmAyari, jetonlar: string[], ileti: PushIleti) {
+// Tek tek istek ama sırayla değil: 10 bin cihazlık duyuru dakikalarca sürmesin. Google'a
+// art arda ulaşılamıyorsa kalanlar denenmez (her biri süre sınırı kadar beklerdi).
+export async function androidTopluGonder(
+  jetonlar: string[],
+  tekGonder: (jeton: string) => Promise<GonderimSonucu>,
+  eszamanli = ESZAMANLI
+) {
   const sonuclar: ({ jeton: string } & GonderimSonucu)[] = [];
   let sira = 0;
+  let ardisikHata = 0;
   const isci = async () => {
-    while (sira < jetonlar.length) {
+    while (sira < jetonlar.length && ardisikHata < ARDISIK_HATA_SINIRI) {
       const jeton = jetonlar[sira++];
-      sonuclar.push({ jeton, ...(await androidGonder(ayar, jeton, ileti)) });
+      const sonuc = await tekGonder(jeton);
+      ardisikHata = sonuc.ulasilamadi ? ardisikHata + 1 : 0;
+      sonuclar.push({ jeton, ...sonuc });
     }
   };
-  await Promise.all(Array.from({ length: Math.min(ESZAMANLI, jetonlar.length) }, isci));
+  await Promise.all(Array.from({ length: Math.min(eszamanli, jetonlar.length) }, isci));
+  const denenmeyen = jetonlar.length - sonuclar.length;
+  if (denenmeyen) console.error(`[push] FCM'e ulaşılamadı, ${denenmeyen} cihaz denenmedi`);
   return sonuclar;
 }
 
@@ -253,7 +275,9 @@ async function jetonlaraGonder(jetonlar: Hedef[], ileti: PushIleti, ios: ApnsAya
   const androidJetonlari = secili("android");
   try {
     if (ios && iosJetonlari.length) sonuclar.push(...(await iosTopluGonder(ios, iosJetonlari, ileti)));
-    if (android && androidJetonlari.length) sonuclar.push(...(await androidTopluGonder(android, androidJetonlari, ileti)));
+    if (android && androidJetonlari.length) {
+      sonuclar.push(...(await androidTopluGonder(androidJetonlari, (j) => androidGonder(android, j, ileti))));
+    }
   } catch (e) {
     console.error(`[push] gönderim hatası: ${(e as Error).message}`);
   }
@@ -262,7 +286,7 @@ async function jetonlaraGonder(jetonlar: Hedef[], ileti: PushIleti, ios: ApnsAya
 }
 
 // Geçerli hedefler; süresi dolmuş ya da şifresi değişmiş oturumun jetonu silinir
-async function hedefleriGetir(where: { userId?: string }): Promise<Hedef[]> {
+async function hedefleriGetir(where: Prisma.CihazJetonuWhereInput): Promise<Hedef[]> {
   const satirlar = await prisma.cihazJetonu.findMany({
     where,
     select: {
@@ -281,7 +305,7 @@ async function hedefleriGetir(where: { userId?: string }): Promise<Hedef[]> {
   return gecerli;
 }
 
-async function gonder(where: { userId?: string }, ileti: PushIleti) {
+async function gonder(where: Prisma.CihazJetonuWhereInput, ileti: PushIleti) {
   try {
     const ios = apnsAyari();
     const android = fcmAyari();
@@ -298,6 +322,10 @@ async function gonder(where: { userId?: string }, ileti: PushIleti) {
  * açıldığı için jetonları da bu kimlikle kayıtlıdır. Reddolmaz.
  */
 export const hesabaPush = (userId: string, ileti: PushIleti) => gonder({ userId }, ileti);
+
+/** Yalnız hesap sahibinin kendi cihazları (admin bildirimleri: üyelere gitmez). Reddolmaz. */
+export const sahibePush = (userId: string, ileti: PushIleti) =>
+  gonder({ userId, mobilOturum: { memberId: null } }, ileti);
 
 /** Uygulamayı kurmuş herkes (genel duyuru). Reddolmaz. */
 export const herkesePush = (ileti: PushIleti) => gonder({}, ileti);

@@ -73,7 +73,7 @@ model CihazJetonu {
 | `lib/mobilOturum.ts` | `oturumAc`, `oturumYenile`, `oturumKapat`, oturum yanıtı, süresi geçen temizliği |
 | `lib/mobilKapi.ts` | `hataYaniti`, `mobilOturumKapisi`, `panelKapisi`, `jsonGovde` (16 KB), `sayfalama` |
 | `lib/auth.ts` | `getSession`: Bearer varsa mobil JWT + `oturumHalaGecerli`; yoksa çerez aynen. `createSession`: Bearer isteğinde çerez yazmaz. Çerezli akış değişmez |
-| `proxy.ts` | Matcher'a `/api/admin/:path*`: Bearer başlıklı istek 403 (Açık nokta 2). Çerezli akış değişmez |
+| `proxy.ts` | Matcher'a `/api/admin/:path*`: Bearer başlıklı istek 403. Çerezli akış değişmez |
 | `lib/mobilBicim.ts`, `lib/mobilPanelModeli.ts` | Saf kurallar (abonelik, yenileme kararı, sayfalama; birim süzme, `besYil`, harita) |
 | `lib/mobilPanel.ts` | Panel okuma sorguları, dar `select`, para sayıya çevrilir |
 | `lib/hesapSilme.ts` | Sahip hesabının tüm verisi tek işlemde; dosyalar diskten |
@@ -111,6 +111,6 @@ model CihazJetonu {
 
 ## Canlıya geçiş öncesi Lider/kullanıcı işleri
 
-- SQL uygulaması; env: `APNS_KEY_B64`, `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_BUNDLE_ID`, `FCM_SERVICE_ACCOUNT_B64`, `PUSH_ACIK`.
+- SQL uygulaması; env: `APNS_KEY_B64`, `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_BUNDLE_ID`, `FCM_SERVICE_ACCOUNT_B64`, `PUSH_ACIK`, isteğe bağlı `GUVENILEN_PROXY` (varsayılan 1), `APNS_ORTAM`.
 - iOS bundle id doğrulaması (`MizanMulk` görünüyor; ASC ile eşleşmeli), Firebase projesi.
 - Sunucuda: nginx `x-forwarded-for`'u eziyor mu; `next-16-4` canlı dal mı.

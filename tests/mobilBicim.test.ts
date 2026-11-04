@@ -14,6 +14,7 @@ import {
   yenilemeKarari,
   type ErisimOzeti,
 } from "@/lib/mobilBicim";
+import { istemciIpCoz } from "@/lib/rateLimit";
 
 const T = new Date("2026-11-05T10:00:00Z");
 const once = (ms: number) => new Date(T.getTime() - ms);
@@ -81,6 +82,9 @@ test("sayfalama: sınırlar ve sarmalayıcı", () => {
   assert.equal(s("sayfa=abc").sayfa, 1);
   assert.equal(s("sayfa=3&adet=10").skip, 20);
   assert.equal(s("", 50).adet, 50);
+  assert.equal(s("sayfa=Infinity").sayfa, 1);
+  assert.equal(s("sayfa=1e30").sayfa, 1_000_000);
+  assert.equal(s("adet=Infinity").adet, 20);
   assert.deepEqual(s("sayfa=2&adet=2").sar(["a"], 3), { kayitlar: ["a"], sayfa: 2, adet: 2, toplam: 3, sonrakiVar: false });
   assert.equal(s("sayfa=1&adet=2").sar(["a", "b"], 3).sonrakiVar, true);
 });
@@ -105,4 +109,17 @@ test("tarihAraligi ve sayiya", () => {
   assert.equal(sayiya(undefined), null);
   assert.equal(sayiya(0), 0);
   assert.equal(sayiya({ toString: () => "1250.50" }), 1250.5);
+});
+
+test("istemciIpCoz: sağdan N. değer, uydurulan sol değerler yok sayılır", () => {
+  assert.equal(istemciIpCoz("1.1.1.1", null, undefined), "1.1.1.1", "varsayılan 1 proxy");
+  assert.equal(istemciIpCoz("6.6.6.6, 1.1.1.1", null, "1"), "1.1.1.1", "istemci sola değer uydurdu");
+  assert.equal(istemciIpCoz("6.6.6.6, 1.1.1.1, 2.2.2.2", null, "2"), "1.1.1.1", "Cloudflare + nginx");
+  assert.equal(istemciIpCoz("1.1.1.1", null, "2"), "1.1.1.1", "zincir kısa: en soldaki");
+  assert.equal(istemciIpCoz("6.6.6.6", "3.3.3.3", "0"), "3.3.3.3", "0: başlığa güvenme");
+  assert.equal(istemciIpCoz("6.6.6.6", null, "0"), "unknown");
+  assert.equal(istemciIpCoz(null, "3.3.3.3", "1"), "3.3.3.3");
+  assert.equal(istemciIpCoz(null, null, "1"), "unknown");
+  assert.equal(istemciIpCoz("6.6.6.6, 1.1.1.1", null, "bozuk"), "1.1.1.1", "bozuk değer varsayılana düşer");
+  assert.equal(istemciIpCoz(" , ", "3.3.3.3", "1"), "3.3.3.3");
 });

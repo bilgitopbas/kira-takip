@@ -19,7 +19,7 @@ Kod ile belge çelişirse kod doğrudur; bildir.
   - B bölümü: `{ "error": "Gösterilebilir Türkçe mesaj" }`, `kod` yok.
   - İstemci `hata ?? error` okur. Akış kararı durum kodundan, ayrım `kod`dan.
 - **Önbellek:** A bölümü yanıtları `Cache-Control: private, no-store`.
-- **Gövde sınırı:** A bölümü JSON gövdesi en çok 16 KB; aşan 413 `GOVDE_BUYUK`. Bozuk JSON boş gövde sayılır (400 `EKSIK_ALAN`).
+- **Gövde sınırı:** A bölümü JSON gövdesi en çok 16 KB; aşan 413 `GOVDE_BUYUK`. Bozuk JSON boş gövde sayılır; uç kendi alan hatasını döner (`giris` 400 `EKSIK_ALAN`, `yenile` 401 `GECERSIZ`, `cikis` 200).
 - **Durum kodları:**
 
 | Kod | Anlam | İstemci ne yapar |
@@ -30,7 +30,7 @@ Kod ile belge çelişirse kod doğrudur; bildir.
 | 409 | Çakışma | Mesajı göster |
 | 413 | Gövde çok büyük | Mesajı göster |
 | 429 | Hız sınırı | Mesajı göster, bekle |
-| 500 | Sunucu hatası | Mesajı göster, tekrar dene |
+| 500 | Sunucu hatası (`SUNUCU_HATASI`) | Mesajı göster, tekrar dene |
 | 502/503 | Dış servis ya da yapılandırma eksik | Mesajı göster |
 
 - **Sayfalı liste** (`?sayfa=1&adet=20`, `adet` en çok 100):
@@ -53,7 +53,7 @@ Web'in kuralı aynen geçerlidir; mobil hiçbir ek erişim açmaz.
 | Şifre değiştirme | ✓ | ✗ 403 | ✓ |
 | Hesabı silme (`/api/mobil/hesap-sil`) | Tüm hesap | Yalnız kendi üyeliği | ✗ 403 |
 | Bildirimler | ✓ | ✓ (sahibin listesi; okundu bilgisi ortak) | ✓ |
-| `/api/admin/*` | Yok | Yok | v1'de Bearer kabul etmez, web'den (Açık nokta 2) |
+| `/api/admin/*` | Yok | Yok | v1'de Bearer kabul etmez, web'den |
 
 **Yazma kapısı (`requireWriteAccess`):** yazma uçlarının çoğu buradan geçer; geçmezse 403 `{error}`. Kural, sahibin hesabına göre:
 - `LOCKED` (deneme + 7 gün ek süre bitti ya da `PASSIVE`): yazma kapalı, okuma açık.
@@ -69,7 +69,7 @@ Web'in kuralı aynen geçerlidir; mobil hiçbir ek erişim açmaz.
 1. `POST /api/mobil/giris` → jetonları expo-secure-store'a yaz. `cihazId`'yi ilk yanıttan sakla, sonraki girişlerde gönder.
 2. `sozlesmeGerekli: true` ise önce onay ekranı → `POST /api/mobil/sozlesme-onay`. Onaysız oturuma `/api/mobil/panel/*` 403 `SOZLESME_ONAYI_GEREK` döner.
 3. Erişim jetonu **5 dk**. `erisimBitis` geçmeden ya da 401 alınca `POST /api/mobil/yenile`.
-4. **Yenileme tek seferde bir istek olmalı (single-flight):** her yenileme yenileme jetonunu da değiştirir. Yanıt yolda kaybolursa eski jeton 60 sn daha çalışır; süre geçince eski jetonun gelmesi çalınma sayılır (`CALINMA_SUPHESI`) ve oturum silinir. Yeni jetonu hemen yaz.
+4. **Yenileme tek seferde bir istek olmalı (single-flight):** her yenileme yenileme jetonunu da değiştirir. Yanıt yolda kaybolursa eski jeton 60 sn daha çalışır; süre geçince önceki jetonun gelmesi çalınma sayılır (`CALINMA_SUPHESI`) ve oturum silinir. Daha eski jeton `GECERSIZ` alır. Yanıttaki yeni jetonu hemen yaz.
 5. **Şifre değişimi / sıfırlama:** `User.sessionVersion` artar. Sahip ve tüm üyelerin tüm cihazlarındaki oturumlar **anında** düşer: erişim jetonu bir sonraki istekte 401, yenileme `SIFRE_DEGISTI`. Şifreyi bu cihazda değiştiren istemci yeni şifreyle `giris` çağırır.
 6. **Üye hesaptan çıkarılınca:** oturum satırı ve push jetonları silinir (veritabanı Cascade). Erişim jetonu anında 401, yenileme `GECERSIZ`. İstemci için `SIFRE_DEGISTI` ile aynı: giriş ekranı.
 7. **Çıkış:** önce `POST /api/mobil/cikis`, sonra yereli temizle. Açık erişim jetonu çıkıştan sonra en çok 5 dk geçerli kalır, istemci onu zaten siler.
@@ -119,7 +119,7 @@ Mobilde giriş yalnız e-posta + şifredir (sahip ve ekip üyesi); Google ve App
 - `kilitli` / ödeme: **uygulama içinde fiyat, havale ya da satın alma bağlantısı gösterilmez** (App Store 3.1.1; mevcut kabukta da `MizanProView` böyle). Nötr mesaj + web adresi metni yeterli.
 
 ### POST /api/mobil/giris
-- **Yetki:** açık. Hız sınırı IP başına 15 dk'da 10.
+- **Yetki:** açık. Hız sınırı: (IP + e-posta) başına 15 dk'da 10, IP başına 15 dk'da 60. GSM ağlarında (CGNAT) çok kullanıcı aynı IP'yi paylaşır.
 - **İstek:** `{ email: string, sifre: string, cihazId?: string (en çok 128) }`. `cihazId` yoksa sunucu üretir. İstemci e-postayı kırpar, otomatik büyük harfi kapatır.
 - **Sıra (web `auth/login` ile aynı):** önce `User.email`, yoksa `AccountMember.email`.
 - **Yanıt 200:** oturum yanıtı.
@@ -147,6 +147,7 @@ Mobilde giriş yalnız e-posta + şifredir (sahip ve ekip üyesi); Google ve App
 - **İstek:** `{ platform: "ios"|"android", jeton: string (en çok 1024) }`. Yerel APNs/FCM jetonu (`getDevicePushTokenAsync`), **Expo push jetonu DEĞİL**.
 - **Yanıt 200:** `{ mesaj }`. Aynı jeton başka hesaptaysa bu hesaba geçer.
 - **Kural:** jeton erişim jetonundaki oturuma bağlanır. Oturum düşünce (şifre değişimi, üye çıkarılması, süre, çalınma şüphesi, çıkış) push kaydı da gider. Yeniden girişten sonra tekrar kaydet.
+- **Biçim:** iOS hex (32-200 karakter), Android `[A-Za-z0-9_:.-]` (20-1024). Dışı 400.
 - **Hatalar:** 400 `GECERSIZ_PLATFORM` · 400 `GECERSIZ_JETON` · 401 `OTURUM_YOK` · 429 `RATE_LIMIT`.
 
 ### DELETE /api/mobil/cihaz
@@ -162,12 +163,12 @@ Apple 5.1.1(v) ve Play hesap silme kuralı için. **Geri alınamaz; onay ekranı
 - **Yetki:** mobil oturum. Hız sınırı oturum başına 15 dk'da 5.
 - **İstek:** `{ onayMetni: "hesabımı sil" }`. tr-TR küçültmeyle karşılaştırılır.
 - **Etki:**
-  - `SAHIP`: mülk, kiracı, borç, tahsilat, masraf, not, bina, düzen, bildirim, destek, ödeme bildirimi, abonelik, ekip üyeleri, oturum, cihaz jetonları ve hesap silinir; yüklenen sözleşme/makbuz dosyaları diskten silinir.
+  - `SAHIP`: mülk, kiracı, borç, tahsilat, masraf, not, bina, düzen, bildirim, destek, ödeme bildirimi, duyuru, abonelik, ekip üyeleri, oturum, cihaz jetonları ve hesap silinir; kayıtlarda geçen sözleşme ve makbuz dosyaları diskten silinir.
   - `UYE`: yalnız kendi `AccountMember` kaydı, oturumları ve jetonları. Sahibin verisine dokunulmaz.
   - `ADMIN`: 403 `YETKISIZ`.
 - **Yanıt 200:** `{ mesaj }`. Sonra yereli temizle, giriş ekranına dön.
-- **Hatalar:** 400 `ONAY_GEREKLI` · 401 · 403 `YETKISIZ` · 429 · 500.
-- **Not:** `DELETE /api/dashboard/profile/delete-account` mobilde **kullanılmaz** (Açık nokta 1).
+- **Hatalar:** 400 `ONAY_GEREKLI` · 401 `YETKISIZ` · 401 `OTURUM_YOK` (çıkış yapılmış oturum) · 403 `YETKISIZ` · 429 · 500.
+- **Not:** `DELETE /api/dashboard/profile/delete-account` mobilde **kullanılmaz**.
 
 ## Panel (`/api/mobil/panel/*`)
 
@@ -292,7 +293,7 @@ Konum haritası. Web'deki `binaKonumlari` + bina adları. Kümeleme (`kumele`, `
   "duzen": { "binaAnahtari": [0, 0] }
 }
 ```
-- `il` yoksa ya da boşsa düzen anahtarı `*` (tüm iller).
+- `il` yoksa, boşsa ya da `*` ise tüm iller; düzen anahtarı `*`.
 - `duzen`: `yerlesimCoz(anahtarlar, duzen)` girdisi; kayıt yoksa `null`. Yazma: B bölümü `sehir-duzeni`.
 - Bina birim seçimi: `kuleler[].izgara` hücre `id` = `…Birim.id` → `panel/mulkler/:id`.
 - **Yanıt büyük olabilir** (`birimler`, `bloklar`, `bloksuz` aynı birimleri tekrarlar): açılışta bir kez çek, gzip var.
@@ -381,7 +382,7 @@ Okundu ve sil: B bölümü `notifications`. `type` için Push bölümü. `link` 
   { "notification": { "title": "başlık", "body": "metin" }, "data": { "yol": "/dashboard/kiraci/abc", "tur": "PAYMENT_OVERDUE" }, "android": { "priority": "high" } }
   ```
 - **Derin bağlantı:** `yol` = eski `data.path` = `Notification.link`. **WEB yoludur** ve boş olabilir; uygulama kendi rotasına eşler. Okurken: `content.data.yol ?? content.data.data?.yol`. Tanınmayan yol → Bildirimler ekranı.
-- **Kime:** hesap sahibi + daveti kabul etmiş üyeler (`hesapPushHedefleri` kuralı): `CihazJetonu.userId = sahibin id'si`, üye cihazları da bu kimlikle kayıtlıdır. Süresi dolmuş ya da `sessionVersion` uyuşmayan oturumun jetonuna gönderilmez ve silinir.
+- **Kime:** hesap sahibi + daveti kabul etmiş üyeler: `CihazJetonu.userId = sahibin id'si`, üye cihazları da bu kimlikle kayıtlıdır. Admin bildirimleri (`NEW_CUSTOMER`, `IYZICO_PAYMENT`) üyelere gitmez. Süresi dolmuş ya da `sessionVersion` uyuşmayan oturumun jetonuna gönderilmez ve silinir.
 - **Ölü jeton:** APNs 410 / `BadDeviceToken` / `Unregistered`; FCM `UNREGISTERED` ya da jeton hatalı `INVALID_ARGUMENT` → sunucu siler.
 - Kullanıcının kapattığı türler (`notify*`) ve kilitli hesaplar (hesap türlerinde) elenir. Tercihler: B `notification-preferences`.
 
@@ -401,12 +402,12 @@ Okundu ve sil: B bölümü `notifications`. `type` için Push bölümü. `link` 
 - `EFT_PAYMENT_NOTICE`: yalnız admin bildirim listesine yazılır, **push gitmez** (`/admin/odeme-bildirimleri`).
 - Bildirim listesi başlıkları duyuruda `📢 ` ile başlar, push başlığı başlamaz.
 - Cron günde birdir (`/api/cron/bildirimler`, `/api/cron/deneme-hatirlatma`). Bildirim önce `Notification` kaydı olur, `[userId, dedupeKey]` tekrarı engeller.
-- Metinler kiracı adı içerir (`Ahmet Y. kirasını ödemedi…`): Apple/Google üzerinden geçer, kilit ekranında görünür (Açık nokta 4).
+- Metinler kiracı adı içerir (`Ahmet Y. kirasını ödemedi…`): Apple/Google üzerinden geçer, kilit ekranında görünür (bilerek; OneSignal'de de böyleydi).
 
 # Dosyalar
 
 - **Kira sözleşmesi dosyası:** `GET /api/dashboard/tenants/:id/contract`, Bearer ile. Doğru `Content-Type`, `inline`. **Hata JSON değil HTML sayfasıdır** (web için): durum kodu ≠ 200 ise gövdeyi gösterme. Range yok. expo-file-system ile başlıklı indir, sonra aç/paylaş.
-- **Makbuz:** yükleme var (`receiptFile`), **indirme ucu web'de de yok**; yalnız `hasReceipt` gösterilir (Açık nokta 5).
+- **Makbuz:** yükleme var (`receiptFile`), **indirme ucu web'de de yok**; yalnız `hasReceipt` gösterilir (v1.1).
 - **Yükleme sınırı (`lib/uploads.ts`):** en çok 10 MB; uzantı dosya ADINDAN denetlenir: `.pdf .jpg .jpeg .png .webp .doc .docx`. RN'de `FormData.append('contractFile', { uri, name: 'x.pdf', type })`, `name` uzantılı olmalı (HEIC reddedilir, önce JPEG'e çevir).
 
 ---
@@ -632,7 +633,7 @@ Hepsi `YENI_PANEL=1` ister (canlıda açık); kapalıysa 404 `Bulunamadı.`. Yaz
 
 ### GET /api/dashboard/profile
 - **Yanıt:** `{ user: {fullName, email, phone, city, hasPassword}, role }`.
-- **Not:** Üyede **sahibin** profili döner; üyenin kendi adı `kullanici.ad`'dadır.
+- **Not:** Üyede **sahibin** profili döner; üyenin kendi adı `kullanici.ad`'dadır. Mobil oturumda `role` hep `CUSTOMER` gelir; tür için `kullanici.tur` esastır.
 
 ### PATCH /api/dashboard/profile
 - **İstek:** `{ fullName, email (ikisi zorunlu), phone?, city? }`. **Yanıt:** `{ success, user }`. 400; 409 `Bu e-posta adresi başka bir hesapta kayıtlı.`
@@ -648,7 +649,7 @@ Hepsi `YENI_PANEL=1` ister (canlıda açık); kapalıysa 404 `Bulunamadı.`. Yaz
 - **Yanıt:** `{ success }`. 400 `E-posta adresiniz zaten onaylı.`; 429 (hesap başına 15 dk'da 3); 500.
 
 ### DELETE /api/dashboard/profile/delete-account
-- **MOBİLDE KULLANILMAZ.** Yerine `/api/mobil/hesap-sil` (Açık nokta 1).
+- **MOBİLDE KULLANILMAZ.** Yerine `/api/mobil/hesap-sil`.
 
 ### GET /api/dashboard/team
 - **Yanıt:** `{ members: [{id, email, fullName, acceptedAt, createdAt}] }`.
@@ -676,12 +677,11 @@ Hepsi `YENI_PANEL=1` ister (canlıda açık); kapalıysa 404 `Bulunamadı.`. Yaz
 - **Not:** `mailGonder` belgeyi oturumdaki kişiye gönderir. Alan listesi `lib/kiraSozlesmesiAlanlari.ts`. Base64 yanıt büyüktür. v1'de zorunlu değil.
 
 ### POST /api/dashboard/yazdirma-baglantisi
-- **İstek:** `{ yol: "/dashboard/…" }` (göreli, ≤300). **Yanıt:** `{ url }`.
-- **Not:** Tek kullanımlık (10 dk). Açıldığı tarayıcıda 7 günlük web oturumu kurar. Rapor/yazdırma sayfalarını sistem tarayıcısında açmak içindir.
+- **MOBİLDE KULLANILMAZ:** Bearer ile 403. Bağlantı 7 günlük web oturumu kurardı; mobil jeton çıkışa bağlı olmayan bir çereze dönüşmesin.
 
 ## Ödeme ve Mizan Pro: mobilde kullanılmaz
 
-`POST /api/dashboard/mizan-pro/request`, `GET|POST /api/dashboard/odeme-bildirimi`. App Store 3.1.1 gereği uygulamada ödeme yöntemi ya da fiyat gösterilmez. İstisna: mevcut kabuktaki "Beni Arayın" (`mizan-pro/request`, `{type: "PLAN_UPGRADE", propertyCount}`) kalsın mı Lider kararı (Açık nokta 3).
+`POST /api/dashboard/mizan-pro/request`, `GET|POST /api/dashboard/odeme-bildirimi`. App Store 3.1.1 gereği uygulamada ödeme yöntemi ya da fiyat gösterilmez. Mevcut kabuktaki "Beni Arayın" v1'de yok.
 
 ## Açık kimlik uçları (`/api/auth/*`)
 
@@ -694,14 +694,12 @@ Hepsi `YENI_PANEL=1` ister (canlıda açık); kapalıysa 404 `Bulunamadı.`. Yaz
 
 ---
 
-# Açık noktalar (Lider kararı)
+# Kararlar (Lider, 5 Kasım)
 
-Varsayılan yazılı olan, karar gelmezse uygulanacak olandır.
-
-1. **Web güvenlik açığı (üye sahibi silebilir):** `DELETE /api/dashboard/profile/delete-account` `session.memberId` denetlemiyor: **ekip üyesi sahibin tüm hesabını silebilir.** Ayrıca web ucu, şemaya göre, kiracı notu, masraf ya da ödeme bildirimi olan hesapta FK kısıtına takılıp 500 verir (canlıda denenmedi), yani çoğu dolu hesap silinemez; bu mağaza kuralına aykırı olur. Varsayılan: mobil yeni `hesap-sil` ucunu kullanır, web ucuna dokunmam. Öneri: web ucuna tek satır üye engeli ayrı onayla.
-2. **Admin:** Admin v1'de mobilde kendi hesabının paneli ve bildirimleri. `/api/admin/*` Bearer kabul etmez (`impersonate` gibi uçlar açılmasın, proxy matcher'ıyla 403). Varsayılan: böyle; admin ekranları v2.
-3. **"Beni Arayın":** Varsayılan: mobilde **yok** (3.1.1 riski), yalnız nötr metin. Mevcut kabukta var; kullanıcı isterse eklenir.
-4. **Kilit ekranında kiracı adı:** Metinler OneSignal'de de böyleydi. Varsayılan: aynen kalır (Topbaş'ta sohbet metni çıkarılmıştı, burada davranış değişmesin diye dokunmuyorum).
-5. **v1'de eksik bırakılanlar:** makbuz indirme (web'de de yok), takvim ve finans raporu uçları (Lider listesinde yok), uygulama içi kayıt (web ucu reCAPTCHA ister; yeni hesap web `/register`'dan açılır). İstenirse v1.1.
-6. **Hız sınırı:** görevdeki değerler (giriş 10/15 dk IP) uygulanır. Türkiye'de GSM'ler CGNAT kullanır; aynı IP'de çok kullanıcı takılabilir. `getClientIp` `x-forwarded-for`'un ilk değerini alıyor; nginx başlığı eziyor mu sunucuda doğrulanmalı, yoksa sınır atlatılır. Varsayılan: görevdeki gibi.
-7. **Kullanım koşulları onayı:** web Google akışı `termsAcceptedAt` yazmıyor, yani web'den Google ile gelen hesaplarda onay kaydı yok. Mobilde `sozlesmeGerekli` bu hesaplara da bir kez onay ekranı gösterir. Varsayılan: böyle; web'e dokunulmaz.
+1. **Web hesap silme:** üye engeli ayrı dalda (`guvenlik-hesap-sil`) canlıya önce çıkar; web ucunun FK/500 sorununa dokunulmaz. Mobil `hesap-sil` kullanır.
+2. **Admin:** v1'de kendi hesabının paneli ve bildirimleri. `/api/admin/*` Bearer kabul etmez (403).
+3. **"Beni Arayın":** v1'de yok; yalnız nötr metin.
+4. **Kilit ekranında kiracı adı:** metinler aynen kalır.
+5. **v1.1'e kalan:** makbuz indirme (web'de de yok), takvim ve finans raporu uçları, uygulama içi kayıt (yeni hesap web `/register`'dan).
+6. **Hız sınırı:** giriş (IP + e-posta) 10/15 dk + IP 60/15 dk; yenileme IP 120/15 dk. Önümüzdeki proxy sayısı `GUVENILEN_PROXY` ile ayarlanır (varsayılan 1).
+7. **Kullanım koşulları onayı:** web'den Google ile gelen hesaplarda `termsAcceptedAt` boş olabilir; mobilde `sozlesmeGerekli` bir kez onay ekranı gösterir. Web'e dokunulmaz.

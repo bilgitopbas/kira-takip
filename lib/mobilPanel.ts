@@ -122,21 +122,25 @@ export async function mulkDetayiGetir(ownerId: string, id: string) {
   };
 }
 
-const KIRACI_SIRALAMA: Record<string, Prisma.TenantOrderByWithRelationInput> = {
-  newest: { createdAt: "desc" },
-  rent_asc: { monthlyRent: "asc" },
-  rent_desc: { monthlyRent: "desc" },
-  contract_asc: { contractStart: "asc" },
-  contract_desc: { contractStart: "desc" },
-};
+const KIRACI_SIRALAMA = new Map<string, Prisma.TenantOrderByWithRelationInput>([
+  ["newest", { createdAt: "desc" }],
+  ["rent_asc", { monthlyRent: "asc" }],
+  ["rent_desc", { monthlyRent: "desc" }],
+  ["contract_asc", { contractStart: "asc" }],
+  ["contract_desc", { contractStart: "desc" }],
+]);
 
 export async function kiracilariGetir(
   ownerId: string,
   s: { q: string | null; propertyId: string | null; il: string | null; oturma: string | null; siralama: string | null },
   sayfa: Sayfa
 ) {
+  // il, diğer panel uçlarıyla aynı çözümden: kayıtlı binanın ili, 81 ile eşlenmiş mülk metni
+  const ildekiMulkler = s.il
+    ? (await panelBirimleriGetir(ownerId)).birimler.filter((b) => b.il === s.il).map((b) => b.id)
+    : null;
   const where: Prisma.TenantWhereInput = {
-    property: { ownerId, ...(s.il ? { city: { equals: s.il, mode: "insensitive" as const } } : {}) },
+    property: { ownerId, ...(ildekiMulkler ? { id: { in: ildekiMulkler } } : {}) },
     ...(s.q ? { fullName: { contains: s.q, mode: "insensitive" as const } } : {}),
     ...(s.oturma === "LIVING" || s.oturma === "VACATED" ? { occupancyStatus: s.oturma } : {}),
     ...(s.propertyId
@@ -158,7 +162,7 @@ export async function kiracilariGetir(
         property: { select: { id: true, title: true } },
         otherProperties: { select: { property: { select: { id: true, title: true } } } },
       },
-      orderBy: [KIRACI_SIRALAMA[s.siralama ?? ""] ?? KIRACI_SIRALAMA.newest, { id: "asc" }],
+      orderBy: [KIRACI_SIRALAMA.get(s.siralama ?? "") ?? { createdAt: "desc" }, { id: "asc" }],
       skip: sayfa.skip,
       take: sayfa.take,
     }),

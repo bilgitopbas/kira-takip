@@ -34,6 +34,8 @@ export async function sahipHesabiniSil(ownerId: string) {
       await tx.supportTicket.deleteMany({ where: { userId: ownerId } });
       await tx.paymentNotice.deleteMany({ where: { userId: ownerId } });
       await tx.subscription.deleteMany({ where: { userId: ownerId } });
+      // targetName kişinin adını taşır; senderId FK'si silmeyi engellemesin
+      await tx.announcement.deleteMany({ where: { OR: [{ targetId: ownerId }, { senderId: ownerId }] } });
       await tx.user.delete({ where: { id: ownerId } });
 
       return {

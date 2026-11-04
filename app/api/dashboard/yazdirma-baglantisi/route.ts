@@ -12,6 +12,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Oturum bulunamadı." }, { status: 401 });
   }
 
+  // Bağlantı açıldığı yerde 7 günlük web oturumu kurar: mobil jeton, çıkışa ve
+  // çalınma tespitine bağlı olmayan bir çereze dönüşmesin.
+  if (session.mobilOturumId) {
+    return NextResponse.json({ error: "Bu işlem mobil uygulamadan yapılamaz." }, { status: 403 });
+  }
+
   let govde: { yol?: unknown };
   try {
     govde = await req.json();

@@ -106,6 +106,12 @@ export function fcmMesaji(jeton: string, ileti: PushIleti) {
   };
 }
 
+// Yerel jeton biçimi: APNs hex, FCM URL güvenli metin. Jeton APNs isteğinin yoluna girer.
+export function cihazJetonuGecerli(platform: "ios" | "android", jeton: unknown): jeton is string {
+  if (typeof jeton !== "string") return false;
+  return platform === "ios" ? /^[0-9a-fA-F]{32,200}$/.test(jeton) : /^[A-Za-z0-9_:.-]{20,1024}$/.test(jeton);
+}
+
 // Silinmesi gereken jetonlar: uygulama kaldırılmış / jeton geçersiz
 export const apnsOluMu = (durum: number, sebep: string) =>
   durum === 410 || sebep === "BadDeviceToken" || sebep === "Unregistered";

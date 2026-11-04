@@ -13,7 +13,8 @@ export async function GET(req: NextRequest) {
     const k = await panelKapisi();
     if ("yanit" in k) return k.yanit;
     const ownerId = k.session.userId;
-    const il = sorguMetni(req.nextUrl.searchParams, "il", DUZEN_SINIRI.il);
+    const hamIl = sorguMetni(req.nextUrl.searchParams, "il", DUZEN_SINIRI.il);
+    const il = hamIl === "*" ? null : hamIl;
     const [{ birimler }, duzen] = await Promise.all([panelBirimleriGetir(ownerId), sehirDuzeniGetir(ownerId, il ?? "*")]);
     return jsonYanit({
       il: il ?? "*",

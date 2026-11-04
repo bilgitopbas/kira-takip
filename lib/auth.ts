@@ -29,6 +29,7 @@ type SessionPayload = {
   memberName?: string;
   // Yalnız mobil jetonla açılan oturumda (Authorization: Bearer)
   mobilOturumId?: string;
+  mobilRol?: "ADMIN" | "CUSTOMER";
 };
 
 // Mobil istek mi? Başlık varsa çerez hiç okunmaz ve yazılmaz.
@@ -97,9 +98,12 @@ export async function getSession(): Promise<SessionPayload | null> {
     // Geçersiz Bearer çereze düşmez; sürüm ve üyelik denetimi web'le aynı
     const y = await erisimJetonuCoz(bearerAyikla(yetki));
     if (!y || !(await oturumHalaGecerli(y.userId, y.sv, y.memberId))) return null;
+    // Yönetim uçları mobil jetonu kabul etmez (v1): rol kontrolleri de bunu kesin kılar,
+    // yalnız proxy'ye dayanmaz. Gerçek rol mobilRol'dedir.
     return {
       userId: y.userId,
-      role: y.role,
+      role: "CUSTOMER",
+      mobilRol: y.role,
       memberId: y.memberId,
       memberEmail: y.memberEmail,
       memberName: y.memberName,

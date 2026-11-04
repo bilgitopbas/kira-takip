@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { kullaniciTuru } from "@/lib/mobilBicim";
 import { sahipHesabiniSil } from "@/lib/hesapSilme";
-import { hataYaniti, jsonGovde, jsonYanit, mobilKapisi, sunucuHatasi } from "@/lib/mobilKapi";
+import { canliOturumKapisi, hataYaniti, jsonGovde, jsonYanit, sunucuHatasi } from "@/lib/mobilKapi";
 
 const ONAY_METNI = "hesabımı sil";
 
@@ -10,13 +10,13 @@ const ONAY_METNI = "hesabımı sil";
 // dokunulmaz. Admin: mobilden silinemez.
 export async function POST(req: Request) {
   try {
-    const k = await mobilKapisi();
+    const k = await canliOturumKapisi();
     if ("yanit" in k) return k.yanit;
-    const { userId, role, memberId, mobilOturumId } = k.session;
+    const { userId, mobilRol, memberId, mobilOturumId } = k.session;
     if (!checkRateLimit(`mobil-hesap-sil:${mobilOturumId}`, 5, 15 * 60 * 1000)) {
       return hataYaniti("Çok fazla deneme yaptınız. Lütfen daha sonra tekrar deneyin.", 429, "RATE_LIMIT");
     }
-    const tur = kullaniciTuru(role, memberId);
+    const tur = kullaniciTuru(mobilRol ?? "CUSTOMER", memberId);
     if (tur === "ADMIN") return hataYaniti("Yönetici hesabı uygulamadan silinemez.", 403, "YETKISIZ");
 
     const g = await jsonGovde(req);

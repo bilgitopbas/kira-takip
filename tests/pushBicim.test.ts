@@ -13,10 +13,11 @@ import {
   fcmJwt,
   fcmMesaji,
   fcmOluMu,
+  cihazJetonuGecerli,
   jetonGecerliMi,
   type ApnsAyari,
 } from "@/lib/pushBicim";
-import { baglantiKur, iosTopluGonder } from "@/lib/push";
+import { androidTopluGonder, baglantiKur, iosTopluGonder } from "@/lib/push";
 
 const b64 = (s: string) => Buffer.from(s).toString("base64");
 const ec = crypto.generateKeyPairSync("ec", { namedCurve: "P-256" });
@@ -120,6 +121,36 @@ test("jetonGecerliMi: şifre değişince ve süre dolunca geçersiz", () => {
   assert.equal(jetonGecerliMi(j(1, 1, "2026-11-01"), simdi), false);
 });
 
+test("cihazJetonuGecerli: biçim", () => {
+  assert.equal(cihazJetonuGecerli("ios", "a1".repeat(32)), true);
+  assert.equal(cihazJetonuGecerli("ios", "../../3/device/x"), false, "yol enjeksiyonu");
+  assert.equal(cihazJetonuGecerli("ios", "abc"), false);
+  assert.equal(cihazJetonuGecerli("android", "fGz3:APA91b-abc_DEF.ghijkl012345"), true);
+  assert.equal(cihazJetonuGecerli("android", "kısa"), false);
+  assert.equal(cihazJetonuGecerli("android", "x y".repeat(20)), false);
+  assert.equal(cihazJetonuGecerli("ios", 12), false);
+});
+
+test("androidTopluGonder: art arda ulaşılamazsa kalanlar denenmez; yanıt gelirse sayaç sıfırlanır", async () => {
+  const eski = console.error;
+  console.error = () => {};
+  try {
+    let n = 0;
+    const jetonlar = Array.from({ length: 500 }, (_, i) => `j${i}`);
+    const kopuk = await androidTopluGonder(jetonlar, async () => {
+      n++;
+      return { tamam: false, ulasilamadi: true };
+    }, 4);
+    assert.ok(n < 40, `${n} deneme`);
+    assert.equal(kopuk.length, n);
+    const karisik = await androidTopluGonder(jetonlar, async (j) => ({ tamam: false, olu: j === "j0" }), 4);
+    assert.equal(karisik.length, 500, "yanıt geliyorsa hepsi denenir");
+    assert.equal(karisik.filter((r) => r.olu).length, 1);
+  } finally {
+    console.error = eski;
+  }
+});
+
 // --- APNs döngüsü: sahte http2 oturumu ---
 
 const AYAR: ApnsAyari = { ...apnsAyari(TAM)! };
@@ -132,6 +163,9 @@ function sahteOturum(yanitla: (jeton: string) => Yanit, kayit: { acik: number; e
   oturum.closed = false;
   oturum.close = () => {
     oturum.closed = true;
+  };
+  (oturum as unknown as { destroy(): void }).destroy = () => {
+    oturum.destroyed = true;
   };
   oturum.request = (b) => {
     const akis = new EventEmitter() as EventEmitter & { end(g: string): void; close(): void };
@@ -219,6 +253,19 @@ test("iosTopluGonder: asılı istek yalnız kendini düşürür", async () => {
   const sonuc = await iosTopluGonder(AYAR, ["asili", "a", "b"], ILETI, { baglanti, sureMs: 20 });
   assert.deepEqual(sonuc.map((r) => r.tamam), [false, true, true]);
   assert.equal(sonuc[0].olu, undefined, "zaman aşımı jetonu ölü saymaz");
+});
+
+test("iosTopluGonder: zaman aşımı bağlantıyı düşürür, sonraki gönderim yeniden bağlanır", async () => {
+  const kayit = kayitYeni();
+  let baglantiSayisi = 0;
+  const baglanti = baglantiKur(() => {
+    baglantiSayisi++;
+    return sahteOturum((j) => (j === "asili" ? "asili" : { durum: 200 }), kayit);
+  }, 5);
+  await iosTopluGonder(AYAR, ["asili"], ILETI, { baglanti, sureMs: 10 });
+  const sonuc = await iosTopluGonder(AYAR, ["a"], ILETI, { baglanti, sureMs: 10 });
+  assert.equal(sonuc[0].tamam, true);
+  assert.equal(baglantiSayisi, 2);
 });
 
 test("iosTopluGonder: art arda kopukta kalanlar denenmez", async () => {

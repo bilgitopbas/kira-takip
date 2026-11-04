@@ -8,7 +8,7 @@ export async function POST() {
   try {
     const k = await mobilKapisi();
     if ("yanit" in k) return k.yanit;
-    if (kullaniciTuru(k.session.role, k.session.memberId) === "SAHIP") {
+    if (kullaniciTuru(k.session.mobilRol ?? "CUSTOMER", k.session.memberId) === "SAHIP") {
       const simdi = new Date();
       const id = k.session.userId;
       await prisma.$transaction([

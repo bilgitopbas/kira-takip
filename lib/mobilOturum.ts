@@ -9,6 +9,7 @@ const ONCEKI_JETON_SURESI_MS = 60 * 1000;
 const TEMIZLIK_ARALIGI_MS = 60 * 60 * 1000;
 const CIHAZ_ID_SINIRI = 128;
 const JETON_SINIRI = 512;
+const YENILEME_DENEMESI = 2;
 
 const SAHIP_SECIMI = {
   id: true,
@@ -135,6 +136,15 @@ export async function oturumYenile(yenilemeJetonu: unknown): Promise<YenilemeSon
     return { hata: "GECERSIZ" };
   }
   const ozet = jetonOzeti(yenilemeJetonu);
+  // Paralel yenilemede yazmayı kaybeden, güncel satırla bir kez daha karar verir
+  for (let deneme = 0; deneme < YENILEME_DENEMESI; deneme++) {
+    const sonuc = await yenilemeDene(ozet);
+    if (sonuc) return sonuc;
+  }
+  return { hata: "GECERSIZ" };
+}
+
+async function yenilemeDene(ozet: string): Promise<YenilemeSonucu | null> {
   const kayit = await prisma.mobilOturum.findFirst({
     where: { OR: [{ yenilemeOzeti: ozet }, { oncekiOzet: ozet }] },
     include: { user: { select: SAHIP_SECIMI }, member: { select: UYE_SECIMI } },
@@ -152,16 +162,20 @@ export async function oturumYenile(yenilemeJetonu: unknown): Promise<YenilemeSon
   const eskiJeton = kayit.yenilemeOzeti !== ozet;
   const yeniJeton = yenilemeJetonuUret();
   const yenilemeBitis = new Date(simdi.getTime() + YENILEME_SURESI_MS);
-  await prisma.mobilOturum.update({
-    where: { id: kayit.id },
+  const yazilan = await prisma.mobilOturum.updateMany({
+    where: { id: kayit.id, yenilemeOzeti: kayit.yenilemeOzeti },
     data: {
       yenilemeOzeti: jetonOzeti(yeniJeton),
-      // Yanıtı kaybolan istemci eski jetonla tekrar gelebilir: yalnız ilk dönüşte süre başlar
-      ...(eskiJeton ? {} : { oncekiOzet: ozet, oncekiGecerlilik: new Date(simdi.getTime() + ONCEKI_JETON_SURESI_MS) }),
+      // Her dönüşte o anki güncel jeton "önceki" olur. Yanıtı kaybolan istemci eski jetonla
+      // tekrar gelirse süre uzamaz: iki kopyadan pencere dışında kalanı gelince çalınma
+      // sayılır ve oturum düşer; saldırganın kopyası sessizce yaşamaz.
+      oncekiOzet: kayit.yenilemeOzeti,
+      ...(eskiJeton ? {} : { oncekiGecerlilik: new Date(simdi.getTime() + ONCEKI_JETON_SURESI_MS) }),
       sonKullanma: yenilemeBitis,
       sonGorulme: simdi,
     },
   });
+  if (yazilan.count === 0) return null;
   return { tamam: await oturumYaniti(kayit.user, kayit.member, kayit.id, kayit.cihazId, yeniJeton, yenilemeBitis) };
 }
 

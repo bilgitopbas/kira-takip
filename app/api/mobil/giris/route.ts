@@ -9,6 +9,9 @@ const GECERSIZ_MESAJ =
   "E-posta veya şifre hatalı. Hesabınızı web'de Google ile açtıysanız önce Şifremi Unuttum ile şifre belirleyin.";
 const EPOSTA_SINIRI = 254;
 const SIFRE_SINIRI = 200;
+const ON_BES_DK = 15 * 60 * 1000;
+
+const cokDeneme = () => hataYaniti("Çok fazla deneme yaptınız. Lütfen daha sonra tekrar deneyin.", 429, "RATE_LIMIT");
 
 // Hesabı olmayan e-postada da bcrypt çalışsın: yanıt süresi hesabın varlığını sızdırmasın
 const sahteOzet = bcrypt.hashSync("mizan-mobil-sahte-sifre", 10);
@@ -37,11 +40,12 @@ async function uyeBul(email: string) {
 
 // E-posta + şifre → erişim + yenileme jetonu. Sıra web girişiyle aynı: önce hesap
 // sahibi, yoksa ekip üyesi. Şifresiz hesap ve kabul edilmemiş davet de aynı yanıtı verir.
+// Hız sınırı iki katman: GSM'lerde (CGNAT) çok kullanıcı aynı IP'yi paylaşır, bu yüzden
+// parola denemesi IP + e-posta başına, IP'nin toplamı daha geniş bir sınırla kesilir.
 export async function POST(req: NextRequest) {
   try {
-    if (!checkRateLimit(`mobil-giris:${getClientIp(req)}`, 10, 15 * 60 * 1000)) {
-      return hataYaniti("Çok fazla deneme yaptınız. Lütfen daha sonra tekrar deneyin.", 429, "RATE_LIMIT");
-    }
+    const ip = getClientIp(req);
+    if (!checkRateLimit(`mobil-giris-ip:${ip}`, 60, ON_BES_DK)) return cokDeneme();
     const g = await jsonGovde(req);
     if ("yanit" in g) return g.yanit;
     const { email: hamEposta, sifre, cihazId } = g.govde;
@@ -49,6 +53,7 @@ export async function POST(req: NextRequest) {
     if (!email || email.length > EPOSTA_SINIRI || typeof sifre !== "string" || !sifre || sifre.length > SIFRE_SINIRI) {
       return hataYaniti("E-posta ve şifre zorunludur.", 400, "EKSIK_ALAN");
     }
+    if (!checkRateLimit(`mobil-giris:${ip}:${email.toLowerCase()}`, 10, ON_BES_DK)) return cokDeneme();
 
     const user = await kullaniciBul(email);
     const uye = user ? null : await uyeBul(email);
