@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { sendPushNotification } from "@/lib/onesignal";
 import { sahibePush } from "@/lib/push";
 
 async function createForAllAdmins(data: {
@@ -23,7 +22,6 @@ async function createForAllAdmins(data: {
             dedupeKey: data.dedupeKey,
           },
         })
-        .then(() => sendPushNotification(admin.id, data.title, data.message, data.link))
         .then(() => sahibePush(admin.id, { baslik: data.title, govde: data.message, tur: data.type, yol: data.link }))
         .catch(() => {
           // unique constraint on [userId, dedupeKey] -> already exists, ignore

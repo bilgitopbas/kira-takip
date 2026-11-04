@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { sendPushNotification, sendPushToAll } from "@/lib/onesignal";
-import { hesapPushHedefleri } from "@/lib/pushHedef";
-import { hesabaPush, herkesePush } from "@/lib/push";
+import { hesabaPush, herkesePush, pushCihazSayisi } from "@/lib/push";
 
 // Duyuru (sadece admin): targetId yoksa HERKESE, varsa sadece o kullanıcıya
 // uygulama içi bildirim + telefon push'u gönderilir.
@@ -61,15 +59,13 @@ export async function POST(req: Request) {
         },
       });
       // Hesap sahibi + davetli üyelerin cihazları
-      const hedefler = await hesapPushHedefleri(target.id);
-      await sendPushNotification(hedefler, announcement.title, announcement.message);
       await hesabaPush(target.id, {
         baslik: announcement.title,
         altBaslik: cleanSubtitle,
         govde: announcement.message,
         tur: "ANNOUNCEMENT",
       });
-      pushRecipients = hedefler.length;
+      pushRecipients = await pushCihazSayisi(target.id);
     } else {
       // Herkese: tüm kullanıcılara uygulama içi bildirim + genel push
       const users = await prisma.user.findMany({ select: { id: true } });
@@ -85,7 +81,6 @@ export async function POST(req: Request) {
           skipDuplicates: true,
         });
       }
-      const push = await sendPushToAll(announcement.title, announcement.message, cleanSubtitle);
       // Beklenmez: on binlerce cihazda yanıt zaman aşımına düşmesin; herkesePush reddolmaz
       void herkesePush({
         baslik: announcement.title,
@@ -93,7 +88,7 @@ export async function POST(req: Request) {
         govde: announcement.message,
         tur: "ANNOUNCEMENT",
       });
-      pushRecipients = (push as { recipients?: number } | null)?.recipients ?? null;
+      pushRecipients = await pushCihazSayisi();
     }
 
     return NextResponse.json(
