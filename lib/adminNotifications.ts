@@ -51,3 +51,16 @@ export async function notifyAdminsIyzicoPayment(payment: { id: string; customerN
     dedupeKey: `iyzico_payment:${payment.id}`,
   });
 }
+
+// Ana sayfadaki "Sizi Arayalım" formu. Ayrı bir tür şema değişikliği isteyeceği
+// için potansiyel müşteri olarak NEW_CUSTOMER türü kullanılır. Telefon numarası
+// bildirime (push sağlayıcılarına) konmaz; yönetici panelinde görünür.
+export async function notifyAdminsContactRequest(talep: { id: string; name: string }) {
+  await createForAllAdmins({
+    type: "NEW_CUSTOMER",
+    title: "Yeni arama talebi",
+    message: `${talep.name} ana sayfadan geri arama talebi bıraktı.`,
+    link: "/admin/destek",
+    dedupeKey: `contact_request:${talep.id}`,
+  });
+}

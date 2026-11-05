@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import { verifyRecaptcha } from "@/lib/recaptcha";
+import { notifyAdminsContactRequest } from "@/lib/adminNotifications";
 
 const AD_EN_AZ = 2;
 const AD_EN_FAZLA = 100;
@@ -72,7 +73,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await prisma.contactRequest.create({
+    const talep = await prisma.contactRequest.create({
       data: {
         name: ad,
         phone: telefon,
@@ -80,6 +81,12 @@ export async function POST(req: NextRequest) {
         marketingConsent: consent === true,
       },
     });
+
+    try {
+      await notifyAdminsContactRequest(talep);
+    } catch (notifyErr) {
+      console.error("Admin bildirimi oluşturulamadı:", notifyErr);
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {
