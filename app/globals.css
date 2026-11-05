@@ -193,3 +193,21 @@ body {
   animation: calendarPop 550ms cubic-bezier(0.22, 1, 0.36, 1) both;
   transform-style: preserve-3d;
 }
+
+/* Sayfalar arası tam yüklemelerde (ör. ana sayfa → giriş/kayıt) yumuşak çapraz
+   solma; desteklemeyen tarayıcıda geçiş eskisi gibi anlıktır. */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.4s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}

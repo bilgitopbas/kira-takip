@@ -1,51 +1,55 @@
-import Navbar from "@/components/Navbar";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import NativeLoginRedirect from "@/components/NativeLoginRedirect";
-import Footer from "@/components/Footer";
-import TrustedCompanies from "@/components/TrustedCompanies";
-import Testimonials from "@/components/Testimonials";
-import FaqContact from "@/components/FaqContact";
-import StatsSection from "@/components/StatsSection";
-import HowItWorks from "@/components/HowItWorks";
-import HeroSection from "@/components/HeroSection";
-import FeatureGrid from "@/components/FeatureGrid";
-import PricingSection from "@/components/PricingSection";
-import MobileAppSection from "@/components/MobileAppSection";
-import BlogPreviewSection from "@/components/BlogPreviewSection";
+import SvgTanimlari from "@/components/anasayfa/SvgTanimlari";
+import UstMenu from "@/components/anasayfa/UstMenu";
+import Kahraman from "@/components/anasayfa/Kahraman";
+import Firmalar from "@/components/anasayfa/Firmalar";
+import NelerYapiyoruz from "@/components/anasayfa/NelerYapiyoruz";
+import Rakamlar from "@/components/anasayfa/Rakamlar";
+import MobilUygulama from "@/components/anasayfa/MobilUygulama";
+import Adimlar from "@/components/anasayfa/Adimlar";
+import Paketler from "@/components/anasayfa/Paketler";
+import Yorumlar from "@/components/anasayfa/Yorumlar";
+import BlogOnizleme from "@/components/anasayfa/BlogOnizleme";
+import SssIletisim from "@/components/anasayfa/SssIletisim";
+import { AltBilgi, Kapanis } from "@/components/anasayfa/KapanisAltBilgi";
+import AnasayfaHareket from "@/components/anasayfa/AnasayfaHareket";
+import "./anasayfa.css";
+
+// Türkçe harfler (ş, ğ, İ) için latin-ext de yüklenir.
+const jakarta = Plus_Jakarta_Sans({ subsets: ["latin", "latin-ext"], variable: "--font-jakarta", display: "swap" });
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className={`anasayfa ${jakarta.variable}`}>
       <NativeLoginRedirect />
-      <Navbar />
-
-      <HeroSection />
-
-      {/* MOBİL UYGULAMA */}
-      <MobileAppSection />
-
-      {/* NELER YAPIYORUZ */}
-      <FeatureGrid />
-
-      {/* RAKAMLARLA MİZAN */}
-      <StatsSection />
-
-      {/* NASIL KULLANILIR */}
-      <HowItWorks />
-
-      {/* FİYATLANDIRMA */}
-      <PricingSection />
-
-      {/* REFERANSLAR */}
-      <TrustedCompanies />
-      <Testimonials />
-
-      {/* BLOG */}
-      <BlogPreviewSection />
-
-      {/* SSS + İLETİŞİM */}
-      <FaqContact />
-
-      <Footer />
+      <SvgTanimlari />
+      <UstMenu />
+      <main>
+        {/* 3D MÜLK ŞEHRİ */}
+        <Kahraman />
+        {/* REFERANS FİRMALAR */}
+        <Firmalar />
+        {/* NELER YAPIYORUZ */}
+        <NelerYapiyoruz />
+        {/* RAKAMLARLA MİZAN */}
+        <Rakamlar />
+        {/* MOBİL UYGULAMA */}
+        <MobilUygulama />
+        {/* NASIL KULLANILIR */}
+        <Adimlar />
+        {/* FİYATLANDIRMA (yalnız web) */}
+        <Paketler />
+        {/* MÜŞTERİ YORUMLARI */}
+        <Yorumlar />
+        {/* BLOG */}
+        <BlogOnizleme />
+        {/* SSS + İLETİŞİM */}
+        <SssIletisim />
+        <Kapanis />
+      </main>
+      <AltBilgi />
+      <AnasayfaHareket />
     </div>
   );
 }
