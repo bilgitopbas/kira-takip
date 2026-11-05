@@ -1,6 +1,6 @@
-// Ana sayfadaki tüm hareketlerin ortak durdurma anahtarı. "Hareketi durdur"
-// düğmesi kökteki .anasayfa öğesine data-durdu yazar; döngüler bunu okur,
-// CSS animasyonları da aynı öznitelikle bekler.
+// Ana sayfadaki tüm hareketlerin ortak durdurma anahtarı. "Hareketi azalt"
+// açık cihazlarda kökteki .anasayfa öğesine data-durdu yazılır; döngüler bunu
+// okur, CSS animasyonları da aynı öznitelikle bekler.
 
 export const HAREKET_OLAYI = "mz-hareket";
 

@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Ok, Tik, gecikme } from "./SvgTanimlari";
+import MagazaRozetleri from "./MagazaRozetleri";
 import { azHareketMi, dongudeCalis, hareketDurdu, hareketiAyarla, HAREKET_OLAYI } from "./hareket";
 import { egriYolu, etiketKonumu, kapakEsle, kesisir, olcekle, trSayi, yavaslayan, type Kutu } from "@/lib/anasayfaGrafik";
 import izler from "./sehirEtiketleri.json";
 
-// Giriş: 3D Mülk Şehri videosu (onaylanan sahneden kaydedilmiş 12 sn'lik döngü),
+// Giriş: 3D Mülk Şehri videosu (onaylanan sahneden kaydedilmiş, 24 sn'de tam tur atan döngü),
 // üstünde bina etiketleri ve canlı örnek kartlar. Tüm veriler örnektir.
 
 const ETIKET_RENGI: Record<string, string> = { odendi: "#52E0C8", bekliyor: "#F6C56B", gecikmis: "#F58FB0" };
@@ -19,7 +20,7 @@ const BILDIRIMLER = [
 const ILK_VERI = [22, 30, 26, 38, 34, 46, 42, 55, 50, 63, 58, 72];
 const GRAFIK = { g: 260, y: 84, min: 14, max: 80 };
 // Kayıtların piksel boyutu ve kapta yerleşimi (CSS object-position ile aynı)
-const VIDEO = { masaustu: { g: 1600, y: 900, x: 0.7 }, telefon: { g: 720, y: 880, x: 0.5 } };
+const VIDEO = { masaustu: { g: 1280, y: 720, x: 0.7 }, telefon: { g: 540, y: 660, x: 0.5 } };
 
 function alanYollari(veri: number[]) {
   const n = olcekle(veri, GRAFIK.g, GRAFIK.y, GRAFIK.min, GRAFIK.max);
@@ -35,16 +36,12 @@ export default function Kahraman() {
   const tahsilatRef = useRef<HTMLSpanElement>(null);
   const dolulukRef = useRef<HTMLSpanElement>(null);
   const [oynuyor, setOynuyor] = useState(false);
-  const [durdu, setDurdu] = useState(false);
   const [bi, setBi] = useState(0);
   const [degisiyor, setDegisiyor] = useState(false);
 
-  // Hareket anahtarı: "hareketi azalt" açıksa baştan durur.
+  // Hareket anahtarı: "hareketi azalt" açıksa tüm hareketler baştan durur.
   useEffect(() => {
-    const dinle = (e: Event) => setDurdu((e as CustomEvent<{ durdu: boolean }>).detail.durdu);
-    window.addEventListener(HAREKET_OLAYI, dinle);
     hareketiAyarla(azHareketMi());
-    return () => window.removeEventListener(HAREKET_OLAYI, dinle);
   }, []);
 
   // Video: veri tasarrufu açıksa yalnız poster; ekran dışındayken bekler.
@@ -58,7 +55,12 @@ export default function Kahraman() {
       if (tasarruf || hareketDurdu() || !gorunur) v.pause();
       else {
         v.muted = true;
-        v.play().catch(() => {});
+        v.play().catch(() => {
+          // Tarayıcı otomatik oynatmayı reddettiyse ilk etkileşimde yeniden dene
+          const dene = () => v.play().catch(() => {});
+          window.addEventListener("pointerdown", dene, { once: true });
+          window.addEventListener("scroll", dene, { once: true, passive: true });
+        });
       }
     };
     const io = new IntersectionObserver(([e]) => {
@@ -234,20 +236,7 @@ export default function Kahraman() {
             </div>
           ))}
         </div>
-        <div className="ornek-not">Örnek görünüm · sahte veri</div>
-        <button type="button" className="durdur" aria-pressed={durdu} onClick={() => hareketiAyarla(!durdu)}>
-          <svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
-            {durdu ? (
-              <path d="M3 1.5v9l7.5-4.5z" />
-            ) : (
-              <>
-                <rect x="2" y="1.5" width="2.6" height="9" rx="1" />
-                <rect x="7.4" y="1.5" width="2.6" height="9" rx="1" />
-              </>
-            )}
-          </svg>
-          <span>{durdu ? "Hareketi başlat" : "Hareketi durdur"}</span>
-        </button>
+        <div className="pembe-isik" aria-hidden="true" />
       </div>
 
       <div className="kap kahraman-ic">
@@ -280,7 +269,8 @@ export default function Kahraman() {
               Nasıl Çalışır?
             </a>
           </div>
-          <div className="kucuk-not belir" style={gecikme(".4s")}>
+          <MagazaRozetleri className="magaza kahraman-magaza belir" style={gecikme(".4s")} />
+          <div className="kucuk-not belir" style={gecikme(".48s")}>
             Kurulum yok · kredi kartı gerekmez
           </div>
         </div>

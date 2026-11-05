@@ -39,8 +39,12 @@ async function sunucuyaYaz(il: string, duzen: Duzen | null): Promise<boolean> {
   }
 }
 
-/** il: seçili il adı, "" = tüm iller */
-export function useSehirDuzeni(il: string) {
+/**
+ * il: seçili il adı, "" = tüm iller.
+ * yalnizCihaz: ana sayfadaki örnek şehir gibi oturumsuz kullanımda sunucuya
+ * hiç istek atılmaz; düzen yalnız bu cihazda tutulur.
+ */
+export function useSehirDuzeni(il: string, yalnizCihaz = false) {
   const ilAnahtari = il || "*";
   const [durum, setDurum] = useState<{ il: string; duzen: Duzen | null; sunucu: boolean; hesap: string } | null>(null);
 
@@ -50,16 +54,20 @@ export function useSehirDuzeni(il: string) {
       let sunucu = false;
       let hesap = "yerel";
       let duzen: Duzen | null = null;
-      try {
-        const r = await fetch(`/api/dashboard/sehir-duzeni?il=${encodeURIComponent(ilAnahtari)}`, { signal: AbortSignal.timeout(4000) });
-        if (r.ok) {
-          const v = (await r.json()) as { sunucu: boolean; hesap: string; duzen: Duzen | null };
-          sunucu = v.sunucu;
-          hesap = v.hesap || hesap;
-          duzen = v.duzen;
+      if (yalnizCihaz) {
+        hesap = "ornek";
+      } else {
+        try {
+          const r = await fetch(`/api/dashboard/sehir-duzeni?il=${encodeURIComponent(ilAnahtari)}`, { signal: AbortSignal.timeout(4000) });
+          if (r.ok) {
+            const v = (await r.json()) as { sunucu: boolean; hesap: string; duzen: Duzen | null };
+            sunucu = v.sunucu;
+            hesap = v.hesap || hesap;
+            duzen = v.duzen;
+          }
+        } catch {
+          // çevrimdışı: cihazdaki düzen
         }
-      } catch {
-        // çevrimdışı: cihazdaki düzen
       }
       const yerel = yerelOku(yerelAnahtar(hesap, ilAnahtari));
       if (sunucu && !duzen && yerel) {
@@ -72,7 +80,7 @@ export function useSehirDuzeni(il: string) {
     return () => {
       iptal = true;
     };
-  }, [ilAnahtari]);
+  }, [ilAnahtari, yalnizCihaz]);
 
   const kaydet = useCallback(
     async (duzen: Duzen | null) => {

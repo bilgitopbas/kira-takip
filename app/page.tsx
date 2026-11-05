@@ -5,6 +5,7 @@ import UstMenu from "@/components/anasayfa/UstMenu";
 import Kahraman from "@/components/anasayfa/Kahraman";
 import Firmalar from "@/components/anasayfa/Firmalar";
 import NelerYapiyoruz from "@/components/anasayfa/NelerYapiyoruz";
+import MulkSehrimVitrin from "@/components/anasayfa/MulkSehrimVitrin";
 import Rakamlar from "@/components/anasayfa/Rakamlar";
 import MobilUygulama from "@/components/anasayfa/MobilUygulama";
 import Adimlar from "@/components/anasayfa/Adimlar";
@@ -32,6 +33,8 @@ export default function HomePage() {
         <Firmalar />
         {/* NELER YAPIYORUZ */}
         <NelerYapiyoruz />
+        {/* MÜLK ŞEHRİM: gerçek 3D ve harita, örnek portföy */}
+        <MulkSehrimVitrin />
         {/* RAKAMLARLA MİZAN */}
         <Rakamlar />
         {/* MOBİL UYGULAMA */}

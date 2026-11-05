@@ -48,13 +48,13 @@ test("etiket konumu: kareler arası enterpolasyon, döngü ve gizli kare", () =>
   assert.equal(etiketKonumu(k, 10, 0, 1), null, "görünmeyen etiket");
 });
 
-test("kayıtlı etiket izleri: 12 sn döngü, 10 kare/sn, iki görünüm, 7 bina", () => {
+test("kayıtlı etiket izleri: 24 sn tam tur, 10 kare/sn, iki görünüm, 7 bina", () => {
   assert.equal(izler.bilgi.length, 7);
   assert.ok(izler.bilgi.some((b) => b.ad === "Bahçe Villası"), "Türkçe harfler bozulmamış");
   assert.ok(izler.bilgi.every((b) => !/Ã|Ä/.test(b.ad)));
   for (const g of [izler.masaustu, izler.telefon]) {
     assert.equal(g.fps, 10);
-    assert.equal(g.kareler.length, 120);
+    assert.equal(g.kareler.length, 240);
     assert.ok(g.kareler.every((f) => f.length === 7));
   }
   assert.ok(kesisir({ l: 0, t: 0, r: 10, b: 10 }, { l: 5, t: 5, r: 15, b: 15 }));

@@ -156,10 +156,6 @@ html:has(.anasayfa){scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 .anasayfa .bildirim-metin.degis{opacity:0;transform:translateY(6px)}
 .anasayfa .bildirim-metin b{display:block;font-size:13.5px}
 .anasayfa .bildirim-metin span{color:#A9B8D2}
-.anasayfa .ornek-not{position:absolute;z-index:3;right:190px;top:104px;font-size:12px;color:#8494B3;display:flex;align-items:center;gap:8px}
-.anasayfa .durdur{position:absolute;z-index:4;right:24px;top:96px;display:flex;align-items:center;gap:8px;font:600 12.5px var(--font);color:#D5DEEE;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);padding:8px 12px;border-radius:999px;cursor:pointer;backdrop-filter:blur(8px)}
-.anasayfa .durdur:hover{background:rgba(255,255,255,.13)}
-.anasayfa .durdur svg{width:12px;height:12px}
 .anasayfa .poster{position:absolute;inset:0;z-index:0;background:url(/anasayfa/poster-masaustu.webp) 70% 50%/cover no-repeat}
 @media (max-width:1060px){
   /* Telefon/tablet: şehir en üstte ön planda, metin altında */
@@ -177,8 +173,6 @@ html:has(.anasayfa){scroll-behavior:smooth;-webkit-text-size-adjust:100%}
   .anasayfa .k-bildirim{width:auto;left:0;right:0;bottom:0;padding:10px 12px;border-radius:16px}
   .anasayfa .poster{background-image:url(/anasayfa/poster-telefon.webp);background-position:50% 50%}
   .anasayfa .sehir-video{object-position:50% 50%}
-  .anasayfa .ornek-not{left:16px;bottom:auto;top:76px;font-size:11px}
-  .anasayfa .durdur{right:16px;bottom:auto;top:70px;padding:7px 10px;font-size:11.5px}
 }
 @media (max-width:640px){
   .anasayfa .cip .uzun{display:none}
@@ -374,12 +368,11 @@ html:has(.anasayfa){scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 .anasayfa .durum-cubugu{position:absolute;top:0;left:0;right:0;height:calc(var(--w)*.15);display:flex;justify-content:space-between;align-items:center;padding:0 calc(var(--w)*.085);color:#fff;font-size:calc(var(--w)*.043);font-weight:700;z-index:2}
 .anasayfa .durum-cubugu svg{height:calc(var(--w)*.045);width:auto}
 .anasayfa .ev-cizgisi{position:absolute;bottom:calc(var(--w)*.018);left:50%;transform:translateX(-50%);width:34%;height:calc(var(--w)*.014);border-radius:9px;background:rgba(255,255,255,.75);z-index:2}
-.anasayfa .tel-1{left:4%;bottom:4%;transform:rotate(-7deg) translateZ(30px)}
-.anasayfa .tel-2{right:4%;bottom:0;transform:rotate(6deg) translateZ(50px)}
+.anasayfa .tel-1{left:4%;bottom:4%;transform:rotate(-7deg)}
+.anasayfa .tel-2{right:4%;bottom:0;transform:rotate(6deg)}
 .anasayfa .yuz{animation:mz-yuz 8s ease-in-out infinite}
 .anasayfa .tel-2 .yuz,.anasayfa .tel-2.yuz{animation-delay:-3s}
 @keyframes mz-yuz{0%,100%{translate:0 0}50%{translate:0 -12px}}
-.anasayfa .cihaz-not{position:absolute;left:0;right:0;bottom:-34px;text-align:center;font-size:12px;color:var(--metin-3)}
 @media (max-width:1060px){
   .anasayfa .mobil-ic{grid-template-columns:1fr}
   .anasayfa .sahne-cihaz{height:520px}
@@ -388,10 +381,9 @@ html:has(.anasayfa){scroll-behavior:smooth;-webkit-text-size-adjust:100%}
   .anasayfa .sahne-cihaz{height:360px;margin-top:10px;perspective:1000px}
   .anasayfa .ipad{--w:min(88vw,340px);top:40%}
   .anasayfa .iphone{--w:min(28vw,112px)}
-  .anasayfa .tel-1{left:3%;bottom:6%;transform:rotate(-6deg) translateZ(20px)}
-  .anasayfa .tel-2{right:3%;bottom:2%;transform:rotate(5deg) translateZ(30px)}
+  .anasayfa .tel-1{left:3%;bottom:6%;transform:rotate(-6deg)}
+  .anasayfa .tel-2{right:3%;bottom:2%;transform:rotate(5deg)}
   .anasayfa .ipad{transform:translate(-50%,-50%) translateZ(-80px) rotateX(4deg)}
-  .anasayfa .cihaz-not{bottom:-28px}
   .anasayfa .iphone::before,.anasayfa .iphone::after{width:2px}
   .anasayfa .magaza a{flex:1 1 160px;min-width:0;padding:10px 14px}
 }
@@ -568,3 +560,40 @@ html:has(.anasayfa){scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 .anasayfa .gonderildi span{color:#E3F7F3;font-size:14px}
 .anasayfa .form-hata{position:relative;z-index:1;margin:16px 0 0;font-size:14px;color:#fff;background:rgba(158,61,102,.55);border:1px solid var(--pembe-300);border-radius:12px;padding:10px 14px}
 .anasayfa .dugme:disabled{opacity:.6;cursor:default;transform:none}
+/* Cihaz sahnesi: katmanlar düz dizilir (iPad'in 3D düzlemi telefonları kesmesin) */
+.anasayfa .cihaz-grup{transform-style:flat;perspective:1600px}
+.anasayfa .ipad{z-index:1}
+.anasayfa .iphone{z-index:2}
+/* Girişte bebek pembesi ışık ve mağaza rozetleri */
+.anasayfa .pembe-isik{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(42% 46% at 88% 14%,rgba(245,184,207,.42),transparent 70%),radial-gradient(36% 40% at 62% 92%,rgba(245,184,207,.30),transparent 70%),radial-gradient(30% 36% at 4% 78%,rgba(245,184,207,.22),transparent 70%)}
+.anasayfa .kahraman .tikler li span{background:rgba(245,184,207,.22);color:var(--pembe-200)}
+.anasayfa .kahraman .cam-kart{border-color:rgba(245,184,207,.32);box-shadow:0 30px 60px -24px rgba(0,0,0,.55),0 0 0 1px rgba(245,184,207,.08),inset 0 1px 0 rgba(255,255,255,.15)}
+.anasayfa .kahraman-magaza{margin-top:20px}
+.anasayfa .kahraman-magaza a{border-color:rgba(255,255,255,.4)}
+@media (max-width:640px){.anasayfa .kahraman-magaza a{flex:1 1 140px;min-width:0;padding:9px 12px}.anasayfa .kahraman-magaza .s2{font-size:16px}}
+/* Mülk Şehrim vitrini: panelin gerçek 3D şehri ve haritası (örnek portföy) */
+.anasayfa .vitrin{background:radial-gradient(700px 460px at 85% 40%,rgba(82,224,200,.28),transparent 65%),radial-gradient(560px 400px at 10% 85%,rgba(245,184,207,.32),transparent 65%),linear-gradient(180deg,#D8F0EB,var(--zemin))}
+.anasayfa .vitrin-ic{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:44px;align-items:center}
+.anasayfa .vitrin .alt{margin-left:0}
+.anasayfa .vitrin-sekmeler{display:inline-flex;gap:4px;padding:5px;margin-top:28px;border-radius:999px;background:#fff;border:1px solid rgba(31,194,176,.25);box-shadow:0 10px 24px -18px rgba(11,127,120,.5)}
+.anasayfa .vitrin-sekmeler button{font:700 14.5px var(--font);color:var(--metin-2);background:transparent;border:0;padding:11px 18px;border-radius:999px;cursor:pointer;transition:background .25s,color .25s}
+.anasayfa .vitrin-sekmeler button[aria-selected="true"]{background:linear-gradient(135deg,var(--derin-1),var(--derin-2));color:#fff}
+.anasayfa .vitrin-ipucu{font-size:14.5px;color:var(--metin-2);margin:16px 0 0;max-width:460px}
+.anasayfa .vitrin-secim{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-height:44px;margin:14px 0 22px;font-size:14px;color:var(--metin)}
+.anasayfa .vitrin-secim span{font-size:12.5px;font-weight:700;padding:4px 10px;border-radius:999px}
+.anasayfa .vitrin-secim .vitrin-secim-bos{font-weight:500;padding:0;color:var(--metin-3)}
+.anasayfa .vs-odendi{background:#DDF6EF;color:#0B6B5F}
+.anasayfa .vs-bekliyor{background:#FDF0D5;color:#8A5A00}
+.anasayfa .vs-gecikmis{background:#FCE3EC;color:#9E3D66}
+.anasayfa .vs-bos{background:#E6EAF2;color:#4A5672}
+.anasayfa .vitrin-sahne{position:relative;height:560px;border-radius:28px;overflow:hidden;background:#EAF4F2;border:1px solid rgba(31,194,176,.28);box-shadow:0 40px 80px -40px rgba(11,127,120,.55),0 0 0 6px rgba(255,255,255,.6)}
+.anasayfa .vitrin-poster{position:absolute;inset:0;width:100%;border:0;padding:0;cursor:pointer;background:#EAF4F2 center/cover no-repeat;display:flex;align-items:center;justify-content:center;font:inherit}
+.anasayfa .vitrin-poster::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,23,51,0) 40%,rgba(10,23,51,.38));transition:opacity .3s}
+.anasayfa .vitrin-poster:hover::before{opacity:.7}
+.anasayfa .vitrin-oynat{position:relative;display:inline-flex;align-items:center;gap:12px;padding:15px 24px 15px 16px;border-radius:999px;background:rgba(255,255,255,.94);color:var(--metin);font-weight:800;font-size:16px;box-shadow:0 20px 40px -16px rgba(10,23,51,.5);transition:transform .25s}
+.anasayfa .vitrin-poster:hover .vitrin-oynat{transform:scale(1.04)}
+.anasayfa .vitrin-oynat svg{width:34px;height:34px;padding:8px;border-radius:50%;background:linear-gradient(135deg,var(--aku-300),var(--pembe-300));color:var(--gece-900)}
+.anasayfa .vitrin-not{position:absolute;left:16px;bottom:14px;font-size:12px;font-weight:700;color:#fff;background:rgba(10,23,51,.55);padding:6px 11px;border-radius:999px}
+.anasayfa .vitrin-yukleniyor{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--metin-3)}
+@media (max-width:960px){.anasayfa .vitrin-ic{grid-template-columns:1fr;gap:28px}.anasayfa .vitrin-sahne{height:440px}}
+@media (max-width:480px){.anasayfa .vitrin-sekmeler{display:flex}.anasayfa .vitrin-sekmeler button{flex:1;padding:10px 8px;font-size:13.5px}.anasayfa .vitrin-oynat{font-size:14px;padding:12px 18px 12px 12px}}

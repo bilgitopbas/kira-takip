@@ -1029,6 +1029,7 @@ export default function Sehir3D({
   yalnizGecikmis,
   il,
   onSec,
+  ornek = false,
 }: {
   binalar: Bina[];
   secim: Sehir3DSecim;
@@ -1036,6 +1037,8 @@ export default function Sehir3D({
   /** Seçili il ("" = tüm iller); bina düzeni il başına saklanır */
   il: string;
   onSec: (bina: string | null, birim: string | null, blok: string | null) => void;
+  /** Ana sayfa vitrini: oturum yok, bina düzeni sunucuya yazılmaz */
+  ornek?: boolean;
 }) {
   const kapRef = useRef<HTMLDivElement>(null);
   const etiketRef = useRef<HTMLDivElement>(null);
@@ -1053,7 +1056,7 @@ export default function Sehir3D({
   );
 
   // Bina düzeni (kullanıcı taşıdıysa) — il başına, hesap düzeyinde
-  const { duzen, yuklendi, kaydet } = useSehirDuzeni(il);
+  const { duzen, yuklendi, kaydet } = useSehirDuzeni(il, ornek);
   const hucreler = useMemo(() => yerlesimCoz(modeller.map((b) => b.anahtar), duzen), [modeller, duzen]);
   const duzenImzasi = hucreler.map((h) => h.join(",")).join(";");
   const ozel = !!duzen && Object.keys(duzen).length > 0;
