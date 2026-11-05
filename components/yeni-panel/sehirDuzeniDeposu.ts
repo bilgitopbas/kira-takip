@@ -86,11 +86,12 @@ export function useSehirDuzeni(il: string, yalnizCihaz = false) {
     async (duzen: Duzen | null) => {
       if (!durum || durum.il !== ilAnahtari) return;
       setDurum({ ...durum, duzen });
-      const tamam = durum.sunucu ? await sunucuyaYaz(ilAnahtari, duzen) : false;
+      // Örnek (oturumsuz) kullanımda sunucuya asla yazılmaz
+      const tamam = durum.sunucu && !yalnizCihaz ? await sunucuyaYaz(ilAnahtari, duzen) : false;
       // Sunucu yoksa ya da yazılamadıysa cihazda tut (düzen kaybolmasın)
       yerelYaz(yerelAnahtar(durum.hesap, ilAnahtari), tamam ? null : duzen);
     },
-    [durum, ilAnahtari]
+    [durum, ilAnahtari, yalnizCihaz]
   );
 
   const gecerli = durum && durum.il === ilAnahtari ? durum : null;
