@@ -667,3 +667,5 @@ html:has(.anasayfa){scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 @media (prefers-reduced-motion:reduce){
   .anasayfa .oz-icerik,.anasayfa .oz-icerik *{animation:none}
 }
+.anasayfa .onay a{color:#fff;font-weight:700;text-decoration:underline;text-underline-offset:2px}
+.anasayfa .onay+.onay{margin-top:10px}

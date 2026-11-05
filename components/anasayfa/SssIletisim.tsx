@@ -40,7 +40,7 @@ const SORULAR = [
 ];
 
 export default function SssIletisim() {
-  const [form, setForm] = useState({ name: "", phone: "", consent: false });
+  const [form, setForm] = useState({ name: "", phone: "", consent: false, aydinlatma: false, acikRiza: false });
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -48,6 +48,11 @@ export default function SssIletisim() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+
+    if (!form.aydinlatma || !form.acikRiza) {
+      setError("Devam etmek için Aydınlatma Metni ve Açık Rıza Metni onaylarını işaretleyin.");
+      return;
+    }
 
     const recaptchaToken = RECAPTCHA_SITE_KEY ? window.grecaptcha?.getResponse() : "";
     if (RECAPTCHA_SITE_KEY && !recaptchaToken) {
@@ -145,6 +150,25 @@ export default function SssIletisim() {
                     />
                   </div>
                 </div>
+                {/* Aydınlatma ve açık rıza onayı zorunlu; kampanya iletisi isteğe bağlı */}
+                <label className="onay">
+                  <input type="checkbox" required checked={form.aydinlatma} onChange={(e) => setForm({ ...form, aydinlatma: e.target.checked })} />
+                  <span>
+                    <a href="/aydinlatma-metni" target="_blank" rel="noopener noreferrer">
+                      Aydınlatma Metni
+                    </a>
+                    &apos;ni okudum. *
+                  </span>
+                </label>
+                <label className="onay">
+                  <input type="checkbox" required checked={form.acikRiza} onChange={(e) => setForm({ ...form, acikRiza: e.target.checked })} />
+                  <span>
+                    <a href="/acik-riza-metni" target="_blank" rel="noopener noreferrer">
+                      Açık Rıza Metni
+                    </a>{" "}
+                    kapsamında kişisel verilerimin işlenmesine onay veriyorum. *
+                  </span>
+                </label>
                 <label className="onay">
                   <input type="checkbox" checked={form.consent} onChange={(e) => setForm({ ...form, consent: e.target.checked })} />
                   <span>Mizan Mülk Yönetimi kampanyaları hakkında elektronik ileti almak istiyorum.</span>

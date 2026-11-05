@@ -34,10 +34,19 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Geçersiz istek." }, { status: 400 });
   }
-  const { name, phone, consent, recaptchaToken } = (govde ?? {}) as Record<string, unknown>;
+  const { name, phone, consent, aydinlatma, acikRiza, recaptchaToken } = (govde ?? {}) as Record<string, unknown>;
 
   if (typeof name !== "string" || typeof phone !== "string") {
     return NextResponse.json({ error: "Ad ve telefon zorunludur." }, { status: 400 });
+  }
+
+  // Aydınlatma Metni ve Açık Rıza Metni onayı zorunlu; kayıt yalnız ikisi de
+  // açıkça işaretlendiyse (true) oluşur. Kampanya iletisi (consent) isteğe bağlı.
+  if (aydinlatma !== true || acikRiza !== true) {
+    return NextResponse.json(
+      { error: "Devam etmek için Aydınlatma Metni ve Açık Rıza Metni onaylarını işaretleyin." },
+      { status: 400 }
+    );
   }
 
   // Kontrol karakterlerini at, fazla boşlukları tek boşluğa indir.
