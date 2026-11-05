@@ -2,10 +2,10 @@
 
 import { useEffect } from "react";
 import { trSayi, yavaslayan } from "@/lib/anasayfaGrafik";
-import { azHareketMi, dongudeCalis, HAREKET_OLAYI } from "./hareket";
+import { azHareketMi, HAREKET_OLAYI } from "./hareket";
 
-// Sunucuda çizilen bölümlerin hareketleri: görünce belirme, sayaçlar, nefes alan
-// çubuklar, canlı kiracı durumu, kart ışığı, cihaz eğimi. Hiçbir şey çizmez.
+// Sunucuda çizilen bölümlerin hareketleri: görünce belirme, sayaçlar, kıvılcım
+// grafiklerindeki noktalar, cihaz eğimi. Hiçbir şey çizmez.
 // İçerik varsayılan olarak görünür; yalnız ilk anda ekran dışında kalanlar
 // ".bekle" ile gizlenip ekrana girince belirir (ilk boyamada yanıp sönme olmaz).
 export default function AnasayfaHareket() {
@@ -60,36 +60,6 @@ export default function AnasayfaHareket() {
         izle.observe(el);
       });
       temizle.push(() => izle.disconnect());
-    }
-
-    if (!az) {
-      // Finansal raporlama çubukları nefes alır; Burak Şahin'in durumu ödenir/gecikir.
-      const cubuklar = [...kok.querySelectorAll<HTMLElement>("[data-nefes]")];
-      const durum = kok.querySelector<HTMLElement>("[data-canli-durum]");
-      let odendi = false;
-      const nefes = window.setInterval(() => {
-        if (!dongudeCalis()) return;
-        cubuklar.forEach((c) => (c.style.height = `${Math.min(100, Number(c.dataset.nefes) * (0.86 + Math.random() * 0.26))}%`));
-      }, 2600);
-      const durumId = window.setInterval(() => {
-        if (!durum || !dongudeCalis()) return;
-        odendi = !odendi;
-        durum.className = `durum ${odendi ? "d-odendi" : "d-gec"}`;
-        durum.textContent = odendi ? "Ödendi" : "2 gün geç";
-      }, 3200);
-      temizle.push(() => window.clearInterval(nefes), () => window.clearInterval(durumId));
-    }
-
-    if (!dokunmatik) {
-      const kartlar = [...kok.querySelectorAll<HTMLElement>(".kart")];
-      const isik = (e: PointerEvent) => {
-        const k = e.currentTarget as HTMLElement;
-        const r = k.getBoundingClientRect();
-        k.style.setProperty("--mx", `${e.clientX - r.left}px`);
-        k.style.setProperty("--my", `${e.clientY - r.top}px`);
-      };
-      kartlar.forEach((k) => k.addEventListener("pointermove", isik));
-      temizle.push(() => kartlar.forEach((k) => k.removeEventListener("pointermove", isik)));
     }
 
     const sahne = kok.querySelector<HTMLElement>("[data-egim]");
