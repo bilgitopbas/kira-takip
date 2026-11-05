@@ -16,8 +16,8 @@ const BLOCKS: LegalBlock[] = [
   {
     type: "ul",
     items: [
-      "Zorunlu Çerezler: Oturum açma, güvenlik ve sitenin temel işlevlerinin çalışması için gereklidir; devre dışı bırakılamaz.",
-      "Performans ve Analiz Çerezleri: Sitenin nasıl kullanıldığını anlamamıza ve deneyimi iyileştirmemize yardımcı olur.",
+      "Zorunlu Çerezler: Oturum açma, güvenlik ve sitenin temel işlevlerinin çalışması için gereklidir; devre dışı bırakılamaz. Kayıt ve iletişim formlarındaki bot korumasında Google reCAPTCHA, güvenlik amacıyla çerez yerleştirebilir.",
+      "Performans ve Analiz Çerezleri: Sitenin nasıl kullanıldığını anlamamıza ve deneyimi iyileştirmemize yardımcı olur. Bu amaçla Google Analytics çerezleri (_ga, _ga_*) kullanılır; bu çerezler yalnızca çerez bildiriminde \"Kabul Et\" seçildiğinde yerleştirilir ve en fazla 2 yıl saklanır.",
       "İşlevsellik Çerezleri: Tercihlerinizi (örneğin dil veya tema seçimi) hatırlamamızı sağlar.",
       "Pazarlama Çerezleri: Yalnızca açık rızanız bulunması halinde, ilgi alanlarınıza uygun içerik ve kampanyaların sunulması amacıyla kullanılır.",
     ],
