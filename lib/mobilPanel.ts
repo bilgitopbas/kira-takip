@@ -124,10 +124,11 @@ export async function mulkDetayiGetir(ownerId: string, id: string) {
 
 const KIRACI_SIRALAMA = new Map<string, Prisma.TenantOrderByWithRelationInput>([
   ["newest", { createdAt: "desc" }],
-  ["rent_asc", { monthlyRent: "asc" }],
-  ["rent_desc", { monthlyRent: "desc" }],
-  ["contract_asc", { contractStart: "asc" }],
-  ["contract_desc", { contractStart: "desc" }],
+  // Kira/sözleşme girilmemiş kiracılar her yönde sonda (Postgres DESC'te NULL'ı başa alır)
+  ["rent_asc", { monthlyRent: { sort: "asc", nulls: "last" } }],
+  ["rent_desc", { monthlyRent: { sort: "desc", nulls: "last" } }],
+  ["contract_asc", { contractStart: { sort: "asc", nulls: "last" } }],
+  ["contract_desc", { contractStart: { sort: "desc", nulls: "last" } }],
 ]);
 
 export async function kiracilariGetir(
