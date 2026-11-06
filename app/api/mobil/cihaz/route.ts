@@ -1,14 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { cihazJetonuGecerli } from "@/lib/pushBicim";
-import { hataYaniti, jsonGovde, jsonYanit, mobilKapisi, sunucuHatasi } from "@/lib/mobilKapi";
+import { hataYaniti, jsonGovde, jsonYanit, kendiHesabiKapisi, sunucuHatasi } from "@/lib/mobilKapi";
 
 // Push jetonu kaydı: uygulama her açılışta çağırabilir (jeton değişmişse güncellenir).
 // Aynı jeton başka hesapta kayıtlıysa bu hesaba geçer: cihazda oturum değişmiştir.
 // Jeton erişim jetonundaki mobil oturuma bağlanır; oturum düşünce silinir.
 export async function POST(req: Request) {
   try {
-    const k = await mobilKapisi();
+    const k = await kendiHesabiKapisi();
     if ("yanit" in k) return k.yanit;
     const { userId, mobilOturumId } = k.session;
     if (!checkRateLimit(`mobil-cihaz:${mobilOturumId}`, 60, 15 * 60 * 1000)) {
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
 // Yalnız kendi hesabının jetonu silinir; jeton yoksa da sonuç aynı
 export async function DELETE(req: Request) {
   try {
-    const k = await mobilKapisi();
+    const k = await kendiHesabiKapisi();
     if ("yanit" in k) return k.yanit;
     const g = await jsonGovde(req);
     if ("yanit" in g) return g.yanit;

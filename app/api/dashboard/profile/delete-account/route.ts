@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession, destroySession } from "@/lib/auth";
+import { mobilVekaletMi, VEKALET_YASAK_MESAJI } from "@/lib/mobilBicim";
 import { hesapSilmeEngeli } from "@/lib/hesapSilmeYetkisi";
 
 export async function DELETE() {
@@ -12,6 +13,9 @@ export async function DELETE() {
   const engel = hesapSilmeEngeli(session);
   if (engel) {
     return NextResponse.json({ error: engel }, { status: 403 });
+  }
+  if (mobilVekaletMi(session)) {
+    return NextResponse.json({ error: VEKALET_YASAK_MESAJI, kod: "VEKALET_YASAK" }, { status: 403 });
   }
 
   const properties = await prisma.property.findMany({

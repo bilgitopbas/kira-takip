@@ -5,6 +5,8 @@ import assert from "node:assert/strict";
 import {
   abonelikBilgisi,
   kullaniciTuru,
+  mobilAdminMi,
+  mobilVekaletMi,
   sayfalama,
   sayiya,
   sorguMetni,
@@ -122,4 +124,18 @@ test("istemciIpCoz: sağdan N. değer, uydurulan sol değerler yok sayılır", (
   assert.equal(istemciIpCoz(null, null, "1"), "unknown");
   assert.equal(istemciIpCoz("6.6.6.6, 1.1.1.1", null, "bozuk"), "1.1.1.1", "bozuk değer varsayılana düşer");
   assert.equal(istemciIpCoz(" , ", "3.3.3.3", "1"), "3.3.3.3");
+});
+
+test("mobilAdminMi: yalnız yöneticinin kendi oturumu", () => {
+  assert.equal(mobilAdminMi({ mobilRol: "ADMIN" }), true);
+  assert.equal(mobilAdminMi({ mobilRol: "CUSTOMER" }), false);
+  assert.equal(mobilAdminMi({}), false);
+  assert.equal(mobilAdminMi({ mobilRol: "ADMIN", memberId: "m1" }), false);
+  assert.equal(mobilAdminMi({ mobilRol: "ADMIN", impersonatedBy: "a1" }), false);
+});
+
+test("mobilVekaletMi: yalnız mobil jetonlu vekalet; web çerezli vekalet değil", () => {
+  assert.equal(mobilVekaletMi({ mobilOturumId: "o1", impersonatedBy: "a1" }), true);
+  assert.equal(mobilVekaletMi({ impersonatedBy: "a1" }), false);
+  assert.equal(mobilVekaletMi({ mobilOturumId: "o1" }), false);
 });

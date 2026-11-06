@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { mobilVekaletMi, VEKALET_YASAK_MESAJI } from "@/lib/mobilBicim";
 
 export async function GET() {
   const session = await getSession();
@@ -25,6 +26,9 @@ export async function PATCH(req: NextRequest) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Yetkisiz erişim." }, { status: 401 });
+  }
+  if (mobilVekaletMi(session)) {
+    return NextResponse.json({ error: VEKALET_YASAK_MESAJI, kod: "VEKALET_YASAK" }, { status: 403 });
   }
 
   const { fullName, email, phone, city } = await req.json();

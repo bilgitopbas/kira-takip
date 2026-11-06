@@ -1,51 +1,4 @@
-import { prisma } from "@/lib/prisma";
-
-async function getStats() {
-  const now = new Date();
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
-
-  const [
-    userCount,
-    propertyCount,
-    tenantCount,
-    recentUsers,
-    trialCount,
-    activeCount,
-    danismanCount,
-    passiveCount,
-    churnedTrialCount,
-  ] = await Promise.all([
-    prisma.user.count({ where: { role: "CUSTOMER" } }),
-    prisma.property.count(),
-    prisma.tenant.count(),
-    prisma.user.findMany({
-      where: { role: "CUSTOMER" },
-      orderBy: { createdAt: "desc" },
-      take: 5,
-      select: { id: true, fullName: true, email: true, subscriptionStatus: true, createdAt: true },
-    }),
-    prisma.user.count({ where: { role: "CUSTOMER", subscriptionStatus: "TRIAL" } }),
-    prisma.user.count({ where: { role: "CUSTOMER", subscriptionStatus: "ACTIVE" } }),
-    prisma.user.count({ where: { role: "CUSTOMER", subscriptionStatus: "DANISMAN" } }),
-    prisma.user.count({ where: { role: "CUSTOMER", subscriptionStatus: "PASSIVE" } }),
-    prisma.user.count({
-      where: {
-        role: "CUSTOMER",
-        subscriptionStatus: { in: ["TRIAL", "PASSIVE"] },
-        trialEndsAt: { gte: thirtyDaysAgo, lte: now },
-      },
-    }),
-  ]);
-
-  return {
-    userCount,
-    propertyCount,
-    tenantCount,
-    recentUsers,
-    tierCounts: { TRIAL: trialCount, ACTIVE: activeCount, DANISMAN: danismanCount, PASSIVE: passiveCount },
-    churnedTrialCount,
-  };
-}
+import { adminIstatistikleri } from "@/lib/adminIslemleri";
 
 const STATUS_STYLES = {
   TRIAL: "bg-amber-50 text-amber-600 border border-amber-100",
@@ -69,7 +22,7 @@ const TIER_BAR_STYLES: Record<string, string> = {
 };
 
 export default async function AdminDashboard() {
-  const { userCount, propertyCount, tenantCount, recentUsers, tierCounts, churnedTrialCount } = await getStats();
+  const { userCount, propertyCount, tenantCount, recentUsers, tierCounts, churnedTrialCount } = await adminIstatistikleri();
   const tierTotal = Math.max(1, tierCounts.TRIAL + tierCounts.ACTIVE + tierCounts.DANISMAN + tierCounts.PASSIVE);
 
   const CARDS = [

@@ -9,6 +9,20 @@ export function kullaniciTuru(role: "ADMIN" | "CUSTOMER", memberId?: string | nu
   return role === "ADMIN" ? "ADMIN" : "SAHIP";
 }
 
+// Mobil yönetim uçları: yalnız yöneticinin kendi oturumu (ekip üyesi ya da müşteri
+// paneline girilmiş vekalet jetonu değil)
+export function mobilAdminMi(s: { mobilRol?: string; memberId?: string; impersonatedBy?: string }): boolean {
+  return s.mobilRol === "ADMIN" && !s.memberId && !s.impersonatedBy;
+}
+
+// Yönetici mobilde müşteri paneline girmiş: hesaba ait kalıcı ayarlar (şifre, e-posta,
+// profil, ekip, cihaz, hesap silme) bu jetonla değiştirilemez. Web çerezli vekalet etkilenmez.
+export function mobilVekaletMi(s: { mobilOturumId?: string; impersonatedBy?: string }): boolean {
+  return Boolean(s.mobilOturumId && s.impersonatedBy);
+}
+
+export const VEKALET_YASAK_MESAJI = "Bu işlem kullanıcı paneline girilmişken yapılamaz.";
+
 // Kullanım koşulları ve açık rıza yalnız hesap sahibinden istenir
 export function sozlesmeGerekli(
   tur: KullaniciTuru,

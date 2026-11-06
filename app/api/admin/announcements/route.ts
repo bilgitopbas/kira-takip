@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { sendPushNotification, sendPushToAll } from "@/lib/onesignal";
-import { hesapPushHedefleri } from "@/lib/pushHedef";
-import { hesabaPush, herkesePush } from "@/lib/push";
+import { duyuruGonder } from "@/lib/adminIslemleri";
 
 // Duyuru (sadece admin): targetId yoksa HERKESE, varsa sadece o kullanıcıya
 // uygulama içi bildirim + telefon push'u gönderilir.
@@ -19,82 +17,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Başlık ve mesaj zorunludur." }, { status: 400 });
     }
 
-    let target: { id: string; fullName: string } | null = null;
-    if (targetId) {
-      target = await prisma.user.findUnique({
-        where: { id: targetId },
-        select: { id: true, fullName: true },
-      });
-      if (!target) {
-        return NextResponse.json({ error: "Seçilen kullanıcı bulunamadı." }, { status: 404 });
-      }
-    }
-
-    const cleanSubtitle = subtitle?.trim() || null;
-
-    const announcement = await prisma.announcement.create({
-      data: {
-        title: title.trim(),
-        subtitle: cleanSubtitle,
-        message: message.trim(),
-        targetId: target?.id ?? null,
-        targetName: target?.fullName ?? null,
-        senderId: session.userId,
-      },
+    const sonuc = await duyuruGonder({
+      title: title.trim(),
+      subtitle: subtitle?.trim() || null,
+      message: message.trim(),
+      targetId: targetId || null,
+      senderId: session.userId,
     });
-
-    const inAppMessage = cleanSubtitle
-      ? `${cleanSubtitle} — ${announcement.message}`
-      : announcement.message;
-
-    let pushRecipients: number | null = null;
-
-    if (target) {
-      // Tek kullanıcı: uygulama içi bildirim + kişiye özel push
-      await prisma.notification.create({
-        data: {
-          userId: target.id,
-          type: "ANNOUNCEMENT",
-          title: `📢 ${announcement.title}`,
-          message: inAppMessage,
-          dedupeKey: `announcement-${announcement.id}`,
-        },
-      });
-      // Hesap sahibi + davetli üyelerin cihazları
-      const hedefler = await hesapPushHedefleri(target.id);
-      await sendPushNotification(hedefler, announcement.title, announcement.message);
-      await hesabaPush(target.id, {
-        baslik: announcement.title,
-        altBaslik: cleanSubtitle,
-        govde: announcement.message,
-        tur: "ANNOUNCEMENT",
-      });
-      pushRecipients = hedefler.length;
-    } else {
-      // Herkese: tüm kullanıcılara uygulama içi bildirim + genel push
-      const users = await prisma.user.findMany({ select: { id: true } });
-      if (users.length) {
-        await prisma.notification.createMany({
-          data: users.map((u) => ({
-            userId: u.id,
-            type: "ANNOUNCEMENT" as const,
-            title: `📢 ${announcement.title}`,
-            message: inAppMessage,
-            dedupeKey: `announcement-${announcement.id}`,
-          })),
-          skipDuplicates: true,
-        });
-      }
-      const push = await sendPushToAll(announcement.title, announcement.message, cleanSubtitle);
-      // Beklenmez: on binlerce cihazda yanıt zaman aşımına düşmesin; herkesePush reddolmaz
-      void herkesePush({
-        baslik: announcement.title,
-        altBaslik: cleanSubtitle,
-        govde: announcement.message,
-        tur: "ANNOUNCEMENT",
-      });
-      pushRecipients = (push as { recipients?: number } | null)?.recipients ?? null;
+    if ("hata" in sonuc) {
+      return NextResponse.json({ error: "Seçilen kullanıcı bulunamadı." }, { status: 404 });
     }
+    const { announcement, pushRecipients } = sonuc;
 
     return NextResponse.json(
       { message: "Duyuru gönderildi.", announcement, pushRecipients },

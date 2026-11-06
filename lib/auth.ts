@@ -69,6 +69,16 @@ export async function createSession(payload: SessionPayload) {
   });
 }
 
+// Vekalet jetonu (yönetici müşteri panelinde): yöneticinin mobil oturumu hâlâ açık,
+// rolü ADMIN ve şifresi değişmemiş olmalı. Yönetici çıkış yapınca vekalet de düşer.
+const vekaletHalaGecerli = cache(async (oturumId: string, adminId: string): Promise<boolean> => {
+  const o = await prisma.mobilOturum.findFirst({
+    where: { id: oturumId, userId: adminId, memberId: null, sonKullanma: { gt: new Date() } },
+    select: { sessionVersion: true, user: { select: { role: true, sessionVersion: true } } },
+  });
+  return !!o && o.user.role === "ADMIN" && o.sessionVersion === o.user.sessionVersion;
+});
+
 // Aynı istek içinde getSession birden çok kez çağrılırsa veritabanına bir kez gidilir.
 const oturumHalaGecerli = cache(
   async (userId: string, sv: number, memberId: string | undefined): Promise<boolean> => {
@@ -98,6 +108,12 @@ export async function getSession(): Promise<SessionPayload | null> {
     // Geçersiz Bearer çereze düşmez; sürüm ve üyelik denetimi web'le aynı
     const y = await erisimJetonuCoz(bearerAyikla(yetki));
     if (!y || !(await oturumHalaGecerli(y.userId, y.sv, y.memberId))) return null;
+    if (
+      y.impersonatedBy &&
+      (y.role !== "CUSTOMER" || y.memberId || !(await vekaletHalaGecerli(y.oturumId, y.impersonatedBy)))
+    ) {
+      return null;
+    }
     // Yönetim uçları mobil jetonu kabul etmez (v1): rol kontrolleri de bunu kesin kılar,
     // yalnız proxy'ye dayanmaz. Gerçek rol mobilRol'dedir.
     return {
@@ -108,6 +124,7 @@ export async function getSession(): Promise<SessionPayload | null> {
       memberEmail: y.memberEmail,
       memberName: y.memberName,
       mobilOturumId: y.oturumId,
+      ...(y.impersonatedBy ? { impersonatedBy: y.impersonatedBy } : {}),
     };
   }
 

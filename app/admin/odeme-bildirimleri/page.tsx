@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { odemeBildirimleriniGetir } from "@/lib/adminIslemleri";
 import OdemeBildirimleriView from "@/components/admin/OdemeBildirimleriView";
 
 export default async function OdemeBildirimleriPage() {
@@ -9,13 +9,7 @@ export default async function OdemeBildirimleriPage() {
     redirect("/login");
   }
 
-  const bildirimler = await prisma.paymentNotice.findMany({
-    orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-    take: 200,
-    include: {
-      user: { select: { fullName: true, email: true, phone: true } },
-    },
-  });
+  const bildirimler = await odemeBildirimleriniGetir();
 
   return (
     <div>

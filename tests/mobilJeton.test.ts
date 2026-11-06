@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { SignJWT } from "jose";
 import {
   ERISIM_SURESI_SN,
+  VEKALET_SURESI_SN,
   bearerAyikla,
   erisimJetonuCoz,
   erisimJetonuUret,
@@ -21,6 +22,17 @@ test("üret/çöz: içerik korunur, süre 5 dk", async () => {
   const { jeton, bitis } = await erisimJetonuUret(ICERIK, SIMDI);
   assert.equal(bitis.getTime(), SIMDI + ERISIM_SURESI_SN * 1000);
   assert.deepEqual(await erisimJetonuCoz(jeton, SIMDI), ICERIK);
+});
+
+test("vekalet jetonu: impersonatedBy taşınır, 30 dk sonra geçersiz", async () => {
+  const vekalet = { ...ICERIK, impersonatedBy: "admin1" };
+  const { jeton, bitis } = await erisimJetonuUret(vekalet, SIMDI, VEKALET_SURESI_SN);
+  assert.equal(bitis.getTime(), SIMDI + 30 * 60 * 1000);
+  assert.deepEqual(await erisimJetonuCoz(jeton, SIMDI + 29 * 60 * 1000), vekalet);
+  assert.equal(await erisimJetonuCoz(jeton, SIMDI + 31 * 60 * 1000), null);
+  // Olağan jetonda alan yok
+  const { jeton: olagan } = await erisimJetonuUret(ICERIK, SIMDI);
+  assert.equal((await erisimJetonuCoz(olagan, SIMDI))?.impersonatedBy, undefined);
 });
 
 test("üye alanları taşınır", async () => {

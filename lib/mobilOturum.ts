@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { computeAccessState } from "@/lib/access";
 import { abonelikBilgisi, kullaniciTuru, sozlesmeGerekli, yenilemeKarari, type YenilemeHatasi } from "@/lib/mobilBicim";
-import { YENILEME_SURESI_MS, erisimJetonuUret, jetonOzeti, yenilemeJetonuUret } from "@/lib/mobilJeton";
+import { VEKALET_SURESI_SN, YENILEME_SURESI_MS, erisimJetonuUret, jetonOzeti, yenilemeJetonuUret } from "@/lib/mobilJeton";
 
 // Mobil oturum kaydı: giriş, yenileme, çıkış. Cihaz başına tek satır.
 const ONCEKI_JETON_SURESI_MS = 60 * 1000;
@@ -61,13 +61,18 @@ async function oturumYaniti(
     oturumId,
     ...(uye ? { memberId: uye.id, memberEmail: uye.email, memberName: uye.fullName } : {}),
   });
-  const tur = kullaniciTuru(role, uye?.id);
   return {
     erisimJetonu: erisim.jeton,
     erisimBitis: erisim.bitis,
     yenilemeJetonu,
     yenilemeBitis,
     cihazId,
+    ...hesapBilgisi(sahip, uye, kullaniciTuru(role, uye?.id)),
+  };
+}
+
+function hesapBilgisi(sahip: Sahip, uye: Uye | null, tur: ReturnType<typeof kullaniciTuru>) {
+  return {
     kullanici: {
       id: sahip.id,
       ad: uye?.fullName ?? sahip.fullName,
@@ -192,4 +197,27 @@ export async function oturumKapat(yenilemeJetonu: unknown, cihazJetonu: unknown)
   if (typeof cihazJetonu === "string" && cihazJetonu) {
     await prisma.cihazJetonu.deleteMany({ where: { jeton: cihazJetonu, userId: kayit.userId } });
   }
+}
+
+type VekaletSonucu =
+  | { hata: "KULLANICI_YOK" | "YALNIZ_DANISMAN" }
+  | { tamam: { erisimJetonu: string; erisimBitis: Date } & ReturnType<typeof hesapBilgisi> };
+
+// Yönetici → Mizan Danışman müşterinin paneli (web'deki "Panele Git"). Yenileme jetonu ve
+// oturum satırı yok: jeton yöneticinin mobil oturumuna bağlıdır, o kapanınca ya da 30 dk
+// dolunca düşer (lib/auth.ts). Sözleşme onayı vekalette sorulmaz (lib/mobilKapi.ts).
+export async function vekaletAc(adminId: string, adminOturumId: string, hedefId: string): Promise<VekaletSonucu> {
+  const hedef = await prisma.user.findUnique({ where: { id: hedefId }, select: SAHIP_SECIMI });
+  if (!hedef || hedef.role !== "CUSTOMER") return { hata: "KULLANICI_YOK" };
+  if (hedef.subscriptionStatus !== "DANISMAN") return { hata: "YALNIZ_DANISMAN" };
+  const erisim = await erisimJetonuUret(
+    { userId: hedef.id, role: "CUSTOMER", sv: hedef.sessionVersion, oturumId: adminOturumId, impersonatedBy: adminId },
+    Date.now(),
+    VEKALET_SURESI_SN
+  );
+  // İz: yalnız kimlikler, kişisel veri yok
+  console.info(`Mobil vekalet: admin=${adminId} hedef=${hedef.id}`);
+  return {
+    tamam: { erisimJetonu: erisim.jeton, erisimBitis: erisim.bitis, ...hesapBilgisi(hedef, null, "SAHIP"), sozlesmeGerekli: false },
+  };
 }

@@ -2,6 +2,7 @@ import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { mobilVekaletMi, VEKALET_YASAK_MESAJI } from "@/lib/mobilBicim";
 import { requireWriteAccess } from "@/lib/access";
 import { sendInviteEmail } from "@/lib/mail";
 import { resolveAppUrl } from "@/lib/url";
@@ -25,6 +26,9 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Yetkisiz erişim." }, { status: 401 });
+  }
+  if (mobilVekaletMi(session)) {
+    return NextResponse.json({ error: VEKALET_YASAK_MESAJI, kod: "VEKALET_YASAK" }, { status: 403 });
   }
 
   const access = await requireWriteAccess(session.userId);

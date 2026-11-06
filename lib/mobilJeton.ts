@@ -8,6 +8,8 @@ import { SignJWT, jwtVerify } from "jose";
 // gerekmez, ama web çerezi ile mobil jeton birbirinin yerine geçemez.
 
 export const ERISIM_SURESI_SN = 5 * 60;
+// Yöneticinin müşteri paneline girme jetonu: yenilenmez, süre dolunca uygulama admin paneline döner
+export const VEKALET_SURESI_SN = 30 * 60;
 export const YENILEME_SURESI_MS = 60 * 24 * 60 * 60 * 1000;
 const JETON_TURU = "mobil-erisim";
 const TURETME_ETIKETI = "mizan-mobil-erisim-v1";
@@ -20,6 +22,9 @@ export type MobilJetonIcerigi = {
   memberId?: string;
   memberEmail?: string;
   memberName?: string;
+  // Yalnız vekalet jetonunda: paneline girilen hesabı açan yöneticinin userId'si.
+  // oturumId o zaman yöneticinin mobil oturumudur.
+  impersonatedBy?: string;
 };
 
 let onbellek: { gizli: string; anahtar: Uint8Array } | null = null;
@@ -32,14 +37,14 @@ function imzaAnahtari(): Uint8Array {
   return onbellek.anahtar;
 }
 
-export async function erisimJetonuUret(icerik: MobilJetonIcerigi, simdi = Date.now()) {
+export async function erisimJetonuUret(icerik: MobilJetonIcerigi, simdi = Date.now(), sureSn = ERISIM_SURESI_SN) {
   const iat = Math.floor(simdi / 1000);
   const jeton = await new SignJWT({ tur: JETON_TURU, ...icerik })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt(iat)
-    .setExpirationTime(iat + ERISIM_SURESI_SN)
+    .setExpirationTime(iat + sureSn)
     .sign(imzaAnahtari());
-  return { jeton, bitis: new Date((iat + ERISIM_SURESI_SN) * 1000) };
+  return { jeton, bitis: new Date((iat + sureSn) * 1000) };
 }
 
 /** Geçersiz, süresi dolmuş ya da başka türden (ör. web çerezi) jetonda null */
@@ -67,6 +72,7 @@ export async function erisimJetonuCoz(jeton: string | null, simdi = Date.now()):
       ...(typeof y.memberId === "string" ? { memberId: y.memberId } : {}),
       ...(typeof y.memberEmail === "string" ? { memberEmail: y.memberEmail } : {}),
       ...(typeof y.memberName === "string" ? { memberName: y.memberName } : {}),
+      ...(typeof y.impersonatedBy === "string" ? { impersonatedBy: y.impersonatedBy } : {}),
     };
   } catch {
     return null;

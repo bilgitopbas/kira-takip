@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { kullaniciTuru, sozlesmeGerekli } from "@/lib/mobilBicim";
+import { VEKALET_YASAK_MESAJI, kullaniciTuru, mobilAdminMi, sozlesmeGerekli } from "@/lib/mobilBicim";
 
 // app/api/mobil/* uçlarının ortak kapıları ve yanıtları. Kullanım:
 //   const k = await panelKapisi(); if ("yanit" in k) return k.yanit; k.session ...
@@ -20,6 +20,7 @@ export const sunucuHatasi = (err: unknown) => {
 };
 
 const YETKISIZ = () => hataYaniti("Yetkisiz.", 401, "YETKISIZ");
+const VEKALET_YASAK = () => hataYaniti(VEKALET_YASAK_MESAJI, 403, "VEKALET_YASAK");
 
 type Oturum = NonNullable<Awaited<ReturnType<typeof getSession>>>;
 export type MobilOturumu = Oturum & { mobilOturumId: string };
@@ -31,14 +32,24 @@ export async function mobilKapisi(): Promise<Kapi> {
   return session?.mobilOturumId ? { session: session as MobilOturumu } : { yanit: YETKISIZ() };
 }
 
+// Hesabın kendine ait işlemleri (cihaz, sözleşme onayı): yönetici müşteri panelindeyken kapalı
+export async function kendiHesabiKapisi(): Promise<Kapi> {
+  const k = await mobilKapisi();
+  if ("yanit" in k) return k;
+  return k.session.impersonatedBy ? { yanit: VEKALET_YASAK() } : k;
+}
+
 // Geri alınamaz işlemler: erişim jetonu çıkıştan birkaç dakika uzun yaşayabilir,
 // oturum satırı da aranır
 export async function canliOturumKapisi(): Promise<Kapi> {
-  const k = await mobilKapisi();
-  if ("yanit" in k) return k;
-  const { mobilOturumId: id, userId } = k.session;
+  const k = await kendiHesabiKapisi();
+  return "yanit" in k ? k : oturumSatiriKapisi(k.session);
+}
+
+async function oturumSatiriKapisi(session: MobilOturumu): Promise<Kapi> {
+  const { mobilOturumId: id, userId } = session;
   const oturum = await prisma.mobilOturum.findFirst({ where: { id, userId }, select: { id: true } });
-  return oturum ? k : { yanit: hataYaniti("Oturum geçersiz. Lütfen yeniden giriş yapın.", 401, "OTURUM_YOK") };
+  return oturum ? { session } : { yanit: hataYaniti("Oturum geçersiz. Lütfen yeniden giriş yapın.", 401, "OTURUM_YOK") };
 }
 
 // Panel okumaları: onayı eksik sahibe veri verilmez, uygulama onay ekranına gider
@@ -46,7 +57,8 @@ export async function panelKapisi(): Promise<Kapi> {
   const k = await mobilKapisi();
   if ("yanit" in k) return k;
   const tur = kullaniciTuru(k.session.mobilRol ?? "CUSTOMER", k.session.memberId);
-  if (tur !== "SAHIP") return k;
+  // Yönetici onayı sahip adına veremez; web panelinde de vekalette sözleşme sorulmaz
+  if (tur !== "SAHIP" || k.session.impersonatedBy) return k;
   const sahip = await prisma.user.findUnique({
     where: { id: k.session.userId },
     select: { termsAcceptedAt: true, marketingConsentAt: true },
@@ -56,6 +68,19 @@ export async function panelKapisi(): Promise<Kapi> {
     return { yanit: hataYaniti("Sözleşme onayı gerekiyor.", 403, "SOZLESME_ONAYI_GEREK") };
   }
   return k;
+}
+
+// /api/mobil/admin/*: yalnız yöneticinin kendi oturumu (vekalet jetonu ve ekip üyesi değil).
+// Yazan uçlar canli: true ile oturum satırını da arar. Abonelik ve sözleşme onayı aranmaz.
+export async function adminKapisi({ canli = false } = {}): Promise<Kapi> {
+  const k = await mobilKapisi();
+  if ("yanit" in k) return k;
+  const yetkiYok = { yanit: hataYaniti("Bu işlem için yönetici yetkisi gerekiyor.", 403, "YETKI_YOK") };
+  if (!mobilAdminMi(k.session)) return yetkiYok;
+  // Jetondaki rol 5 dk eskiyebilir: yetkisi alınan yönetici hemen düşer
+  const kullanici = await prisma.user.findUnique({ where: { id: k.session.userId }, select: { role: true } });
+  if (kullanici?.role !== "ADMIN") return yetkiYok;
+  return canli ? oturumSatiriKapisi(k.session) : k;
 }
 
 // Bozuk JSON boş gövde sayılır; zorunlu alan denetimi uçta yapılır

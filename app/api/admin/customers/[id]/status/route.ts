@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { musteriPaketiDegistir } from "@/lib/adminIslemleri";
+import { paketMi } from "@/lib/paketler";
 
 export async function PATCH(
   req: NextRequest,
@@ -14,14 +15,11 @@ export async function PATCH(
   const { id } = await params;
   const { status } = await req.json();
 
-  if (!["ACTIVE", "PASSIVE", "TRIAL", "DANISMAN"].includes(status)) {
+  if (!paketMi(status)) {
     return NextResponse.json({ error: "Geçersiz durum." }, { status: 400 });
   }
 
-  const updated = await prisma.user.update({
-    where: { id },
-    data: { subscriptionStatus: status },
-  });
+  const updated = await musteriPaketiDegistir(id, status);
 
   return NextResponse.json({ success: true, user: updated });
 }

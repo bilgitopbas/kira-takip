@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { calculatePlanPrice } from "@/lib/access";
+import { mulkLimitiBelirle } from "@/lib/adminIslemleri";
 
 export async function PATCH(
   req: NextRequest,
@@ -20,24 +19,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Geçerli bir mülk sayısı girin." }, { status: 400 });
   }
 
-  const now = new Date();
-  const periodEnd = new Date(now);
-  periodEnd.setMonth(periodEnd.getMonth() + 1);
-
-  const subscription = await prisma.subscription.upsert({
-    where: { userId: id },
-    create: {
-      userId: id,
-      propertyCount: count,
-      monthlyPrice: calculatePlanPrice(count),
-      currentPeriodStart: now,
-      currentPeriodEnd: periodEnd,
-    },
-    update: {
-      propertyCount: count,
-      monthlyPrice: calculatePlanPrice(count),
-    },
-  });
+  const subscription = await mulkLimitiBelirle(id, count);
 
   return NextResponse.json({ success: true, subscription });
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { yonetimTercihiDegistir } from "@/lib/adminIslemleri";
 
 export async function PATCH(
   req: NextRequest,
@@ -14,10 +14,7 @@ export async function PATCH(
   const { id } = await params;
   const { wantsManagement } = await req.json();
 
-  const user = await prisma.user.update({
-    where: { id },
-    data: { wantsManagement: Boolean(wantsManagement) },
-  });
+  const user = await yonetimTercihiDegistir(id, Boolean(wantsManagement));
 
   return NextResponse.json({ success: true, wantsManagement: user.wantsManagement });
 }
