@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { azHareketMi } from "./hareket";
 
 const MENU = [
   { label: "Neler Yapıyoruz?", href: "#neler-yapiyoruz" },
@@ -33,12 +34,24 @@ export default function UstMenu() {
     };
   }, []);
 
-  const sinif = ["ust", kaydi || menuAcik ? "kaydi" : "", aydinlik ? "acik" : ""].filter(Boolean).join(" ");
+  // Zaten ana sayfadayız: aynı adrese gezinme görünürde hiçbir şey yapmadığı için
+  // logo sayfanın en üstüne kayar ve adresteki #bölüm ekini temizler; zaten en
+  // üstteyse ana sayfayı yeniden yükler.
+  const basaDon = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
+    setMenuAcik(false);
+    if (window.location.hash) history.replaceState(null, "", "/");
+    if (window.scrollY < 10) window.location.reload();
+    else window.scrollTo({ top: 0, behavior: azHareketMi() ? "auto" : "smooth" });
+  };
+
+  const sinif =["ust", kaydi || menuAcik ? "kaydi" : "", aydinlik ? "acik" : ""].filter(Boolean).join(" ");
 
   return (
     <header className={sinif}>
       <div className="kap">
-        <Link href="/" className="logo" aria-label="Mizan Mülk Yönetimi ana sayfa">
+        <Link href="/" className="logo" aria-label="Mizan Mülk Yönetimi ana sayfa" onClick={basaDon}>
           <Image className="la" src="/anasayfa/logo-acik.webp" alt="Mizan Mülk Yönetimi" width={168} height={46} preload />
           <Image className="lk" src="/anasayfa/logo-koyu.webp" alt="" aria-hidden="true" width={168} height={46} />
         </Link>

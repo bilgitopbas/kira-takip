@@ -520,9 +520,18 @@ html:has(.anasayfa){scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 .anasayfa .pembe-isik{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(42% 46% at 88% 14%,rgba(245,184,207,.42),transparent 70%),radial-gradient(36% 40% at 62% 92%,rgba(245,184,207,.30),transparent 70%),radial-gradient(30% 36% at 4% 78%,rgba(245,184,207,.22),transparent 70%)}
 .anasayfa .kahraman .tikler li span{background:rgba(245,184,207,.22);color:var(--pembe-200)}
 .anasayfa .kahraman .cam-kart{border-color:rgba(245,184,207,.32);box-shadow:0 30px 60px -24px rgba(0,0,0,.55),0 0 0 1px rgba(245,184,207,.08),inset 0 1px 0 rgba(255,255,255,.15)}
-.anasayfa .kahraman-magaza{margin-top:20px}
-.anasayfa .kahraman-magaza a{border-color:rgba(255,255,255,.4)}
-@media (max-width:640px){.anasayfa .kahraman-magaza a{flex:1 1 140px;min-width:0;padding:9px 12px}.anasayfa .kahraman-magaza .s2{font-size:16px}}
+/* Sade giriş: tek ana düğme, metin bağlantısı, kapsülsüz özellikler, küçük mağaza rozetleri */
+.anasayfa .kahraman .tikler{gap:8px 22px}
+.anasayfa .kahraman .tikler li{background:none;border:0;padding:0;backdrop-filter:none}
+.anasayfa .metin-bag{display:inline-flex;align-items:center;gap:8px;padding:10px 6px;font-size:15px;font-weight:600;color:#E3EAF6;text-decoration:underline;text-decoration-color:rgba(227,234,246,.35);text-underline-offset:5px;transition:color .2s,text-decoration-color .2s}
+.anasayfa .metin-bag svg{width:14px;height:14px;transform:rotate(90deg)}
+.anasayfa .metin-bag:hover{color:#fff;text-decoration-color:var(--aku-300)}
+.anasayfa .kahraman-magaza{margin-top:22px;gap:10px}
+.anasayfa .kahraman-magaza a{min-width:0;padding:7px 14px;gap:9px;border-radius:11px;border-color:rgba(255,255,255,.32)}
+.anasayfa .kahraman-magaza svg{width:21px;height:21px}
+.anasayfa .kahraman-magaza .s1{font-size:9.5px}
+.anasayfa .kahraman-magaza .s2{font-size:15px}
+@media (max-width:640px){.anasayfa .kahraman .tikler li{padding:0}.anasayfa .kahraman .cta-satir{justify-content:center}.anasayfa .kahraman-magaza a{flex:0 1 auto}}
 /* Mülk Şehrim vitrini: panelin gerçek 3D şehri ve haritası (örnek portföy) */
 .anasayfa .vitrin{background:radial-gradient(700px 460px at 85% 40%,rgba(82,224,200,.28),transparent 65%),radial-gradient(560px 400px at 10% 85%,rgba(245,184,207,.32),transparent 65%),linear-gradient(180deg,#D8F0EB,var(--zemin))}
 .anasayfa .vitrin-ic{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:44px;align-items:center}

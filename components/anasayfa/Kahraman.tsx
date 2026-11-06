@@ -215,9 +215,8 @@ export default function Kahraman() {
           aria-hidden="true"
           onPlaying={() => setOynuyor(true)}
         >
-          <source media="(max-width: 1060px)" src="/anasayfa/sehir-telefon.webm" type='video/webm; codecs="vp9"' />
+          {/* Yalnız H.264: bazı ekran kartlarının VP9 (WebM) donanım çözücüsü bu kayıtlarda hata verip videoyu durduruyordu */}
           <source media="(max-width: 1060px)" src="/anasayfa/sehir-telefon.mp4" type="video/mp4" />
-          <source src="/anasayfa/sehir-masaustu.webm" type='video/webm; codecs="vp9"' />
           <source src="/anasayfa/sehir-masaustu.mp4" type="video/mp4" />
         </video>
         <div className="perde" aria-hidden="true" />
@@ -265,14 +264,14 @@ export default function Kahraman() {
             <a href="/register" className="dugme ana">
               45 Gün Ücretsiz Deneyin <Ok />
             </a>
-            <a href="#neler-yapiyoruz" className="dugme hayalet">
-              Nasıl Çalışır?
+            <a href="#neler-yapiyoruz" className="metin-bag">
+              Nasıl çalışır? <Ok />
             </a>
           </div>
-          <MagazaRozetleri className="magaza kahraman-magaza belir" style={gecikme(".4s")} />
-          <div className="kucuk-not belir" style={gecikme(".48s")}>
+          <div className="kucuk-not belir" style={gecikme(".4s")}>
             Kurulum yok · kredi kartı gerekmez
           </div>
+          <MagazaRozetleri className="magaza kahraman-magaza belir" style={gecikme(".48s")} />
         </div>
 
         <div className="kahraman-sag" aria-hidden="true">
