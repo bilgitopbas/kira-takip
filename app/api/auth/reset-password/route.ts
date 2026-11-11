@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    if (!checkRateLimit(`reset-password:${ip}`, 10, 15 * 60 * 1000)) {
+      return NextResponse.json(
+        { error: "Çok fazla deneme yaptınız. Lütfen daha sonra tekrar deneyin." },
+        { status: 429 }
+      );
+    }
+
     const { token, password } = await req.json();
 
     if (!token || !password) {

@@ -4,17 +4,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import Script from "next/script";
 import TiltCard from "@/components/motion/TiltCard";
 import { isNativeApp } from "@/lib/native";
+import TurnstileAlani, { TURNSTILE_SITE_KEY } from "@/components/TurnstileAlani";
 
-const RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
-
-declare global {
-  interface Window {
-    grecaptcha?: { getResponse: (id?: number) => string; reset: (id?: number) => void };
-  }
-}
 
 const ACCOUNT_TYPES = [
   {
@@ -97,6 +90,8 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileSifirla, setTurnstileSifirla] = useState(0);
   const [nativeApp, setNativeApp] = useState(false);
 
   useEffect(() => {
@@ -122,9 +117,8 @@ export default function RegisterPage() {
       return;
     }
 
-    const recaptchaToken = RECAPTCHA_SITE_KEY ? window.grecaptcha?.getResponse() : "";
-    if (RECAPTCHA_SITE_KEY && !recaptchaToken) {
-      setError("Lütfen robot olmadığınızı doğrulayın.");
+    if (TURNSTILE_SITE_KEY && !turnstileToken) {
+      setError("Lütfen güvenlik doğrulamasının tamamlanmasını bekleyin.");
       return;
     }
 
@@ -133,15 +127,16 @@ export default function RegisterPage() {
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, recaptchaToken }),
+      body: JSON.stringify({ ...form, turnstileToken }),
     });
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setLoading(false);
 
     if (!res.ok) {
       setError(data.error || "Bir hata oluştu.");
-      window.grecaptcha?.reset();
+      // Jeton tek kullanımlık: yeniden göndermek için yenisi gerekir
+      setTurnstileSifirla((n) => n + 1);
       return;
     }
 
@@ -375,12 +370,7 @@ export default function RegisterPage() {
                 </span>
               </label>
 
-              {RECAPTCHA_SITE_KEY && (
-                <>
-                  <Script src="https://www.google.com/recaptcha/api.js" strategy="afterInteractive" />
-                  <div className="g-recaptcha" data-sitekey={RECAPTCHA_SITE_KEY} />
-                </>
-              )}
+              <TurnstileAlani eylem="kayit" onJeton={setTurnstileToken} sifirla={turnstileSifirla} />
 
               <button
                 type="submit"

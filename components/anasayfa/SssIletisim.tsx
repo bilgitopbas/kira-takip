@@ -1,16 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Script from "next/script";
+import TurnstileAlani, { TURNSTILE_SITE_KEY } from "@/components/TurnstileAlani";
 import { gecikme } from "./SvgTanimlari";
 
-const RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
-
-declare global {
-  interface Window {
-    grecaptcha?: { getResponse: (id?: number) => string; reset: (id?: number) => void };
-  }
-}
 
 const SORULAR = [
   {
@@ -44,6 +37,8 @@ export default function SssIletisim() {
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileSifirla, setTurnstileSifirla] = useState(0);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -54,9 +49,8 @@ export default function SssIletisim() {
       return;
     }
 
-    const recaptchaToken = RECAPTCHA_SITE_KEY ? window.grecaptcha?.getResponse() : "";
-    if (RECAPTCHA_SITE_KEY && !recaptchaToken) {
-      setError("Lütfen robot olmadığınızı doğrulayın.");
+    if (TURNSTILE_SITE_KEY && !turnstileToken) {
+      setError("Lütfen güvenlik doğrulamasının tamamlanmasını bekleyin.");
       return;
     }
 
@@ -65,7 +59,7 @@ export default function SssIletisim() {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, recaptchaToken }),
+        body: JSON.stringify({ ...form, turnstileToken }),
       });
       if (res.ok) {
         setSent(true);
@@ -73,10 +67,10 @@ export default function SssIletisim() {
       }
       const data = await res.json().catch(() => ({}));
       setError(data.error || "Talebiniz gönderilemedi. Lütfen tekrar deneyin.");
-      window.grecaptcha?.reset();
+      setTurnstileSifirla((n) => n + 1);
     } catch {
       setError("Bağlantı hatası. Lütfen tekrar deneyin.");
-      window.grecaptcha?.reset();
+      setTurnstileSifirla((n) => n + 1);
     } finally {
       setLoading(false);
     }
@@ -173,12 +167,7 @@ export default function SssIletisim() {
                   <input type="checkbox" checked={form.consent} onChange={(e) => setForm({ ...form, consent: e.target.checked })} />
                   <span>Mizan Mülk Yönetimi kampanyaları hakkında elektronik ileti almak istiyorum.</span>
                 </label>
-                {RECAPTCHA_SITE_KEY && (
-                  <>
-                    <Script src="https://www.google.com/recaptcha/api.js" strategy="afterInteractive" />
-                    <div className="g-recaptcha alan" data-sitekey={RECAPTCHA_SITE_KEY} />
-                  </>
-                )}
+                <TurnstileAlani className="alan" eylem="iletisim" onJeton={setTurnstileToken} sifirla={turnstileSifirla} />
                 {error && <p className="form-hata">{error}</p>}
                 <button type="submit" disabled={loading} className="dugme ana">
                   {loading ? "Gönderiliyor..." : "Teklif Al"}

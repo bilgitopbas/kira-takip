@@ -25,6 +25,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "E-posta zorunludur." }, { status: 400 });
     }
 
+    // E-posta başına saatte 3: aşılınca da aynı başarı yanıtı döner (hesabın varlığı sızmaz),
+    // yalnız e-posta gönderilmez. Mobil 2.0.0 da bu ucu çağırır: yanıt sözleşmesi değişmez.
+    if (!checkRateLimit(`forgot-password-eposta:${String(email).trim().toLowerCase()}`, 3, 60 * 60 * 1000)) {
+      return NextResponse.json(GENERIC_SUCCESS);
+    }
+
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return NextResponse.json(GENERIC_SUCCESS);

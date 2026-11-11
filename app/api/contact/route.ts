@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
-import { verifyRecaptcha } from "@/lib/recaptcha";
+import { turnstileDogrula, turnstileHataYaniti } from "@/lib/turnstile";
 import { notifyAdminsContactRequest } from "@/lib/adminNotifications";
 
 const AD_EN_AZ = 2;
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Geçersiz istek." }, { status: 400 });
   }
-  const { name, phone, consent, aydinlatma, acikRiza, recaptchaToken } = (govde ?? {}) as Record<string, unknown>;
+  const { name, phone, consent, aydinlatma, acikRiza, turnstileToken } = (govde ?? {}) as Record<string, unknown>;
 
   if (typeof name !== "string" || typeof phone !== "string") {
     return NextResponse.json({ error: "Ad ve telefon zorunludur." }, { status: 400 });
@@ -67,10 +67,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const recaptchaOk = await verifyRecaptcha(typeof recaptchaToken === "string" ? recaptchaToken : null);
-  if (!recaptchaOk) {
-    return NextResponse.json({ error: "Lütfen robot olmadığınızı doğrulayın." }, { status: 400 });
-  }
+  const turnstileHata = turnstileHataYaniti(await turnstileDogrula(turnstileToken, ip));
+  if (turnstileHata) return turnstileHata;
 
   try {
     const talep = await prisma.contactRequest.create({

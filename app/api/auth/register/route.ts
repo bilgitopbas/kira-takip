@@ -5,7 +5,7 @@ import { hashPassword, createSession } from "@/lib/auth";
 import { sendWelcomeEmail, sendVerificationEmail } from "@/lib/mail";
 import { notifyAdminsNewCustomer } from "@/lib/adminNotifications";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
-import { verifyRecaptcha } from "@/lib/recaptcha";
+import { turnstileDogrula, turnstileHataYaniti } from "@/lib/turnstile";
 import { isValidEmailFormat, domainAcceptsMail } from "@/lib/emailValidation";
 import { resolveAppUrl } from "@/lib/url";
 
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       propertyCountRange,
       termsAccepted,
       marketingConsent,
-      recaptchaToken,
+      turnstileToken,
     } = await req.json();
 
     if (!email || !password || !fullName || !city || !propertyCountRange) {
@@ -48,22 +48,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const emailDomainOk = await domainAcceptsMail(email);
-    if (!emailDomainOk) {
-      return NextResponse.json(
-        { error: "Girdiğiniz e-posta adresi geçerli görünmüyor. Lütfen adresi kontrol edip tekrar deneyin." },
-        { status: 400 }
-      );
-    }
-
-    const recaptchaOk = await verifyRecaptcha(recaptchaToken || null);
-    if (!recaptchaOk) {
-      return NextResponse.json(
-        { error: "Robot olmadığınızı doğrulayın." },
-        { status: 400 }
-      );
-    }
-
     if (!termsAccepted) {
       return NextResponse.json(
         { error: "Devam etmek için Kullanıcı Sözleşmesi'ni ve Aydınlatma Metni'ni kabul etmeniz gerekiyor." },
@@ -74,6 +58,18 @@ export async function POST(req: NextRequest) {
     if (!marketingConsent) {
       return NextResponse.json(
         { error: "Devam etmek için Açık Rıza Metni'ni kabul etmeniz gerekiyor." },
+        { status: 400 }
+      );
+    }
+
+    // Ucuz denetimlerden sonra, DNS ve veritabanından önce (jeton tek kullanımlık)
+    const turnstileHata = turnstileHataYaniti(await turnstileDogrula(turnstileToken, ip));
+    if (turnstileHata) return turnstileHata;
+
+    const emailDomainOk = await domainAcceptsMail(email);
+    if (!emailDomainOk) {
+      return NextResponse.json(
+        { error: "Girdiğiniz e-posta adresi geçerli görünmüyor. Lütfen adresi kontrol edip tekrar deneyin." },
         { status: 400 }
       );
     }
