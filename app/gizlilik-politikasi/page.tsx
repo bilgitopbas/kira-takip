@@ -93,7 +93,7 @@ const BLOCKS: LegalBlock[] = [
       "Barındırma sağlayıcımız: Verileriniz sunucularımızda saklanır.",
       "E-posta sunucusu: Bilgilendirme, doğrulama ve hatırlatma e-postalarının iletilmesi amacıyla e-posta adresiniz ve ilgili mesaj içeriği.",
       "Google Analytics (Google LLC): Web sitemizin hangi sayfalarının ne sıklıkla ve ne kadar süreyle ziyaret edildiğini ölçmek amacıyla; ziyaret edilen sayfa adresi, ziyaret süresi, cihaz ve tarayıcı türü ile yaklaşık konum bilgisi, çerezler aracılığıyla Google'a iletilir ve Google'ın yurt dışındaki sunucularında işlenebilir. Google Analytics yalnızca çerez bildiriminde \"Kabul Et\" seçeneğini işaretlemeniz hâlinde ve yalnızca herkese açık sayfalarımızda çalışır; panel içindeki mülk, kiracı, borç ve hesap bilgileriniz Google Analytics'e gönderilmez. Ayrıntılı bilgi: https://policies.google.com/privacy",
-      "Google reCAPTCHA (Google LLC): Kayıt ve \"Sizi Arayalım\" formlarının otomatik yazılımlarca (bot) kötüye kullanılmasını önlemek amacıyla kullanılır. Doğrulama sırasında IP adresiniz, tarayıcı ve cihaz bilgileriniz ile form sayfasındaki etkileşim bilgileri Google'a iletilir ve Google'ın yurt dışındaki sunucularında işlenebilir; forma yazdığınız ad, telefon ve diğer bilgiler reCAPTCHA'ya gönderilmez. reCAPTCHA'ya Google Gizlilik Politikası (https://policies.google.com/privacy) ve Hizmet Şartları (https://policies.google.com/terms) uygulanır.",
+      "Cloudflare Turnstile (Cloudflare, Inc.): Kayıt ve \"Sizi Arayalım\" formlarının otomatik yazılımlarca (bot) kötüye kullanılmasını önlemek amacıyla kullanılır. Doğrulama yalnız bu formların bulunduğu sayfalarda çalışır; bu sırada IP adresiniz, tarayıcı ve cihaz bilgileriniz Cloudflare'e iletilir ve Cloudflare'in yurt dışındaki sunucularında işlenebilir; forma yazdığınız ad, telefon ve diğer bilgiler Turnstile'a gönderilmez. Turnstile'a Cloudflare Gizlilik Politikası (https://www.cloudflare.com/privacypolicy/) uygulanır.",
       "OpenFreeMap (Hyperknot Software Kft., Macaristan): Panel içindeki Konum Haritası açıldığında harita görselleri tarayıcınız tarafından tiles.openfreemap.org adresinden indirilir; bu sırada IP adresiniz, tarayıcı bilgileriniz ve görüntülenen harita bölgesi bu sağlayıcıya ve kullandığı içerik dağıtım ağına ulaşır. Sağlayıcı çerez kullanmadığını ve erişim kayıtlarında IP adresi saklamadığını beyan etmektedir; mülk, kiracı veya hesap bilgileriniz gönderilmez. Harita, web sitemizin ana sayfasında kullanılmaz. Ayrıntılı bilgi: https://openfreemap.org/privacy/",
     ],
   },
@@ -163,7 +163,7 @@ export default function GizlilikPolitikasiPage() {
       <Navbar />
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <h1 className="text-3xl font-bold text-slate-900 mb-2">Gizlilik Politikası</h1>
-        <p className="text-sm text-slate-500 mb-8">Son güncelleme: 14 Ağustos 2026</p>
+        <p className="text-sm text-slate-500 mb-8">Son güncelleme: 11 Kasım 2026</p>
         <LegalContent blocks={BLOCKS} />
       </div>
       <Footer />
